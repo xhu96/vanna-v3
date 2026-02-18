@@ -18,6 +18,7 @@ from .python import (
 from vanna.integrations.plotly import PlotlyChartGenerator
 from .run_sql import RunSqlTool
 from .visualize_data import VisualizeDataTool
+from .semantic_query import SemanticQueryTool
 
 __all__ = [
     # File system
@@ -35,6 +36,7 @@ __all__ = [
     "create_python_tools",
     # SQL
     "RunSqlTool",
+    "SemanticQueryTool",
     # Visualization
     "PlotlyChartGenerator",
     "VisualizeDataTool",

@@ -254,6 +254,17 @@ class ToolRegistry:
             # Add execution time to metadata
             result.metadata["execution_time_ms"] = execution_time_ms
 
+            lineage_collector = context.metadata.get("lineage_collector")
+            if lineage_collector is not None and hasattr(
+                lineage_collector, "record_tool_result"
+            ):
+                lineage_collector.record_tool_result(
+                    tool_name=tool_call.name,
+                    success=result.success,
+                    metadata=result.metadata,
+                    error=result.error,
+                )
+
             # Audit tool result
             if (
                 self.audit_logger
@@ -270,6 +281,16 @@ class ToolRegistry:
             return result
         except Exception as e:
             msg = f"Execution failed: {str(e)}"
+            lineage_collector = context.metadata.get("lineage_collector")
+            if lineage_collector is not None and hasattr(
+                lineage_collector, "record_tool_result"
+            ):
+                lineage_collector.record_tool_result(
+                    tool_name=tool_call.name,
+                    success=False,
+                    metadata={"execution_time_ms": 0.0},
+                    error=msg,
+                )
             return ToolResult(
                 success=False,
                 result_for_llm=msg,

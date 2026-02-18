@@ -8,10 +8,12 @@ from .local import MemoryConversationStore
 from .mock import MockLlmService
 from .plotly import PlotlyChartGenerator
 from .sqlite import SqliteRunner
+from .semantic import MockSemanticAdapter
 
 __all__ = [
     "MockLlmService",
     "MemoryConversationStore",
     "SqliteRunner",
     "PlotlyChartGenerator",
+    "MockSemanticAdapter",
 ]

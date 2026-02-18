@@ -188,6 +188,7 @@ class SearchSavedCorrectToolUsesTool(Tool[SearchSavedCorrectToolUsesParams]):
                     success=True,
                     result_for_llm=no_results_msg,
                     ui_component=ui_component,
+                    metadata={"retrieved_memories": []},
                 )
 
             # Format results for LLM
@@ -249,6 +250,16 @@ class SearchSavedCorrectToolUsesTool(Tool[SearchSavedCorrectToolUsesParams]):
                 success=True,
                 result_for_llm=results_text.strip(),
                 ui_component=ui_component,
+                metadata={
+                    "retrieved_memories": [
+                        {
+                            "memory_id": result.memory.memory_id,
+                            "score": result.similarity_score,
+                            "tool_name": result.memory.tool_name,
+                        }
+                        for result in results
+                    ]
+                },
             )
 
         except Exception as e:

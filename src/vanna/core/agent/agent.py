@@ -17,6 +17,7 @@ from vanna.components import (
     TaskTrackerUpdateComponent,
     ChatInputUpdateComponent,
     StatusCardComponent,
+    CardComponent,
     Task,
 )
 from .config import AgentConfig
@@ -42,6 +43,8 @@ from vanna.core.user.request_context import RequestContext
 from vanna.core.agent.config import UiFeature
 from vanna.core.audit import AuditLogger
 from vanna.capabilities.agent_memory import AgentMemory
+from vanna.core.planner import SemanticFirstPlanner
+from vanna.core.lineage import LineageCollector
 
 import logging
 
@@ -97,6 +100,7 @@ class Agent:
         conversation_filters: List[ConversationFilter] = [],
         observability_provider: Optional[ObservabilityProvider] = None,
         audit_logger: Optional[AuditLogger] = None,
+        semantic_planner: Optional[SemanticFirstPlanner] = None,
     ):
         self.llm_service = llm_service
         self.tool_registry = tool_registry
@@ -131,6 +135,7 @@ class Agent:
         self.conversation_filters = conversation_filters
         self.observability_provider = observability_provider
         self.audit_logger = audit_logger
+        self.semantic_planner = semantic_planner
 
         # Wire audit logger into tool registry
         if self.audit_logger and self.config.audit_config.enabled:
@@ -530,6 +535,12 @@ class Agent:
             if self.config.ui_features.can_user_access_feature(feature_name, user):
                 ui_features_available.append(feature_name)
 
+        lineage_collector = LineageCollector()
+        lineage_collector.set_schema(
+            request_context.metadata.get("schema_hash"),
+            request_context.metadata.get("schema_snapshot_id"),
+        )
+
         # Create context with observability provider and UI features
         context = ToolContext(
             user=user,
@@ -537,7 +548,10 @@ class Agent:
             request_id=request_id,
             agent_memory=self.agent_memory,
             observability_provider=self.observability_provider,
-            metadata={"ui_features_available": ui_features_available},
+            metadata={
+                "ui_features_available": ui_features_available,
+                "lineage_collector": lineage_collector,
+            },
         )
 
         # Enrich context with additional data with observability
@@ -588,6 +602,39 @@ class Agent:
             )
         )
 
+        # Semantic-first planner hinting (non-breaking, advisory routing).
+        planner_decision = None
+        if self.semantic_planner:
+            try:
+                planner_decision = await self.semantic_planner.decide(
+                    message=message,
+                    tool_schemas=tool_schemas,
+                    context=context,
+                )
+                context.metadata["semantic_planner_decision"] = {
+                    "route": planner_decision.route,
+                    "message": planner_decision.message,
+                    "semantic_hint": planner_decision.semantic_hint.model_dump()
+                    if planner_decision.semantic_hint
+                    else None,
+                }
+                lineage_collector.add_validation_check(
+                    f"semantic_planner_route:{planner_decision.route}"
+                )
+                if planner_decision.route == "sql_fallback":
+                    yield UiComponent(  # type: ignore
+                        rich_component=StatusBarUpdateComponent(
+                            status="warning",
+                            message="SQL fallback route",
+                            detail=planner_decision.message,
+                        )
+                    )
+            except Exception as planner_error:
+                logger.warning(
+                    f"Semantic planner failed; continuing without planner hints: {planner_error}"
+                )
+                planner_decision = None
+
         # Build system prompt with observability
         prompt_span = None
         if self.observability_provider:
@@ -599,6 +646,27 @@ class Agent:
         system_prompt = await self.system_prompt_builder.build_system_prompt(
             user, tool_schemas
         )
+
+        # Enforce semantic-first preference instruction when planner coverage exists.
+        if planner_decision and planner_decision.route == "semantic_preferred":
+            hint_text = planner_decision.message
+            request_hint = (
+                planner_decision.semantic_hint.request.model_dump()
+                if planner_decision.semantic_hint
+                and planner_decision.semantic_hint.request
+                else None
+            )
+            system_prompt = (
+                (system_prompt or "")
+                + "\n\nSemantic-first routing hint:\n"
+                + f"- {hint_text}\n"
+                + (
+                    f"- Suggested semantic_query args: {request_hint}\n"
+                    if request_hint
+                    else ""
+                )
+                + "- If semantic coverage is missing, fall back to SQL and surface a warning."
+            )
 
         # Enhance system prompt with LLM context enhancer
         if self.llm_context_enhancer and system_prompt is not None:
@@ -1083,6 +1151,21 @@ You can:
                     disabled=False,
                 )
             )
+
+        # Emit evidence/lineage panel for reproducibility on every completed answer.
+        lineage_markdown = lineage_collector.to_markdown()
+        yield UiComponent(
+            rich_component=CardComponent(
+                title="Evidence and Lineage",
+                content=lineage_markdown,
+                icon="🔎",
+                status="info",
+                collapsible=True,
+                collapsed=True,
+                markdown=True,
+            ),
+            simple_component=None,
+        )
 
         # Save conversation if configured
         if self.config.auto_save_conversations:

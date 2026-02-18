@@ -30,6 +30,8 @@ from .audit import (
     UiFeatureAccessCheckEvent,
     AiResponseEvent,
 )
+from .planner import SemanticFirstPlanner, PlannerDecision
+from .lineage import LineageCollector
 
 # UI Components
 from .components import UiComponent
@@ -139,6 +141,9 @@ __all__ = [
     "ToolResultEvent",
     "UiFeatureAccessCheckEvent",
     "AiResponseEvent",
+    "SemanticFirstPlanner",
+    "PlannerDecision",
+    "LineageCollector",
     # UI Components
     "UiComponent",
     # Simple Components
