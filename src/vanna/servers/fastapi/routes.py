@@ -81,12 +81,12 @@ def register_chat_routes(
             cdn_url = config.get("cdn_url", "https://img.vanna.ai/vanna-components.js")
             api_base_url = config.get("api_base_url", "")
 
-        return get_index_html(
-            dev_mode=dev_mode,
-            cdn_url=cdn_url,
-            api_base_url=api_base_url,
-            api_v2_prefix=v2_prefix,
-        )
+            return get_index_html(
+                dev_mode=dev_mode,
+                cdn_url=cdn_url,
+                api_base_url=api_base_url,
+                api_v2_prefix=v2_prefix,
+            )
 
     @app.post(f"{v2_prefix}/chat_sse")
     async def chat_sse(

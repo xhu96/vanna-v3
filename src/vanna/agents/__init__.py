@@ -4,4 +4,6 @@ Agent implementations.
 This package contains agent implementations and utilities.
 """
 
-__all__: list[str] = []
+from .basic import create_basic_agent
+
+__all__: list[str] = ["create_basic_agent"]
