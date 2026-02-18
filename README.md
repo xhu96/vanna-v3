@@ -1,6 +1,9 @@
-# Vanna 2.0: Turn Questions into Data Insights
+# Vanna 3.0: Turn Questions into Data Insights
 
-**Natural language → SQL → Answers.** Now with enterprise security and user-aware permissions.
+**Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, and feedback loops.
+
+> [!IMPORTANT]
+> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. This fork builds v3.0 on top of the upstream v2.0.2 release, adding production-grade security, observability, and reliability features. The upstream project is maintained by the Vanna team at [vanna-ai/vanna](https://github.com/vanna-ai/vanna).
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -8,26 +11,31 @@
 
 https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
-
-![Vanna2 Demo](img/architecture.png)
+![Vanna Architecture](img/architecture.png)
 
 ---
 
-## What's New in 2.0
+## What's New in 3.0
 
-🔐 **User-Aware at Every Layer** — Queries automatically filtered per user permissions
+🛡️ **Secure-by-Default** — No LLM-generated Python `exec()` for charts; read-only SQL policy; auth middleware templates
 
-🎨 **Modern Web Interface** — Beautiful pre-built `<vanna-chat>` component
+📊 **Declarative Visualization** — Validated `ChartSpec` protocol (Vega-Lite / Plotly JSON) rendered client-side
 
-⚡ **Streaming Responses** — Real-time tables, charts, and progress updates
+🔄 **Schema Drift Sync** — Portable INFORMATION_SCHEMA snapshots with hash-based diffing and auto memory patching
 
-🔒 **Enterprise Security** — Row-level security, audit logs, rate limiting
+🧠 **Semantic-First Routing** — Queries route through semantic layer tools before falling back to SQL generation
 
-🔄 **Production-Ready** — FastAPI integration, observability, lifecycle hooks
+📋 **Explainability & Lineage** — Every answer ships with schema version, retrieved memories, tool calls, SQL, and confidence tier
 
-> **Upgrading from 0.x?** See the [Migration Guide](MIGRATION_GUIDE.md) | [What changed?](#migration-notes)
+👍 **Feedback Loop** — Thumbs-down + corrected SQL immediately patches memory with weighted corrections
 
-> **Building v3.0?** See [v3 docs](docs/v3/README.md) for typed streaming events, declarative charts, schema drift sync, semantic-first routing, lineage, and feedback-loop architecture.
+🔐 **User-Aware at Every Layer** — Identity, permissions, and row-level security flow through the entire system
+
+⚡ **Typed Streaming Events** — Versioned SSE/poll event contract (`v3`) with namespaced API routes
+
+> **Upgrading from 0.x → 2.0?** See the [Migration Guide](MIGRATION_GUIDE.md)
+>
+> **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
 
 ---
 
@@ -46,10 +54,7 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 ```html
 <!-- Drop into any existing webpage -->
 <script src="https://img.vanna.ai/vanna-components.js"></script>
-<vanna-chat
-  sse-endpoint="https://your-api.com/chat"
-  theme="dark">
-</vanna-chat>
+<vanna-chat sse-endpoint="https://your-api.com/chat" theme="dark"> </vanna-chat>
 ```
 
 Uses your existing cookies/JWTs. Works with React, Vue, or plain HTML.
@@ -74,32 +79,37 @@ All streamed in real-time to your web component.
 
 ---
 
-## Why Vanna 2.0?
+## Why Vanna 3.0?
 
 ### ✅ Get Started Instantly
-* Production chat interface
-* Custom agent with your database
-* Embed in any webpage
+
+- Production chat interface
+- Custom agent with your database
+- Embed in any webpage
 
 ### ✅ Enterprise-Ready Security
+
 **User-aware at every layer** — Identity flows through system prompts, tool execution, and SQL filtering
 **Row-level security** — Queries automatically filtered per user permissions
 **Audit logs** — Every query tracked per user for compliance
 **Rate limiting** — Per-user quotas via lifecycle hooks
 
 ### ✅ Beautiful Web UI Included
+
 **Pre-built `<vanna-chat>` component** — No need to build your own chat interface
 **Streaming tables & charts** — Rich components, not just text
 **Responsive & customizable** — Works on mobile, desktop, light/dark themes
 **Framework-agnostic** — React, Vue, plain HTML
 
 ### ✅ Works With Your Stack
+
 **Any LLM:** OpenAI, Anthropic, Ollama, Azure, Google Gemini, AWS Bedrock, Mistral, Others
 **Any Database:** PostgreSQL, MySQL, Snowflake, BigQuery, Redshift, SQLite, Oracle, SQL Server, DuckDB, ClickHouse, Others
 **Your Auth System:** Bring your own — cookies, JWTs, OAuth tokens
 **Your Framework:** FastAPI, Flask
 
 ### ✅ Extensible But Opinionated
+
 **Custom tools** — Extend the `Tool` base class
 **Lifecycle hooks** — Quota checking, logging, content filtering
 **LLM middlewares** — Caching, prompt engineering
@@ -109,7 +119,7 @@ All streamed in real-time to your web component.
 
 ## Architecture
 
-![Vanna2 Diagram](img/vanna2.svg)
+![Vanna 3.0 Diagram](img/vanna2.svg)
 
 ---
 
@@ -124,7 +134,7 @@ sequenceDiagram
     participant T as 🧰 Tools
 
     U->>W: "Show Q4 sales"
-    W->>S: POST /api/vanna/v2/chat_sse (with auth)
+    W->>S: POST /api/vanna/v3/chat/events (with auth)
     S->>A: User(id=alice, groups=[read_sales])
     A->>T: Execute SQL tool (user-aware)
     T->>T: Apply row-level security
@@ -194,6 +204,7 @@ register_chat_routes(app, chat_handler)
 ```
 
 **Then in your frontend:**
+
 ```html
 <vanna-chat sse-endpoint="/api/vanna/v2/chat_sse"></vanna-chat>
 ```
@@ -247,11 +258,21 @@ tools.register(EmailTool())
 
 ## Advanced Features
 
-Vanna 2.0 includes powerful enterprise features for production use:
+Vanna 3.0 includes powerful enterprise features for production use:
 
 **Lifecycle Hooks** — Add quota checking, custom logging, content filtering at key points in the request lifecycle
 
 **LLM Middlewares** — Implement caching, prompt engineering, or cost tracking around LLM calls
+
+**Schema Drift Sync** — Automatically detect and patch schema changes via cron-compatible scheduler
+
+**Semantic Layer Integration** — Route queries through metrics/dimensions before falling back to raw SQL
+
+**Lineage & Confidence** — Every answer includes provenance, evidence panel, and tiered confidence scores
+
+**Feedback-Driven Memory** — User corrections immediately improve subsequent behavior via weighted memory patches
+
+**Eval Harness & CI Gates** — Regression detection with configurable score delta thresholds
 
 **Conversation Storage** — Persist and retrieve conversation history per user
 
@@ -266,6 +287,7 @@ Vanna 2.0 includes powerful enterprise features for production use:
 ## Use Cases
 
 **Vanna is ideal for:**
+
 - 📊 Data analytics applications with natural language interfaces
 - 🔐 Multi-tenant SaaS needing user-aware permissions
 - 🎨 Teams wanting a pre-built web component + backend
@@ -288,19 +310,35 @@ Vanna 2.0 includes powerful enterprise features for production use:
 
 **Upgrading from Vanna 0.x?**
 
-Vanna 2.0 is a complete rewrite focused on user-aware agents and production deployments. Key changes:
+Vanna 2.0+ is a complete rewrite focused on user-aware agents and production deployments. See the [0.x → 2.0 Migration Guide](MIGRATION_GUIDE.md).
 
-- **New API**: Agent-based instead of `VannaBase` class methods
-- **User-aware**: Every component now knows the user identity
-- **Streaming**: Rich UI components instead of text/dataframes
-- **Web-first**: Built-in `<vanna-chat>` component and server
+**Upgrading from Vanna 2.x to 3.0?**
+
+Vanna 3.0 is an incremental evolution — v2 routes and `LegacyVannaAdapter` remain fully available. Key additions:
+
+- **Secure-by-default**: No Python `exec()` for charts, read-only SQL policy
+- **Declarative charts**: `ChartSpec` replaces code execution
+- **Schema drift sync**: Portable snapshots + auto memory patching
+- **Semantic routing**: Queries go through semantic tools first
+- **Lineage & feedback**: Evidence panels and corrective memory patches
 
 **Migration path:**
 
-1. **Quick wrap** — Use `LegacyVannaAdapter` to wrap your existing Vanna 0.x instance and get the new web UI immediately
-2. **Gradual migration** — Incrementally move to the new Agent API and tools
+1. **Keep v2 routes** — Everything continues to work unchanged
+2. **Switch to v3 endpoints** — Migrate to `/api/vanna/v3/` routes for typed streaming events
+3. **Enable new features** — Schema sync, feedback, semantic routing
 
-See the complete [Migration Guide](MIGRATION_GUIDE.md) for step-by-step instructions.
+See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
+
+---
+
+## Documentation
+
+- 📐 [v3 Architecture & Design](docs/v3/architecture-and-design.md)
+- 📡 [v3 API Events Reference](docs/v3/api-events-v3.md)
+- 🔀 [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
+- 📘 [Golden-Path Examples](examples/v3/)
+- 📖 [Upstream Vanna Docs](https://vanna.ai/docs)
 
 ---
 
@@ -310,4 +348,4 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ by the Vanna team** | [Website](https://vanna.ai) | [Docs](https://vanna.ai/docs) | [Discussions](https://github.com/vanna-ai/vanna/discussions)
+**Fork maintained by [xhu96](https://github.com/xhu96)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)
