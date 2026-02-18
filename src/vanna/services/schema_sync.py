@@ -99,7 +99,9 @@ class PortableSchemaCatalogService(SchemaCatalog):
             ORDER BY table_schema, table_name, ordinal_position
         """
         try:
-            df = await self.sql_runner.run_sql(RunSqlToolArgs(sql=info_schema_sql), context)
+            df = await self.sql_runner.run_sql(
+                RunSqlToolArgs(sql=info_schema_sql), context
+            )
             if not df.empty:
                 return self._columns_from_dataframe(df)
         except Exception:
@@ -188,7 +190,9 @@ class PortableSchemaCatalogService(SchemaCatalog):
     def _column_key(self, column: SchemaColumn) -> Tuple[str, str, str]:
         return (column.schema_name or "", column.table_name, column.column_name)
 
-    def _to_index(self, columns: Iterable[SchemaColumn]) -> Dict[Tuple[str, str, str], SchemaColumn]:
+    def _to_index(
+        self, columns: Iterable[SchemaColumn]
+    ) -> Dict[Tuple[str, str, str], SchemaColumn]:
         return {self._column_key(column): column for column in columns}
 
     def _diff_snapshots(

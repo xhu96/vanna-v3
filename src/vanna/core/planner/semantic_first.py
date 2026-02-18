@@ -48,4 +48,3 @@ class SemanticFirstPlanner:
             message="Semantic coverage missing; fallback to SQL generation.",
             semantic_hint=hint,
         )
-

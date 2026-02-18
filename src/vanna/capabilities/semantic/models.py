@@ -29,4 +29,3 @@ class SemanticQueryResult(BaseModel):
     rows: List[Dict[str, Any]] = Field(default_factory=list)
     row_count: int = 0
     metadata: Dict[str, Any] = Field(default_factory=dict)
-

@@ -64,4 +64,3 @@ class ChatEvent(BaseModel):
             request_id=request_id,
             payload={"status": "done"},
         )
-

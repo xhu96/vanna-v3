@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from vanna.capabilities.semantic import (
     SemanticAdapter,
@@ -18,7 +18,7 @@ class MockSemanticAdapter(SemanticAdapter):
 
     def __init__(
         self,
-        catalog: Dict[str, List[dict]] | None = None,
+        catalog: Dict[str, List[Dict[str, Any]]] | None = None,
     ):
         self.catalog = catalog or {
             "revenue": [
@@ -59,4 +59,3 @@ class MockSemanticAdapter(SemanticAdapter):
                 "source": "mock_semantic_adapter",
             },
         )
-

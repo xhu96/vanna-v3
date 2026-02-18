@@ -83,9 +83,7 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                                 level="error",
                                 message=validation_error,
                             ),
-                            simple_component=SimpleTextComponent(
-                                text=validation_error
-                            ),
+                            simple_component=SimpleTextComponent(text=validation_error),
                         ),
                         error=validation_error,
                         metadata={

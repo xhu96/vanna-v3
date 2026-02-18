@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Type
+from typing import Any, Type
 
 from pydantic import BaseModel, Field
 
@@ -14,7 +14,7 @@ from vanna.core.tool import Tool, ToolContext, ToolResult
 class SemanticQueryToolArgs(BaseModel):
     metric: str = Field(description="Semantic metric identifier")
     dimensions: list[str] = Field(default_factory=list)
-    filters: dict = Field(default_factory=dict)
+    filters: dict[str, Any] = Field(default_factory=dict)
     time_grain: str | None = None
     limit: int = 100
     order_by: str | None = None
@@ -74,4 +74,3 @@ class SemanticQueryTool(Tool[SemanticQueryToolArgs]):
                 "semantic_result": result.model_dump(),
             },
         )
-

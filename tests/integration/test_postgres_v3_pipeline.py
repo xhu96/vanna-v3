@@ -32,7 +32,9 @@ async def test_postgres_runner_and_schema_sync(tmp_path):
 
     table_name = f"vanna_v3_test_{uuid.uuid4().hex[:8]}"
     # Setup test table with direct runner calls.
-    await runner.run_sql(RunSqlToolArgs(sql=f"CREATE TABLE {table_name} (id INT, value TEXT)"), context)
+    await runner.run_sql(
+        RunSqlToolArgs(sql=f"CREATE TABLE {table_name} (id INT, value TEXT)"), context
+    )
     await runner.run_sql(
         RunSqlToolArgs(sql=f"INSERT INTO {table_name} (id, value) VALUES (1, 'ok')"),
         context,
@@ -55,4 +57,6 @@ async def test_postgres_runner_and_schema_sync(tmp_path):
         assert sync_result.snapshot.schema_hash
         assert any(c.table_name == table_name for c in sync_result.snapshot.columns)
     finally:
-        await runner.run_sql(RunSqlToolArgs(sql=f"DROP TABLE IF EXISTS {table_name}"), context)
+        await runner.run_sql(
+            RunSqlToolArgs(sql=f"DROP TABLE IF EXISTS {table_name}"), context
+        )

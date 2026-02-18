@@ -38,4 +38,3 @@ class LineageEvidence:
     sql_executions: List[SqlEvidence] = field(default_factory=list)
     validation_checks: List[str] = field(default_factory=list)
     confidence: str = "Low"
-

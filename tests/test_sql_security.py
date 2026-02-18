@@ -11,9 +11,7 @@ from vanna.tools.run_sql import RunSqlTool
 
 
 class DummySqlRunner(SqlRunner):
-    async def run_sql(
-        self, args: RunSqlToolArgs, context: ToolContext
-    ) -> pd.DataFrame:
+    async def run_sql(self, args: RunSqlToolArgs, context: ToolContext) -> pd.DataFrame:
         return pd.DataFrame([{"ok": 1}])
 
 
@@ -38,9 +36,7 @@ async def test_run_sql_blocks_write_statement_by_default(tool_context):
 @pytest.mark.asyncio
 async def test_run_sql_blocks_multi_statement_by_default(tool_context):
     tool = RunSqlTool(sql_runner=DummySqlRunner())
-    result = await tool.execute(
-        tool_context, RunSqlToolArgs(sql="SELECT 1; SELECT 2;")
-    )
+    result = await tool.execute(tool_context, RunSqlToolArgs(sql="SELECT 1; SELECT 2;"))
     assert result.success is False
     assert "Multiple SQL statements are blocked" in result.result_for_llm
 

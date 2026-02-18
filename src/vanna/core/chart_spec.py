@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
-from jsonschema import validate
-from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
+from jsonschema import validate  # type: ignore[import-untyped]
+from jsonschema.exceptions import ValidationError as JsonSchemaValidationError  # type: ignore[import-untyped]
 
 
 VEGA_LITE_SPEC_SCHEMA: Dict[str, Any] = {
@@ -87,7 +87,9 @@ class ChartSpec(BaseModel):
         try:
             validate(instance=self.spec, schema=schema)
         except JsonSchemaValidationError as exc:
-            raise ValueError(f"Invalid {self.format} chart spec: {exc.message}") from exc
+            raise ValueError(
+                f"Invalid {self.format} chart spec: {exc.message}"
+            ) from exc
 
         return self
 
@@ -150,4 +152,3 @@ def dataframe_to_vega_lite_spec(
         dataset=rows,
         metadata={"row_count": len(rows), "columns": columns},
     )
-

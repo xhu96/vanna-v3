@@ -8,7 +8,7 @@ from typing import Any, Callable, Deque, Dict, Optional
 
 
 def make_fastapi_bearer_auth_middleware(
-    token_validator: Callable[[str], bool]
+    token_validator: Callable[[str], bool],
 ) -> Callable[[Any], None]:
     """Create a FastAPI middleware hook for bearer token validation."""
 
@@ -23,13 +23,17 @@ def make_fastapi_bearer_auth_middleware(
             if not auth_header.startswith("Bearer "):
                 from fastapi.responses import JSONResponse
 
-                return JSONResponse(status_code=401, content={"detail": "Missing token"})
+                return JSONResponse(
+                    status_code=401, content={"detail": "Missing token"}
+                )
 
             token = auth_header.split(" ", 1)[1]
             if not token_validator(token):
                 from fastapi.responses import JSONResponse
 
-                return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+                return JSONResponse(
+                    status_code=401, content={"detail": "Invalid token"}
+                )
 
             return await call_next(request)
 
@@ -37,7 +41,7 @@ def make_fastapi_bearer_auth_middleware(
 
 
 def make_flask_bearer_auth_middleware(
-    token_validator: Callable[[str], bool]
+    token_validator: Callable[[str], bool],
 ) -> Callable[[Any], None]:
     """Create a Flask before_request auth hook."""
 
@@ -88,4 +92,3 @@ def make_fixed_window_rate_limiter(
         queue.append(now)
 
     return guard
-

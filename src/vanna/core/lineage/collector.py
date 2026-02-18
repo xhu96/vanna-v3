@@ -11,10 +11,12 @@ from .models import LineageEvidence, MemoryEvidence, SqlEvidence, ToolLineageRec
 class LineageCollector:
     """Collects execution evidence during an agent run."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.evidence = LineageEvidence()
 
-    def set_schema(self, schema_hash: str | None, schema_snapshot_id: str | None) -> None:
+    def set_schema(
+        self, schema_hash: str | None, schema_snapshot_id: str | None
+    ) -> None:
         self.evidence.schema_hash = schema_hash
         self.evidence.schema_snapshot_id = schema_snapshot_id
 
@@ -99,5 +101,7 @@ class LineageCollector:
             lines.append("- SQL executions: 0")
 
         lines.append(f"- Retrieved memories/docs: {len(evidence.retrieved_memories)}")
-        lines.append(f"- Validation checks: {', '.join(evidence.validation_checks) if evidence.validation_checks else 'none'}")
+        lines.append(
+            f"- Validation checks: {', '.join(evidence.validation_checks) if evidence.validation_checks else 'none'}"
+        )
         return "\n".join(lines)

@@ -11,7 +11,9 @@ class ConfidenceScorer:
     @staticmethod
     def score(evidence: LineageEvidence) -> str:
         successful_tools = [t for t in evidence.tool_calls if t.success]
-        has_semantic = any(t.tool_name == "semantic_query" and t.success for t in successful_tools)
+        has_semantic = any(
+            t.tool_name == "semantic_query" and t.success for t in successful_tools
+        )
         has_sql = len(evidence.sql_executions) > 0
         has_memory_support = len(evidence.retrieved_memories) > 0
         has_validation = len(evidence.validation_checks) > 0
@@ -22,4 +24,3 @@ class ConfidenceScorer:
         if (has_sql or has_memory_support) and not has_errors:
             return "Medium"
         return "Low"
-
