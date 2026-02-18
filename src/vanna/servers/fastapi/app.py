@@ -47,13 +47,28 @@ class VannaFastAPIServer:
         if cors_config.get("enabled", True):
             cors_params = {k: v for k, v in cors_config.items() if k != "enabled"}
 
-            # Set sensible defaults
-            cors_params.setdefault("allow_origins", ["*"])
-            cors_params.setdefault("allow_credentials", True)
-            cors_params.setdefault("allow_methods", ["*"])
-            cors_params.setdefault("allow_headers", ["*"])
+            # Secure-by-default CORS policy (explicit localhost defaults).
+            cors_params.setdefault(
+                "allow_origins",
+                [
+                    "http://localhost",
+                    "http://127.0.0.1",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                ],
+            )
+            cors_params.setdefault("allow_credentials", False)
+            cors_params.setdefault("allow_methods", ["GET", "POST", "OPTIONS"])
+            cors_params.setdefault(
+                "allow_headers",
+                ["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+            )
 
             app.add_middleware(CORSMiddleware, **cors_params)
+
+        # Optional hook for auth and rate-limit middleware registration.
+        for middleware_hook in self.config.get("middleware_hooks", []):
+            middleware_hook(app)
 
         # Add static file serving in dev mode
         dev_mode = self.config.get("dev_mode", False)

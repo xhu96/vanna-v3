@@ -33,6 +33,7 @@ def get_index_html(
     static_path: str = "/static",
     cdn_url: str = "https://img.vanna.ai/vanna-components.js",
     api_base_url: str = "",
+    api_v2_prefix: str = "/api/vanna/v2",
 ) -> str:
     """Generate index HTML with configurable component loading.
 
@@ -41,6 +42,7 @@ def get_index_html(
         static_path: Path to static assets in dev mode
         cdn_url: CDN URL for production components
         api_base_url: Base URL for API endpoints
+        api_v2_prefix: Route prefix for v2 API endpoints
 
     Returns:
         Complete HTML page as string
@@ -189,9 +191,9 @@ def get_index_html(
             <div class="bg-white rounded-xl shadow-lg h-[600px] overflow-hidden border border-vanna-teal/30">
                 <vanna-chat
                     api-base="{api_base_url}"
-                    sse-endpoint="{api_base_url}/api/vanna/v2/chat_sse"
-                    ws-endpoint="{api_base_url}/api/vanna/v2/chat_websocket"
-                    poll-endpoint="{api_base_url}/api/vanna/v2/chat_poll">
+                    sse-endpoint="{api_base_url}{api_v2_prefix}/chat_sse"
+                    ws-endpoint="{api_base_url}{api_v2_prefix}/chat_websocket"
+                    poll-endpoint="{api_base_url}{api_v2_prefix}/chat_poll">
                 </vanna-chat>
             </div>
 
@@ -199,13 +201,13 @@ def get_index_html(
                 <h3 class="text-lg font-semibold text-vanna-navy mb-3 font-serif">API Endpoints</h3>
                 <ul class="space-y-2">
                     <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}/api/vanna/v2/chat_sse - Server-Sent Events streaming
+                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}{api_v2_prefix}/chat_sse - Server-Sent Events streaming
                     </li>
                     <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">WS</span>{api_base_url}/api/vanna/v2/chat_websocket - WebSocket real-time chat
+                        <span class="font-bold text-vanna-teal mr-2">WS</span>{api_base_url}{api_v2_prefix}/chat_websocket - WebSocket real-time chat
                     </li>
                     <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}/api/vanna/v2/chat_poll - Request/response polling
+                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}{api_v2_prefix}/chat_poll - Request/response polling
                     </li>
                     <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
                         <span class="font-bold text-vanna-teal mr-2">GET</span>{api_base_url}/health - Health check

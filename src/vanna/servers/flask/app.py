@@ -45,7 +45,27 @@ class VannaFlaskServer:
         # Enable CORS if configured
         cors_config = self.config.get("cors", {})
         if cors_config.get("enabled", True):
-            CORS(app, **{k: v for k, v in cors_config.items() if k != "enabled"})
+            cors_params = {k: v for k, v in cors_config.items() if k != "enabled"}
+            cors_params.setdefault(
+                "origins",
+                [
+                    "http://localhost",
+                    "http://127.0.0.1",
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                ],
+            )
+            cors_params.setdefault("supports_credentials", False)
+            cors_params.setdefault("methods", ["GET", "POST", "OPTIONS"])
+            cors_params.setdefault(
+                "allow_headers",
+                ["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+            )
+            CORS(app, **cors_params)
+
+        # Optional hook for auth and rate-limit middleware registration.
+        for middleware_hook in self.config.get("middleware_hooks", []):
+            middleware_hook(app)
 
         # Register routes
         register_chat_routes(app, self.chat_handler, self.config)

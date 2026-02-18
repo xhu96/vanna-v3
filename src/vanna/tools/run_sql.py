@@ -1,7 +1,8 @@
 """Generic SQL query execution tool with dependency injection."""
 
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type, cast, Set
 import uuid
+import sqlparse
 from vanna.core.tool import Tool, ToolContext, ToolResult
 from vanna.components import (
     UiComponent,
@@ -24,6 +25,8 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
         file_system: Optional[FileSystem] = None,
         custom_tool_name: Optional[str] = None,
         custom_tool_description: Optional[str] = None,
+        read_only: bool = True,
+        allowed_statement_types: Optional[Set[str]] = None,
     ):
         """Initialize the tool with a SqlRunner implementation.
 
@@ -32,11 +35,23 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             file_system: FileSystem implementation for saving results (defaults to LocalFileSystem)
             custom_tool_name: Optional custom name for the tool (overrides default "run_sql")
             custom_tool_description: Optional custom description for the tool (overrides default description)
+            read_only: Whether to enforce read-only SQL statements (secure default)
+            allowed_statement_types: Allowed first SQL keywords when read_only=True
         """
         self.sql_runner = sql_runner
         self.file_system = file_system or LocalFileSystem()
         self._custom_name = custom_tool_name
         self._custom_description = custom_tool_description
+        self.read_only = read_only
+        self.allowed_statement_types = allowed_statement_types or {
+            "SELECT",
+            "WITH",
+            "SHOW",
+            "DESCRIBE",
+            "DESC",
+            "EXPLAIN",
+            "PRAGMA",
+        }
 
     @property
     def name(self) -> str:
@@ -56,6 +71,30 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
     async def execute(self, context: ToolContext, args: RunSqlToolArgs) -> ToolResult:
         """Execute a SQL query using the injected SqlRunner."""
         try:
+            if self.read_only:
+                validation_error = self._validate_read_only_sql(args.sql)
+                if validation_error:
+                    return ToolResult(
+                        success=False,
+                        result_for_llm=validation_error,
+                        ui_component=UiComponent(
+                            rich_component=NotificationComponent(
+                                type=ComponentType.NOTIFICATION,
+                                level="error",
+                                message=validation_error,
+                            ),
+                            simple_component=SimpleTextComponent(
+                                text=validation_error
+                            ),
+                        ),
+                        error=validation_error,
+                        metadata={
+                            "error_type": "sql_security_violation",
+                            "executed_sql": args.sql,
+                            "validation_checks": ["read_only_policy_failed"],
+                        },
+                    )
+
             # Use the injected SqlRunner to execute the query
             df = await self.sql_runner.run_sql(args, context)
 
@@ -123,6 +162,8 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                         "query_type": query_type,
                         "results": results_data,
                         "output_file": filename,
+                        "executed_sql": args.sql,
+                        "validation_checks": ["read_only_policy_passed"],
                     }
             else:
                 # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
@@ -132,7 +173,12 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     f"Query executed successfully. {rows_affected} row(s) affected."
                 )
 
-                metadata = {"rows_affected": rows_affected, "query_type": query_type}
+                metadata = {
+                    "rows_affected": rows_affected,
+                    "query_type": query_type,
+                    "executed_sql": args.sql,
+                    "validation_checks": ["read_only_policy_passed"],
+                }
                 ui_component = UiComponent(
                     rich_component=NotificationComponent(
                         type=ComponentType.NOTIFICATION, level="success", message=result
@@ -161,5 +207,28 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
                 error=str(e),
-                metadata={"error_type": "sql_error"},
+                metadata={"error_type": "sql_error", "executed_sql": args.sql},
             )
+
+    def _validate_read_only_sql(self, sql: str) -> Optional[str]:
+        """Validate SQL against read-only policy."""
+        statements = [s.strip() for s in sqlparse.split(sql) if s.strip()]
+        if not statements:
+            return "SQL query cannot be empty."
+
+        if len(statements) > 1:
+            return "Multiple SQL statements are blocked by default."
+
+        first_statement = statements[0].lstrip()
+        if not first_statement:
+            return "SQL query cannot be empty."
+
+        first_keyword = first_statement.split(None, 1)[0].upper()
+        if first_keyword not in self.allowed_statement_types:
+            allowed_list = ", ".join(sorted(self.allowed_statement_types))
+            return (
+                f"Blocked by read-only SQL policy. "
+                f"Allowed statement types: {allowed_list}."
+            )
+
+        return None

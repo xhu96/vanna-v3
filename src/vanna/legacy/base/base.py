@@ -80,6 +80,11 @@ class VannaBase(ABC):
         self.dialect = self.config.get("dialect", "SQL")
         self.language = self.config.get("language", None)
         self.max_tokens = self.config.get("max_tokens", 14000)
+        # Security-by-default for v3: do not execute LLM-generated Python chart code
+        # unless explicitly enabled by the operator.
+        self.allow_unsafe_plotly_code_execution = self.config.get(
+            "allow_unsafe_plotly_code_execution", False
+        )
 
     def log(self, message: str, title: str = "Info"):
         print(f"{title}: {message}")
@@ -1765,6 +1770,13 @@ class VannaBase(ABC):
                 self.add_question_sql(question=question, sql=sql)
             # Only generate plotly code if visualize is True
             if visualize:
+                if not self.allow_unsafe_plotly_code_execution:
+                    print(
+                        "Visualization skipped: LLM-generated Python chart execution "
+                        "is disabled by default. "
+                        "Set config['allow_unsafe_plotly_code_execution']=True to opt in."
+                    )
+                    return sql, df, None
                 try:
                     plotly_code = self.generate_plotly_code(
                         question=question,
@@ -2092,6 +2104,11 @@ class VannaBase(ABC):
         """
         ldict = {"df": df, "px": px, "go": go}
         try:
+            if not self.allow_unsafe_plotly_code_execution:
+                raise ValueError(
+                    "Unsafe Plotly code execution is disabled. "
+                    "Enable allow_unsafe_plotly_code_execution to use this path."
+                )
             exec(plotly_code, globals(), ldict)
 
             fig = ldict.get("fig", None)
