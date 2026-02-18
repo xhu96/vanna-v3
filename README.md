@@ -119,7 +119,7 @@ All streamed in real-time to your web component.
 
 ## Architecture
 
-![Vanna 3.0 Diagram](img/vanna2.svg)
+![Vanna 3.0 Architecture](img/vanna3.svg)
 
 ---
 
