@@ -27,6 +27,8 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
 > **Upgrading from 0.x?** See the [Migration Guide](MIGRATION_GUIDE.md) | [What changed?](#migration-notes)
 
+> **Building v3.0?** See [v3 docs](docs/v3/README.md) for typed streaming events, declarative charts, schema drift sync, semantic-first routing, lineage, and feedback-loop architecture.
+
 ---
 
 ## Get Started
