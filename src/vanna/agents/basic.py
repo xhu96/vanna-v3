@@ -51,9 +51,7 @@ class SimpleAgentMemory(AgentMemory):
     ) -> None:
         pass
 
-    async def save_text_memory(
-        self, content: str, context: ToolContext
-    ) -> TextMemory:
+    async def save_text_memory(self, content: str, context: ToolContext) -> TextMemory:
         # Return a dummy memory
         return TextMemory(
             id="dummy",
