@@ -40,7 +40,10 @@
   ],
   "dependencies": {
     "lit": "^3.3.1",
-    "plotly.js-dist-min": "^3.1.0"
+    "plotly.js-dist-min": "^3.1.0",
+    "vega": "^5.33.0",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^5.20.1"
   },
   "devDependencies": {
     "@storybook/addon-actions": "^8.6.14",

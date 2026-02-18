@@ -28,6 +28,7 @@ dependencies = [
     "sqlparse",
     "sqlalchemy",
     "requests",
+    "jsonschema",
 ]
 
 [project.scripts]

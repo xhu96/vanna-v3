@@ -1310,65 +1310,83 @@ export class ButtonGroupComponentRenderer extends BaseComponentRenderer {
   }
 }
 
-// Chart component renderer (for Plotly charts)
+// Chart component renderer (declarative ChartSpec + legacy Plotly payloads)
 export class ChartComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
     const container = document.createElement('div');
     container.className = 'rich-component rich-chart';
     container.dataset.componentId = component.id;
 
-    // The ChartComponent.data field contains the Plotly figure directly
-    // Structure: component.data = { data: [...traces...], layout: {...}, title: "...", config: {...} }
-    const { data: plotlyData, layout, title, config = {} } = component.data;
+    // ChartComponent serializes its custom payload under component.data.data.
+    // We keep compatibility with older payloads where the Plotly dict was top-level.
+    const chartPayload = component.data?.data ?? component.data ?? {};
+    const title = component.data?.title || chartPayload?.title;
 
-    console.log('ChartComponentRenderer: Received component.data:', component.data);
-    console.log('ChartComponentRenderer: plotlyData:', plotlyData);
-    console.log('ChartComponentRenderer: layout:', layout);
+    if (title) {
+      container.innerHTML = `
+        <div class="chart-header">
+          <h3 class="chart-title">${title}</h3>
+        </div>
+        <div class="chart-content"></div>
+      `;
+    }
 
-    // Check if we have a valid Plotly figure structure
-    if (plotlyData && Array.isArray(plotlyData) && layout) {
-      // Create plotly-chart web component
+    const mountTarget = (container.querySelector('.chart-content') as HTMLElement) || container;
+
+    // New declarative format: Vega-Lite ChartSpec
+    if (chartPayload.format === 'vega-lite' && chartPayload.spec) {
+      const vegaElement = document.createElement('vega-lite-chart') as any;
+      mountTarget.appendChild(vegaElement);
+      requestAnimationFrame(() => {
+        vegaElement.spec = chartPayload.spec;
+        vegaElement.dataset = chartPayload.dataset || [];
+      });
+      return container;
+    }
+
+    // Declarative Plotly JSON path
+    if (chartPayload.format === 'plotly-json' && chartPayload.spec?.data) {
       const chartElement = document.createElement('plotly-chart') as any;
+      mountTarget.appendChild(chartElement);
 
-      // Set theme to match current theme
       const vannaChat = document.querySelector('vanna-chat');
       if (vannaChat) {
         chartElement.theme = vannaChat.getAttribute('theme') || 'dark';
       }
 
-      // Wrap in container with optional title
-      if (title) {
-        container.innerHTML = `
-          <div class="chart-header">
-            <h3 class="chart-title">${title}</h3>
-          </div>
-          <div class="chart-content"></div>
-        `;
-        container.querySelector('.chart-content')?.appendChild(chartElement);
-      } else {
-        container.appendChild(chartElement);
+      requestAnimationFrame(() => {
+        chartElement.data = chartPayload.spec.data || [];
+        chartElement.layout = chartPayload.spec.layout || {};
+        chartElement.config = chartPayload.spec.config || {};
+      });
+      return container;
+    }
+
+    // Legacy Plotly payload path
+    if (chartPayload.data && Array.isArray(chartPayload.data) && chartPayload.layout) {
+      const chartElement = document.createElement('plotly-chart') as any;
+      mountTarget.appendChild(chartElement);
+
+      const vannaChat = document.querySelector('vanna-chat');
+      if (vannaChat) {
+        chartElement.theme = vannaChat.getAttribute('theme') || 'dark';
       }
 
-      // Set data AFTER the element is in the DOM
-      // This ensures the web component is fully initialized
       requestAnimationFrame(() => {
-        chartElement.data = plotlyData; // Plotly traces (array)
-        chartElement.layout = layout; // Plotly layout (object)
-        chartElement.config = config;
-
-        console.log('ChartComponentRenderer: Set properties after DOM attachment');
-        console.log('ChartComponentRenderer: chartElement.data:', chartElement.data);
-        console.log('ChartComponentRenderer: chartElement.layout:', chartElement.layout);
+        chartElement.data = chartPayload.data;
+        chartElement.layout = chartPayload.layout;
+        chartElement.config = chartPayload.config || {};
       });
-    } else {
-      // Fallback for invalid chart data
-      container.innerHTML = `
-        <div class="chart-error">
-          <p>Invalid chart data format</p>
-          <pre>${JSON.stringify(component.data, null, 2).substring(0, 200)}...</pre>
-        </div>
-      `;
+      return container;
     }
+
+    // Fallback for invalid chart data
+    container.innerHTML = `
+      <div class="chart-error">
+        <p>Invalid chart data format</p>
+        <pre>${JSON.stringify(component.data, null, 2).substring(0, 200)}...</pre>
+      </div>
+    `;
 
     return container;
   }

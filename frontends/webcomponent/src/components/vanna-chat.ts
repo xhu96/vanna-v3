@@ -9,6 +9,7 @@ import './rich-card.js';
 import './rich-task-list.js';
 import './rich-progress-bar.js';
 import './plotly-chart.js';
+import './vega-lite-chart.js';
 
 @customElement('vanna-chat')
 export class VannaChat extends LitElement {

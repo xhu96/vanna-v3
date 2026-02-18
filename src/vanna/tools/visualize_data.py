@@ -6,6 +6,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from vanna.core.tool import Tool, ToolContext, ToolResult
+from vanna.core.chart_spec import ChartSpec, dataframe_to_vega_lite_spec
 from vanna.components import (
     UiComponent,
     ChartComponent,
@@ -26,6 +27,10 @@ class VisualizeDataArgs(BaseModel):
     filename: str = Field(description="Name of the CSV file to visualize")
     title: Optional[str] = Field(
         default=None, description="Optional title for the chart"
+    )
+    format: str = Field(
+        default="vega-lite",
+        description="Declarative chart format: 'vega-lite' (default) or 'plotly-json'",
     )
 
 
@@ -79,27 +84,45 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
             # Generate title
             title = args.title or f"Visualization of {args.filename}"
 
-            # Generate chart using PlotlyChartGenerator
-            logger.info("Generating chart...")
-            chart_dict = self.plotly_generator.generate_chart(df, title)
-            logger.info(
-                f"Chart generated, type: {type(chart_dict)}, keys: {list(chart_dict.keys()) if isinstance(chart_dict, dict) else 'N/A'}"
-            )
+            # Build declarative chart spec (safe-by-default).
+            records = df.head(500).to_dict("records")
+            column_types = self._infer_column_types(df)
+            if args.format == "plotly-json":
+                chart_dict = self.plotly_generator.generate_chart(df, title)
+                chart_spec = ChartSpec(
+                    format="plotly-json",
+                    schema_version="v1",
+                    spec=chart_dict,
+                    dataset=records,
+                    metadata={"source_file": args.filename},
+                )
+            else:
+                chart_spec = dataframe_to_vega_lite_spec(
+                    rows=records,
+                    columns=df.columns.tolist(),
+                    column_types=column_types,
+                    title=title,
+                )
+                chart_spec.metadata["source_file"] = args.filename
 
             # Create result message
             row_count = len(df)
             col_count = len(df.columns)
-            result = f"Created visualization from '{args.filename}' ({row_count} rows, {col_count} columns)."
+            result = (
+                f"Created declarative chart spec from '{args.filename}' "
+                f"({row_count} rows, {col_count} columns)."
+            )
 
             # Create ChartComponent
             logger.info("Creating ChartComponent...")
             chart_component = ChartComponent(
-                chart_type="plotly",
-                data=chart_dict,
+                chart_type="declarative",
+                data=chart_spec.model_dump(),
                 title=title,
                 config={
                     "data_shape": {"rows": row_count, "columns": col_count},
                     "source_file": args.filename,
+                    "chart_format": chart_spec.format,
                 },
             )
             logger.info("ChartComponent created successfully")
@@ -116,7 +139,7 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     "filename": args.filename,
                     "rows": row_count,
                     "columns": col_count,
-                    "chart": chart_dict,
+                    "chart_spec": chart_spec.model_dump(),
                 },
             )
             logger.info("ToolResult created successfully")
@@ -193,3 +216,16 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                 error=str(e),
                 metadata={"error_type": "general_error"},
             )
+
+    def _infer_column_types(self, df: pd.DataFrame) -> dict:
+        """Map dataframe dtypes into Vega-Lite encoding types."""
+        types = {}
+        for column in df.columns:
+            dtype = df[column].dtype
+            if pd.api.types.is_datetime64_any_dtype(dtype):
+                types[column] = "temporal"
+            elif pd.api.types.is_numeric_dtype(dtype):
+                types[column] = "quantitative"
+            else:
+                types[column] = "nominal"
+        return types
