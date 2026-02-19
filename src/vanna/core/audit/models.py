@@ -33,6 +33,24 @@ class AuditEventType(StrEnum):
     ACCESS_DENIED = "access_denied"
     AUTHENTICATION_ATTEMPT = "authentication_attempt"
 
+    # Personalization events
+    PROFILE_CREATED = "profile_created"
+    PROFILE_UPDATED = "profile_updated"
+    PROFILE_DELETED = "profile_deleted"
+    PROFILE_EXPORTED = "profile_exported"
+
+    # Glossary events
+    GLOSSARY_ENTRY_CREATED = "glossary_entry_created"
+    GLOSSARY_ENTRY_UPDATED = "glossary_entry_updated"
+    GLOSSARY_ENTRY_DELETED = "glossary_entry_deleted"
+
+    # Skill Fabric events
+    SKILL_REGISTERED = "skill_registered"
+    SKILL_PROMOTED = "skill_promoted"
+    SKILL_DISABLED = "skill_disabled"
+    SKILL_DELETED = "skill_deleted"
+    SKILL_GENERATION_REQUESTED = "skill_generation_requested"
+
 
 class AuditEvent(BaseModel):
     """Base audit event with common fields."""

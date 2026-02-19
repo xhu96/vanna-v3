@@ -67,6 +67,9 @@ jobs:
       - name: Run v3 unit/security tests
         run: |
           pytest tests/test_sql_security.py tests/test_chart_spec_validation.py tests/test_schema_diff.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py tests/test_legacy_chart_security.py -q
+      - name: Run personalization + skills tests
+        run: |
+          pytest tests/test_personalization_models.py tests/test_profile_service.py tests/test_pii_redaction.py tests/test_preference_resolver.py tests/test_skill_models.py tests/test_skill_compiler.py tests/test_skill_registry.py tests/test_skill_router.py tests/test_skill_generator.py -q
       - name: Run Postgres integration
         env:
           VANNA_POSTGRES_TEST_DSN: postgresql://postgres:postgres@localhost:5432/postgres

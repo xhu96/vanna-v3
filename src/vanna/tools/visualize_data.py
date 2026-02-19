@@ -85,7 +85,10 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
             title = args.title or f"Visualization of {args.filename}"
 
             # Build declarative chart spec (safe-by-default).
-            records: list[dict[str, Any]] = df.head(500).to_dict("records")
+            records: list[dict[str, Any]] = [
+                {str(k): v for k, v in row.items()}
+                for row in df.head(500).to_dict("records")
+            ]
             column_types = self._infer_column_types(df)
             if args.format == "plotly-json":
                 chart_dict = self.plotly_generator.generate_chart(df, title)

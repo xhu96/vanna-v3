@@ -6,7 +6,7 @@ YAML and JSON files.
 """
 
 import json
-import yaml  # type: ignore[import-untyped]
+import yaml
 from typing import Any, Dict, List
 from pathlib import Path
 

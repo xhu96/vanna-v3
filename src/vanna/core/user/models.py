@@ -15,6 +15,10 @@ class User(BaseModel):
     id: str = Field(description="Unique user identifier")
     username: Optional[str] = Field(default=None, description="Username")
     email: Optional[str] = Field(default=None, description="User email")
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description="Tenant this user belongs to (for personalization & skill scoping)",
+    )
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional user metadata"
     )

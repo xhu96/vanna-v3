@@ -1,0 +1,85 @@
+name: retail_ops_basics
+version: "1.0.0"
+description: >
+  Basic retail operations skill pack. Enables common questions about
+  orders, products, customers, and revenue with safe read-only defaults.
+
+provenance:
+  author: vanna-team
+  generator_metadata:
+    method: manual
+
+intents:
+  patterns:
+    - "(?i)\\b(revenue|sales|order|product|customer|refund|margin|inventory)\\b"
+    - "(?i)\\btop\\s+\\d+\\s+(products?|customers?|orders?)\\b"
+    - "(?i)\\b(GMV|AOV|average order)\\b"
+  embedding_hints:
+    - "total revenue by month"
+    - "top selling products"
+    - "customer order history"
+    - "refund rate"
+    - "gross merchandise value"
+    - "average order value"
+    - "inventory levels"
+    - "revenue by category"
+  tool_routing_hints:
+    - "run_sql"
+
+knowledge:
+  synonyms:
+    revenue:
+      - sales
+      - turnover
+      - income
+    GMV:
+      - gross merchandise value
+      - total sales value
+    AOV:
+      - average order value
+      - avg order amount
+    SKU:
+      - stock keeping unit
+      - product code
+    COGS:
+      - cost of goods sold
+      - cost of sales
+    margin:
+      - profit margin
+      - gross margin
+    churn:
+      - customer churn
+      - attrition rate
+  metric_definitions:
+    GMV: "SUM(order_total) WHERE status != 'cancelled'"
+    AOV: "AVG(order_total) WHERE status != 'cancelled'"
+    refund_rate: "COUNT(CASE WHEN status='refunded' THEN 1 END) / COUNT(*)"
+    margin: "(SUM(revenue) - SUM(cost)) / SUM(revenue)"
+  semantic_mappings: {}
+
+policies:
+  tool_allowlist: []
+  tool_denylist: []
+  required_filters:
+    - "tenant_id = :tenant_id"
+  row_redaction_rules: []
+  column_redaction_rules:
+    - "credit_card_number"
+    - "ssn"
+    - "password"
+  sql_limits:
+    read_only: true
+    max_rows: 1000
+    max_runtime_seconds: 30
+    require_limit: true
+    forbid_ddl_dml: true
+
+rendering:
+  currency: USD
+  locale: en-US
+  date_format: "YYYY-MM-DD"
+  preferred_output_layout: table
+
+eval_suite:
+  pass_rate_threshold: 0.8
+  min_score: 0.7

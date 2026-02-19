@@ -1,0 +1,857 @@
+build	UNKNOWN STEP	﻿2026-02-18T18:18:32.9094113Z Current runner version: '2.331.0'
+build	UNKNOWN STEP	2026-02-18T18:18:32.9127823Z ##[group]Runner Image Provisioner
+build	UNKNOWN STEP	2026-02-18T18:18:32.9128973Z Hosted Compute Agent
+build	UNKNOWN STEP	2026-02-18T18:18:32.9130015Z Version: 20260123.484
+build	UNKNOWN STEP	2026-02-18T18:18:32.9131091Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+build	UNKNOWN STEP	2026-02-18T18:18:32.9132313Z Build Date: 2026-01-23T19:41:17Z
+build	UNKNOWN STEP	2026-02-18T18:18:32.9133582Z Worker ID: {c9924f35-321e-4613-a20f-11b4e415efdc}
+build	UNKNOWN STEP	2026-02-18T18:18:32.9134760Z Azure Region: centralus
+build	UNKNOWN STEP	2026-02-18T18:18:32.9135741Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:32.9138204Z ##[group]Operating System
+build	UNKNOWN STEP	2026-02-18T18:18:32.9139196Z Ubuntu
+build	UNKNOWN STEP	2026-02-18T18:18:32.9139943Z 24.04.3
+build	UNKNOWN STEP	2026-02-18T18:18:32.9140850Z LTS
+build	UNKNOWN STEP	2026-02-18T18:18:32.9141707Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:32.9142625Z ##[group]Runner Image
+build	UNKNOWN STEP	2026-02-18T18:18:32.9143691Z Image: ubuntu-24.04
+build	UNKNOWN STEP	2026-02-18T18:18:32.9144544Z Version: 20260209.23.1
+build	UNKNOWN STEP	2026-02-18T18:18:32.9146478Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+build	UNKNOWN STEP	2026-02-18T18:18:32.9149588Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+build	UNKNOWN STEP	2026-02-18T18:18:32.9151323Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:32.9153134Z ##[group]GITHUB_TOKEN Permissions
+build	UNKNOWN STEP	2026-02-18T18:18:32.9155875Z Contents: read
+build	UNKNOWN STEP	2026-02-18T18:18:32.9156728Z Metadata: read
+build	UNKNOWN STEP	2026-02-18T18:18:32.9158083Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:32.9160891Z Secret source: Actions
+build	UNKNOWN STEP	2026-02-18T18:18:32.9162416Z Prepare workflow directory
+build	UNKNOWN STEP	2026-02-18T18:18:32.9529050Z Prepare all required actions
+build	UNKNOWN STEP	2026-02-18T18:18:32.9586811Z Getting action download info
+build	UNKNOWN STEP	2026-02-18T18:18:33.3366624Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build	UNKNOWN STEP	2026-02-18T18:18:33.4696454Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+build	UNKNOWN STEP	2026-02-18T18:18:33.6641252Z Complete job name: build
+build	UNKNOWN STEP	2026-02-18T18:18:33.7405267Z ##[group]Run actions/checkout@v4
+build	UNKNOWN STEP	2026-02-18T18:18:33.7406189Z with:
+build	UNKNOWN STEP	2026-02-18T18:18:33.7406626Z   repository: xhu96/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:33.7407624Z   token: ***
+build	UNKNOWN STEP	2026-02-18T18:18:33.7408048Z   ssh-strict: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7408472Z   ssh-user: git
+build	UNKNOWN STEP	2026-02-18T18:18:33.7408925Z   persist-credentials: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7409437Z   clean: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7409907Z   sparse-checkout-cone-mode: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7410412Z   fetch-depth: 1
+build	UNKNOWN STEP	2026-02-18T18:18:33.7410831Z   fetch-tags: false
+build	UNKNOWN STEP	2026-02-18T18:18:33.7411256Z   show-progress: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7411699Z   lfs: false
+build	UNKNOWN STEP	2026-02-18T18:18:33.7412095Z   submodules: false
+build	UNKNOWN STEP	2026-02-18T18:18:33.7412525Z   set-safe-directory: true
+build	UNKNOWN STEP	2026-02-18T18:18:33.7413282Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:33.8541510Z Syncing repository: xhu96/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:33.8543399Z ##[group]Getting Git version info
+build	UNKNOWN STEP	2026-02-18T18:18:33.8544188Z Working directory is '/home/runner/work/vanna-v3/vanna-v3'
+build	UNKNOWN STEP	2026-02-18T18:18:33.8545323Z [command]/usr/bin/git version
+build	UNKNOWN STEP	2026-02-18T18:18:33.8550128Z git version 2.52.0
+build	UNKNOWN STEP	2026-02-18T18:18:33.8576980Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:33.8599214Z Temporarily overriding HOME='/home/runner/work/_temp/18ec9aef-2739-49df-98fc-c4af6dec6ca5' before making global git config changes
+build	UNKNOWN STEP	2026-02-18T18:18:33.8601803Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-02-18T18:18:33.8604089Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:33.8644819Z Deleting the contents of '/home/runner/work/vanna-v3/vanna-v3'
+build	UNKNOWN STEP	2026-02-18T18:18:33.8648836Z ##[group]Initializing the repository
+build	UNKNOWN STEP	2026-02-18T18:18:33.8652706Z [command]/usr/bin/git init /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:33.8753463Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	UNKNOWN STEP	2026-02-18T18:18:33.8754946Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	UNKNOWN STEP	2026-02-18T18:18:33.8755997Z hint: to use in all of your new repositories, which will suppress this warning,
+build	UNKNOWN STEP	2026-02-18T18:18:33.8756794Z hint: call:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8758335Z hint:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8759158Z hint: 	git config --global init.defaultBranch <name>
+build	UNKNOWN STEP	2026-02-18T18:18:33.8759821Z hint:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8760423Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	UNKNOWN STEP	2026-02-18T18:18:33.8761452Z hint: 'development'. The just-created branch can be renamed via this command:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8762241Z hint:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8762651Z hint: 	git branch -m <name>
+build	UNKNOWN STEP	2026-02-18T18:18:33.8763399Z hint:
+build	UNKNOWN STEP	2026-02-18T18:18:33.8764073Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	UNKNOWN STEP	2026-02-18T18:18:33.8765182Z Initialized empty Git repository in /home/runner/work/vanna-v3/vanna-v3/.git/
+build	UNKNOWN STEP	2026-02-18T18:18:33.8769751Z [command]/usr/bin/git remote add origin https://github.com/xhu96/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:33.8825239Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:33.8826868Z ##[group]Disabling automatic garbage collection
+build	UNKNOWN STEP	2026-02-18T18:18:33.8832412Z [command]/usr/bin/git config --local gc.auto 0
+build	UNKNOWN STEP	2026-02-18T18:18:33.8872997Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:33.8873979Z ##[group]Setting up auth
+build	UNKNOWN STEP	2026-02-18T18:18:33.8883465Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-02-18T18:18:33.8926522Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	UNKNOWN STEP	2026-02-18T18:18:33.9299742Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-02-18T18:18:33.9336716Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	UNKNOWN STEP	2026-02-18T18:18:33.9609785Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-02-18T18:18:33.9649629Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	UNKNOWN STEP	2026-02-18T18:18:33.9930013Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	UNKNOWN STEP	2026-02-18T18:18:33.9975830Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:33.9977451Z ##[group]Fetching the repository
+build	UNKNOWN STEP	2026-02-18T18:18:33.9986652Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +74f7b71ac197d7da50eb756cde967864e8e3ab86:refs/remotes/origin/CodProj/v3-foundation
+build	UNKNOWN STEP	2026-02-18T18:18:34.7395245Z From https://github.com/xhu96/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:18:34.7397983Z  * [new ref]         74f7b71ac197d7da50eb756cde967864e8e3ab86 -> origin/CodProj/v3-foundation
+build	UNKNOWN STEP	2026-02-18T18:18:34.7432763Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:34.7434477Z ##[group]Determining the checkout info
+build	UNKNOWN STEP	2026-02-18T18:18:34.7436385Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:34.7440226Z [command]/usr/bin/git sparse-checkout disable
+build	UNKNOWN STEP	2026-02-18T18:18:34.7481972Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build	UNKNOWN STEP	2026-02-18T18:18:34.7509755Z ##[group]Checking out the ref
+build	UNKNOWN STEP	2026-02-18T18:18:34.7513077Z [command]/usr/bin/git checkout --progress --force -B CodProj/v3-foundation refs/remotes/origin/CodProj/v3-foundation
+build	UNKNOWN STEP	2026-02-18T18:18:34.7990611Z Switched to a new branch 'CodProj/v3-foundation'
+build	UNKNOWN STEP	2026-02-18T18:18:34.7993161Z branch 'CodProj/v3-foundation' set up to track 'origin/CodProj/v3-foundation'.
+build	UNKNOWN STEP	2026-02-18T18:18:34.8002306Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:34.8043299Z [command]/usr/bin/git log -1 --format=%H
+build	UNKNOWN STEP	2026-02-18T18:18:34.8067815Z 74f7b71ac197d7da50eb756cde967864e8e3ab86
+build	UNKNOWN STEP	2026-02-18T18:18:34.8395507Z ##[group]Run actions/setup-python@v5
+build	UNKNOWN STEP	2026-02-18T18:18:34.8396671Z with:
+build	UNKNOWN STEP	2026-02-18T18:18:34.8397672Z   python-version: 3.11
+build	UNKNOWN STEP	2026-02-18T18:18:34.8398633Z   check-latest: false
+build	UNKNOWN STEP	2026-02-18T18:18:34.8399828Z   token: ***
+build	UNKNOWN STEP	2026-02-18T18:18:34.8400686Z   update-environment: true
+build	UNKNOWN STEP	2026-02-18T18:18:34.8401726Z   allow-prereleases: false
+build	UNKNOWN STEP	2026-02-18T18:18:34.8402749Z   freethreaded: false
+build	UNKNOWN STEP	2026-02-18T18:18:34.8403652Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:35.0118414Z ##[group]Installed versions
+build	UNKNOWN STEP	2026-02-18T18:18:35.0225961Z Successfully set up CPython (3.11.14)
+build	UNKNOWN STEP	2026-02-18T18:18:35.0229053Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:35.0377940Z ##[group]Run python -m pip install --upgrade pip
+build	UNKNOWN STEP	2026-02-18T18:18:35.0379468Z [36;1mpython -m pip install --upgrade pip[0m
+build	UNKNOWN STEP	2026-02-18T18:18:35.0380691Z [36;1mpip install tox[0m
+build	UNKNOWN STEP	2026-02-18T18:18:35.0449393Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-18T18:18:35.0450364Z env:
+build	UNKNOWN STEP	2026-02-18T18:18:35.0451375Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:35.0453153Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+build	UNKNOWN STEP	2026-02-18T18:18:35.0454920Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:35.0456524Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:35.0458344Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:35.0459969Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+build	UNKNOWN STEP	2026-02-18T18:18:35.0461307Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:35.6795780Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages (26.0.1)
+build	UNKNOWN STEP	2026-02-18T18:18:36.4782510Z Collecting tox
+build	UNKNOWN STEP	2026-02-18T18:18:36.5658470Z   Downloading tox-4.38.0-py3-none-any.whl.metadata (3.6 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.5951387Z Collecting cachetools>=7.0.1 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.6090171Z   Downloading cachetools-7.0.1-py3-none-any.whl.metadata (5.6 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.6322228Z Collecting chardet>=5.2 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.6461773Z   Downloading chardet-5.2.0-py3-none-any.whl.metadata (3.4 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.6726545Z Collecting colorama>=0.4.6 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.6867597Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.7234777Z Collecting filelock>=3.24 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.7372432Z   Downloading filelock-3.24.2-py3-none-any.whl.metadata (2.0 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.7637512Z Collecting packaging>=26 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.7775409Z   Downloading packaging-26.0-py3-none-any.whl.metadata (3.3 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.8174155Z Collecting platformdirs>=4.9.1 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.8316746Z   Downloading platformdirs-4.9.2-py3-none-any.whl.metadata (4.7 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.8569789Z Collecting pluggy>=1.6 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.8708231Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.8968111Z Collecting pyproject-api>=1.10 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.9107656Z   Downloading pyproject_api-1.10.0-py3-none-any.whl.metadata (2.7 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:36.9615777Z Collecting virtualenv>=20.36.1 (from tox)
+build	UNKNOWN STEP	2026-02-18T18:18:36.9752162Z   Downloading virtualenv-20.36.1-py3-none-any.whl.metadata (4.7 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.0044967Z Collecting distlib<1,>=0.3.7 (from virtualenv>=20.36.1->tox)
+build	UNKNOWN STEP	2026-02-18T18:18:37.0180515Z   Downloading distlib-0.4.0-py2.py3-none-any.whl.metadata (5.2 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.0398064Z Downloading tox-4.38.0-py3-none-any.whl (183 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.0838066Z Downloading cachetools-7.0.1-py3-none-any.whl (13 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.0995927Z Downloading chardet-5.2.0-py3-none-any.whl (199 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1191111Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1347977Z Downloading filelock-3.24.2-py3-none-any.whl (24 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1509000Z Downloading packaging-26.0-py3-none-any.whl (74 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1672292Z Downloading platformdirs-4.9.2-py3-none-any.whl (21 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1829307Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.1985586Z Downloading pyproject_api-1.10.0-py3-none-any.whl (13 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.2141487Z Downloading virtualenv-20.36.1-py3-none-any.whl (6.0 MB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.2710900Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.0/6.0 MB 111.7 MB/s  0:00:00
+build	UNKNOWN STEP	2026-02-18T18:18:37.2855196Z Downloading distlib-0.4.0-py2.py3-none-any.whl (469 kB)
+build	UNKNOWN STEP	2026-02-18T18:18:37.3247654Z Installing collected packages: distlib, pluggy, platformdirs, packaging, filelock, colorama, chardet, cachetools, virtualenv, pyproject-api, tox
+build	UNKNOWN STEP	2026-02-18T18:18:37.9872535Z 
+build	UNKNOWN STEP	2026-02-18T18:18:37.9886402Z Successfully installed cachetools-7.0.1 chardet-5.2.0 colorama-0.4.6 distlib-0.4.0 filelock-3.24.2 packaging-26.0 platformdirs-4.9.2 pluggy-1.6.0 pyproject-api-1.10.0 tox-4.38.0 virtualenv-20.36.1
+build	UNKNOWN STEP	2026-02-18T18:18:38.0527012Z ##[group]Run tox
+build	UNKNOWN STEP	2026-02-18T18:18:38.0527594Z [36;1mtox[0m
+build	UNKNOWN STEP	2026-02-18T18:18:38.0578557Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-18T18:18:38.0578792Z env:
+build	UNKNOWN STEP	2026-02-18T18:18:38.0579044Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:38.0579479Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+build	UNKNOWN STEP	2026-02-18T18:18:38.0579892Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:38.0580251Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:38.0580621Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+build	UNKNOWN STEP	2026-02-18T18:18:38.0581005Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+build	UNKNOWN STEP	2026-02-18T18:18:38.0581374Z   PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
+build	UNKNOWN STEP	2026-02-18T18:18:38.0581654Z   VANNA_API_KEY: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0581836Z   OPENAI_API_KEY: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0582019Z   MISTRAL_API_KEY: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0582202Z   ANTHROPIC_API_KEY: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0582431Z   GEMINI_API_KEY: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0582615Z   SNOWFLAKE_ACCOUNT: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0582809Z   SNOWFLAKE_USERNAME: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0583000Z   SNOWFLAKE_PASSWORD: 
+build	UNKNOWN STEP	2026-02-18T18:18:38.0583197Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-18T18:18:38.6825616Z ruff: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:18:41.2396823Z .pkg: install_requires> python -I -m pip install 'flit_core<4,>=3.2'
+build	UNKNOWN STEP	2026-02-18T18:18:42.3062490Z .pkg: _optional_hooks> python /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/pyproject_api/_backend.py True flit_core.buildapi
+build	UNKNOWN STEP	2026-02-18T18:18:42.3998382Z .pkg: get_requires_for_build_sdist> python /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/pyproject_api/_backend.py True flit_core.buildapi
+build	UNKNOWN STEP	2026-02-18T18:18:42.4071270Z .pkg: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:18:42.6161823Z .pkg: flit_core==3.12.0,pip==25.3,setuptools==80.9.0
+build	UNKNOWN STEP	2026-02-18T18:18:42.6165596Z .pkg: build_sdist> python /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/pyproject_api/_backend.py True flit_core.buildapi
+build	UNKNOWN STEP	2026-02-18T18:18:42.8437312Z ruff: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema mypy pandas pandas-stubs plotly plotly-stubs 'pydantic>=2.0.0' 'pytest-asyncio>=0.21.0' 'pytest-cov>=4.0.0' 'pytest-mock>=3.10.0' 'pytest>=7.0.0' requests ruff sqlalchemy sqlparse tabulate 'tox>=4.0.0' types-PyYAML types-requests types-tabulate
+build	UNKNOWN STEP	2026-02-18T18:19:04.0263365Z ruff: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/1/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:19:05.7571687Z ruff: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:19:06.0210331Z ruff: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,cachetools==7.0.1,certifi==2026.1.4,chardet==5.2.0,charset-normalizer==3.4.4,click==8.3.1,colorama==0.4.6,coverage==7.13.4,distlib==0.4.0,filelock==3.24.2,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,librt==0.8.1,mypy==1.19.1,mypy_extensions==1.1.0,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pandas-stubs==3.0.0.260204,pathspec==1.0.4,pip==25.3,platformdirs==4.9.2,plotly==6.5.2,plotly-stubs==0.1.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pyproject-api==1.10.0,pytest==9.0.2,pytest-asyncio==1.3.0,pytest-cov==7.0.0,pytest-mock==3.15.1,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,ruff==0.15.1,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,tox==4.38.0,types-PyYAML==6.0.12.20250915,types-requests==2.32.4.20260107,types-tabulate==0.9.0.20241207,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/1/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,virtualenv==20.36.1
+build	UNKNOWN STEP	2026-02-18T18:19:06.0217826Z ruff: commands[0]> ruff format --check src/vanna/ tests/
+build	UNKNOWN STEP	2026-02-18T18:19:06.0653061Z Would reformat: src/vanna/agents/basic.py
+build	UNKNOWN STEP	2026-02-18T18:19:06.0654008Z 1 file would be reformatted, 328 files already formatted
+build	UNKNOWN STEP	2026-02-18T18:19:06.0672253Z ruff: exit 1 (0.05 seconds) /home/runner/work/vanna-v3/vanna-v3> ruff format --check src/vanna/ tests/ pid=2451
+build	UNKNOWN STEP	2026-02-18T18:19:06.2042979Z ruff: FAIL ✖ in 27.72 seconds
+build	UNKNOWN STEP	2026-02-18T18:19:06.2043446Z mypy: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:19:08.3353866Z mypy: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema mypy pandas pandas-stubs plotly plotly-stubs 'pydantic>=2.0.0' 'pytest-asyncio>=0.21.0' 'pytest-cov>=4.0.0' 'pytest-mock>=3.10.0' 'pytest>=7.0.0' requests ruff sqlalchemy sqlparse tabulate 'tox>=4.0.0' types-PyYAML types-requests types-tabulate
+build	UNKNOWN STEP	2026-02-18T18:19:26.7420211Z mypy: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/2/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:19:28.4353193Z mypy: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:19:28.6848036Z mypy: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,cachetools==7.0.1,certifi==2026.1.4,chardet==5.2.0,charset-normalizer==3.4.4,click==8.3.1,colorama==0.4.6,coverage==7.13.4,distlib==0.4.0,filelock==3.24.2,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,librt==0.8.1,mypy==1.19.1,mypy_extensions==1.1.0,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pandas-stubs==3.0.0.260204,pathspec==1.0.4,pip==25.3,platformdirs==4.9.2,plotly==6.5.2,plotly-stubs==0.1.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pyproject-api==1.10.0,pytest==9.0.2,pytest-asyncio==1.3.0,pytest-cov==7.0.0,pytest-mock==3.15.1,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,ruff==0.15.1,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,tox==4.38.0,types-PyYAML==6.0.12.20250915,types-requests==2.32.4.20260107,types-tabulate==0.9.0.20241207,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/2/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,virtualenv==20.36.1
+build	UNKNOWN STEP	2026-02-18T18:19:28.6856344Z mypy: commands[0]> mypy src/vanna/tools src/vanna/core src/vanna/capabilities src/vanna/agents src/vanna/utils src/vanna/web_components src/vanna/components --strict
+build	UNKNOWN STEP	2026-02-18T18:19:41.4279290Z src/vanna/tools/visualize_data.py:88: error: Incompatible types in assignment (expression has type "list[dict[Hashable, Any]]", variable has type "list[dict[str, Any]]")  [assignment]
+build	UNKNOWN STEP	2026-02-18T18:19:41.4808105Z src/vanna/core/evaluation/dataset.py:9: error: Unused "type: ignore" comment  [unused-ignore]
+build	UNKNOWN STEP	2026-02-18T18:19:41.4892959Z src/vanna/agents/basic.py:58: error: Unexpected keyword argument "id" for "TextMemory"  [call-arg]
+build	UNKNOWN STEP	2026-02-18T18:19:41.4894185Z src/vanna/agents/basic.py:58: error: Unexpected keyword argument "user_id" for "TextMemory"  [call-arg]
+build	UNKNOWN STEP	2026-02-18T18:19:41.4895615Z src/vanna/agents/basic.py:62: error: Argument "timestamp" to "TextMemory" has incompatible type "int"; expected "str | None"  [arg-type]
+build	UNKNOWN STEP	2026-02-18T18:19:41.5025872Z Found 5 errors in 3 files (checked 119 source files)
+build	UNKNOWN STEP	2026-02-18T18:19:41.5322463Z mypy: exit 1 (12.85 seconds) /home/runner/work/vanna-v3/vanna-v3> mypy src/vanna/tools src/vanna/core src/vanna/capabilities src/vanna/agents src/vanna/utils src/vanna/web_components src/vanna/components --strict pid=2579
+build	UNKNOWN STEP	2026-02-18T18:19:41.6587831Z mypy: FAIL ✖ in 35.47 seconds
+build	UNKNOWN STEP	2026-02-18T18:19:41.6588979Z py311-unit: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:19:43.7858387Z py311-unit: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:19:57.8814564Z py311-unit: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/3/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:19:59.5577435Z py311-unit: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:19:59.8009326Z py311-unit: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/3/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:19:59.8013118Z py311-unit: commands[0]> pytest tests/test_tool_permissions.py tests/test_llm_context_enhancer.py tests/test_workflow.py tests/test_memory_tools.py -v
+build	UNKNOWN STEP	2026-02-18T18:20:00.2304705Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:20:00.2305932Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-unit/bin/python
+build	UNKNOWN STEP	2026-02-18T18:20:00.2306678Z cachedir: .tox/py311-unit/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:20:00.2307382Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:20:00.2307858Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:20:00.2308157Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:20:00.2308828Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:20:01.0157627Z collecting ... collected 56 items
+build	UNKNOWN STEP	2026-02-18T18:20:01.0158250Z 
+build	UNKNOWN STEP	2026-02-18T18:20:01.0180142Z tests/test_tool_permissions.py::test_tool_access_empty_groups_allows_all PASSED [  1%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0195199Z tests/test_tool_permissions.py::test_tool_access_granted_matching_group PASSED [  3%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0210968Z tests/test_tool_permissions.py::test_tool_access_denied_no_matching_group PASSED [  5%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0228198Z tests/test_tool_permissions.py::test_tool_access_multiple_allowed_groups PASSED [  7%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0242274Z tests/test_tool_permissions.py::test_tool_access_guest_user_denied PASSED [  8%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0285678Z tests/test_tool_permissions.py::test_get_schemas_filters_by_user PASSED  [ 10%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0299996Z tests/test_tool_permissions.py::test_tool_not_found PASSED               [ 12%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0314216Z tests/test_tool_permissions.py::test_duplicate_tool_registration PASSED  [ 14%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0328464Z tests/test_tool_permissions.py::test_tool_access_group_intersection PASSED [ 16%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0340988Z tests/test_tool_permissions.py::test_list_tools PASSED                   [ 17%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0355255Z tests/test_tool_permissions.py::test_transform_args_default_no_transformation PASSED [ 19%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0369465Z tests/test_tool_permissions.py::test_transform_args_custom_modification PASSED [ 21%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0383494Z tests/test_tool_permissions.py::test_transform_args_rejection PASSED     [ 23%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0397604Z tests/test_tool_permissions.py::test_transform_args_allows_approved_content PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0414541Z tests/test_tool_permissions.py::test_transform_args_row_level_security PASSED [ 26%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0428054Z tests/test_tool_permissions.py::test_transform_args_called_during_execution PASSED [ 28%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0442230Z tests/test_tool_permissions.py::test_transform_args_receives_correct_parameters PASSED [ 30%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0482585Z tests/test_tool_permissions.py::test_transform_args_called_during_agent_send_message PASSED [ 32%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0498013Z tests/test_llm_context_enhancer.py::test_custom_enhancer_system_prompt_is_called PASSED [ 33%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0512498Z tests/test_llm_context_enhancer.py::test_custom_enhancer_user_messages_is_called PASSED [ 35%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0528439Z tests/test_llm_context_enhancer.py::test_default_enhancer_with_agent_memory PASSED [ 37%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0542721Z tests/test_llm_context_enhancer.py::test_default_enhancer_without_agent_memory PASSED [ 39%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0558441Z tests/test_llm_context_enhancer.py::test_no_enhancer_means_no_enhancement PASSED [ 41%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0572671Z tests/test_workflow.py::TestWorkflowCommands::test_help_command PASSED   [ 42%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0587513Z tests/test_workflow.py::TestWorkflowCommands::test_status_command PASSED [ 44%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0602354Z tests/test_workflow.py::TestWorkflowCommands::test_memories_command PASSED [ 46%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0616089Z tests/test_workflow.py::TestWorkflowCommands::test_unknown_command PASSED [ 48%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0630529Z tests/test_workflow.py::TestMemoriesView::test_memories_no_agent_memory PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0645216Z tests/test_workflow.py::TestMemoriesView::test_memories_empty PASSED     [ 51%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0666523Z tests/test_workflow.py::TestMemoriesView::test_memories_with_tool_memories PASSED [ 53%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0689049Z tests/test_workflow.py::TestMemoriesView::test_memories_with_text_memories PASSED [ 55%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0710679Z tests/test_workflow.py::TestMemoriesView::test_memories_with_both_types PASSED [ 57%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0730923Z tests/test_workflow.py::TestMemoriesView::test_memories_have_delete_buttons PASSED [ 58%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0745361Z tests/test_workflow.py::TestMemoryDeletion::test_delete_no_agent_memory PASSED [ 60%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0760204Z tests/test_workflow.py::TestMemoryDeletion::test_delete_no_id_provided PASSED [ 62%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0773855Z tests/test_workflow.py::TestMemoryDeletion::test_delete_nonexistent_memory PASSED [ 64%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0788412Z tests/test_workflow.py::TestMemoryDeletion::test_delete_tool_memory_success PASSED [ 66%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0803146Z tests/test_workflow.py::TestMemoryDeletion::test_delete_text_memory_success PASSED [ 67%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0818292Z tests/test_workflow.py::TestMemoryDeletion::test_delete_command_parsing PASSED [ 69%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0832707Z tests/test_workflow.py::TestWorkflowComponentStructure::test_help_has_rich_component PASSED [ 71%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0848186Z tests/test_workflow.py::TestWorkflowComponentStructure::test_memories_cards_have_proper_structure PASSED [ 73%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0862410Z tests/test_workflow.py::TestStarterUI::test_starter_ui_single_component PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0876861Z tests/test_workflow.py::TestStarterUI::test_starter_ui_user_view PASSED  [ 76%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0891873Z tests/test_workflow.py::TestStarterUI::test_starter_ui_admin_view PASSED [ 78%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0906348Z tests/test_workflow.py::TestStarterUI::test_starter_ui_admin_without_memory PASSED [ 80%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0933199Z tests/test_workflow.py::TestAdminOnlyCommands::test_non_admin_cannot_access_status PASSED [ 82%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0947903Z tests/test_workflow.py::TestAdminOnlyCommands::test_non_admin_cannot_access_memories PASSED [ 83%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0961679Z tests/test_workflow.py::TestAdminOnlyCommands::test_non_admin_cannot_delete_memories PASSED [ 85%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0975995Z tests/test_workflow.py::TestAdminOnlyCommands::test_admin_can_access_memories PASSED [ 87%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.0990535Z tests/test_workflow.py::TestAdminOnlyCommands::test_help_shows_admin_commands_for_admin PASSED [ 89%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.1005172Z tests/test_workflow.py::TestAdminOnlyCommands::test_help_hides_admin_commands_for_non_admin PASSED [ 91%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.1022284Z tests/test_memory_tools.py::TestMemoryToolDetailedResults::test_admin_sees_detailed_results PASSED [ 92%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.1037923Z tests/test_memory_tools.py::TestMemoryToolDetailedResults::test_non_admin_sees_simple_status PASSED [ 94%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.1053141Z tests/test_memory_tools.py::TestMemoryToolDetailedResults::test_detailed_results_include_all_memory_fields PASSED [ 96%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.1068875Z tests/test_memory_tools.py::TestMemoryToolDetailedResults::test_no_results_works_for_both_admin_and_user PASSED [ 98%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.2540839Z tests/test_memory_tools.py::TestMemoryToolDetailedResults::test_llm_result_same_for_admin_and_user PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:20:01.2541675Z 
+build	UNKNOWN STEP	2026-02-18T18:20:01.2541906Z ============================== 56 passed in 0.88s ==============================
+build	UNKNOWN STEP	2026-02-18T18:20:01.5196017Z py311-unit: OK ✔ in 19.84 seconds
+build	UNKNOWN STEP	2026-02-18T18:20:01.5196686Z py311-agent-memory-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:20:03.6133007Z py311-agent-memory-sanity: install_package_deps> python -I -m pip install PyYAML 'chromadb>=1.1.0' 'click>=8.0.0' fastembed 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' 'qdrant-client>=1.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:20:36.5372810Z py311-agent-memory-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/4/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:20:38.2965387Z py311-agent-memory-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:20:38.5692046Z py311-agent-memory-sanity: annotated-doc==0.0.4,annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,backoff==2.2.1,bcrypt==5.0.0,build==1.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,chromadb==1.5.0,click==8.3.1,distro==1.9.0,durationpy==0.10,fastembed==0.7.4,filelock==3.24.2,flatbuffers==25.12.19,fsspec==2026.2.0,googleapis-common-protos==1.72.0,greenlet==3.3.1,grpcio==1.78.0,h11==0.16.0,h2==4.3.0,hf-xet==1.2.0,hpack==4.1.0,httpcore==1.0.9,httptools==0.7.1,httpx==0.28.1,huggingface_hub==1.4.1,hyperframe==6.1.0,idna==3.11,importlib_metadata==8.7.1,importlib_resources==6.5.2,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,kubernetes==35.0.0,loguru==0.7.3,markdown-it-py==4.0.0,mdurl==0.1.2,mmh3==5.2.0,mpmath==1.3.0,narwhals==2.16.0,numpy==2.4.2,oauthlib==3.3.1,onnxruntime==1.24.1,opentelemetry-api==1.39.1,opentelemetry-exporter-otlp-proto-common==1.39.1,opentelemetry-exporter-otlp-proto-grpc==1.39.1,opentelemetry-proto==1.39.1,opentelemetry-sdk==1.39.1,opentelemetry-semantic-conventions==0.60b1,orjson==3.11.7,overrides==7.7.0,packaging==26.0,pandas==3.0.1,pillow==11.3.0,pip==25.3,plotly==6.5.2,pluggy==1.6.0,portalocker==3.2.0,posthog==5.4.0,protobuf==6.33.5,py_rust_stemmers==0.1.5,pybase64==1.4.3,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyPika==0.51.1,pyproject_hooks==1.2.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,python-dotenv==1.2.1,PyYAML==6.0.3,qdrant-client==1.16.2,referencing==0.37.0,requests==2.32.5,requests-oauthlib==2.0.0,rich==14.3.2,rpds-py==0.30.0,setuptools==80.9.0,shellingham==1.5.4,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,sympy==1.14.0,tabulate==0.9.0,tenacity==9.1.4,tokenizers==0.22.2,tqdm==4.67.3,typer==0.24.0,typer-slim==0.24.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,uvicorn==0.41.0,uvloop==0.22.1,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/4/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,watchfiles==1.1.1,websocket-client==1.9.0,websockets==16.0,zipp==3.23.0
+build	UNKNOWN STEP	2026-02-18T18:20:38.5700416Z py311-agent-memory-sanity: commands[0]> pytest tests/test_agent_memory_sanity.py -v
+build	UNKNOWN STEP	2026-02-18T18:20:38.9368853Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:20:38.9370169Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-agent-memory-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:20:38.9383801Z cachedir: .tox/py311-agent-memory-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:20:38.9384402Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:20:38.9384710Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:20:38.9384968Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:20:38.9385499Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:20:38.9837940Z collecting ... collected 50 items
+build	UNKNOWN STEP	2026-02-18T18:20:38.9838314Z 
+build	UNKNOWN STEP	2026-02-18T18:20:39.5949264Z tests/test_agent_memory_sanity.py::TestAgentMemoryInterface::test_agent_memory_import PASSED [  2%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.5958129Z tests/test_agent_memory_sanity.py::TestAgentMemoryInterface::test_agent_memory_is_abstract PASSED [  4%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.5967931Z tests/test_agent_memory_sanity.py::TestAgentMemoryInterface::test_agent_memory_has_required_methods PASSED [  6%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.5976650Z tests/test_agent_memory_sanity.py::TestAgentMemoryInterface::test_all_methods_are_async PASSED [  8%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.5985592Z tests/test_agent_memory_sanity.py::TestToolMemoryModel::test_tool_memory_import PASSED [ 10%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.5994257Z tests/test_agent_memory_sanity.py::TestToolMemoryModel::test_tool_memory_is_pydantic_model PASSED [ 12%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6004336Z tests/test_agent_memory_sanity.py::TestToolMemoryModel::test_tool_memory_has_required_fields PASSED [ 14%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6012785Z tests/test_agent_memory_sanity.py::TestToolMemoryModel::test_tool_memory_instantiation PASSED [ 16%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6020498Z tests/test_agent_memory_sanity.py::TestToolMemorySearchResultModel::test_memory_search_result_import PASSED [ 18%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6028667Z tests/test_agent_memory_sanity.py::TestToolMemorySearchResultModel::test_memory_search_result_instantiation PASSED [ 20%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6036498Z tests/test_agent_memory_sanity.py::TestTextMemoryModel::test_text_memory_import PASSED [ 22%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6044473Z tests/test_agent_memory_sanity.py::TestTextMemoryModel::test_text_memory_is_pydantic_model PASSED [ 24%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6053232Z tests/test_agent_memory_sanity.py::TestTextMemoryModel::test_text_memory_has_required_fields PASSED [ 26%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6061105Z tests/test_agent_memory_sanity.py::TestTextMemoryModel::test_text_memory_instantiation PASSED [ 28%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6069757Z tests/test_agent_memory_sanity.py::TestTextMemorySearchResultModel::test_text_memory_search_result_import PASSED [ 30%]
+build	UNKNOWN STEP	2026-02-18T18:20:39.6077943Z tests/test_agent_memory_sanity.py::TestTextMemorySearchResultModel::test_text_memory_search_result_instantiation PASSED [ 32%]
+build	UNKNOWN STEP	2026-02-18T18:20:40.1000475Z tests/test_agent_memory_sanity.py::TestChromaDBAgentMemory::test_chromadb_import PASSED [ 34%]
+build	UNKNOWN STEP	2026-02-18T18:20:40.1009028Z tests/test_agent_memory_sanity.py::TestChromaDBAgentMemory::test_chromadb_implements_agent_memory PASSED [ 36%]
+build	UNKNOWN STEP	2026-02-18T18:20:40.1018461Z tests/test_agent_memory_sanity.py::TestChromaDBAgentMemory::test_chromadb_has_all_methods PASSED [ 38%]
+build	UNKNOWN STEP	2026-02-18T18:20:40.1028257Z tests/test_agent_memory_sanity.py::TestChromaDBAgentMemory::test_chromadb_instantiation PASSED [ 40%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.2966372Z tests/test_agent_memory_sanity.py::TestQdrantAgentMemory::test_qdrant_import PASSED [ 42%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.2974508Z tests/test_agent_memory_sanity.py::TestQdrantAgentMemory::test_qdrant_implements_agent_memory PASSED [ 44%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.2983858Z tests/test_agent_memory_sanity.py::TestQdrantAgentMemory::test_qdrant_has_all_methods PASSED [ 46%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.2992880Z tests/test_agent_memory_sanity.py::TestQdrantAgentMemory::test_qdrant_instantiation PASSED [ 48%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3008471Z tests/test_agent_memory_sanity.py::TestPineconeAgentMemory::test_pinecone_import PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3017602Z tests/test_agent_memory_sanity.py::TestPineconeAgentMemory::test_pinecone_implements_agent_memory PASSED [ 52%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3026545Z tests/test_agent_memory_sanity.py::TestPineconeAgentMemory::test_pinecone_has_all_methods PASSED [ 54%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3042262Z tests/test_agent_memory_sanity.py::TestMilvusAgentMemory::test_milvus_import PASSED [ 56%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3050981Z tests/test_agent_memory_sanity.py::TestMilvusAgentMemory::test_milvus_implements_agent_memory PASSED [ 58%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3059474Z tests/test_agent_memory_sanity.py::TestMilvusAgentMemory::test_milvus_has_all_methods PASSED [ 60%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3074158Z tests/test_agent_memory_sanity.py::TestWeaviateAgentMemory::test_weaviate_import PASSED [ 62%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3082451Z tests/test_agent_memory_sanity.py::TestWeaviateAgentMemory::test_weaviate_implements_agent_memory PASSED [ 64%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3091338Z tests/test_agent_memory_sanity.py::TestWeaviateAgentMemory::test_weaviate_has_all_methods PASSED [ 66%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3107315Z tests/test_agent_memory_sanity.py::TestFAISSAgentMemory::test_faiss_import PASSED [ 68%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3116112Z tests/test_agent_memory_sanity.py::TestFAISSAgentMemory::test_faiss_implements_agent_memory PASSED [ 70%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3124391Z tests/test_agent_memory_sanity.py::TestFAISSAgentMemory::test_faiss_has_all_methods PASSED [ 72%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3139574Z tests/test_agent_memory_sanity.py::TestFAISSAgentMemory::test_faiss_instantiation SKIPPED [ 74%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3154094Z tests/test_agent_memory_sanity.py::TestOpenSearchAgentMemory::test_opensearch_import PASSED [ 76%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3162962Z tests/test_agent_memory_sanity.py::TestOpenSearchAgentMemory::test_opensearch_implements_agent_memory PASSED [ 78%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3171582Z tests/test_agent_memory_sanity.py::TestOpenSearchAgentMemory::test_opensearch_has_all_methods PASSED [ 80%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3186892Z tests/test_agent_memory_sanity.py::TestAzureAISearchAgentMemory::test_azuresearch_import PASSED [ 82%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3195364Z tests/test_agent_memory_sanity.py::TestAzureAISearchAgentMemory::test_azuresearch_implements_agent_memory PASSED [ 84%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3204191Z tests/test_agent_memory_sanity.py::TestAzureAISearchAgentMemory::test_azuresearch_has_all_methods PASSED [ 86%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3219340Z tests/test_agent_memory_sanity.py::TestMarqoAgentMemory::test_marqo_import PASSED [ 88%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3227912Z tests/test_agent_memory_sanity.py::TestMarqoAgentMemory::test_marqo_implements_agent_memory PASSED [ 90%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3235861Z tests/test_agent_memory_sanity.py::TestMarqoAgentMemory::test_marqo_has_all_methods PASSED [ 92%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3249599Z tests/test_agent_memory_sanity.py::TestDemoAgentMemory::test_demo_import PASSED [ 94%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3257702Z tests/test_agent_memory_sanity.py::TestDemoAgentMemory::test_demo_implements_agent_memory PASSED [ 96%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.3266193Z tests/test_agent_memory_sanity.py::TestDemoAgentMemory::test_demo_has_all_methods PASSED [ 98%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.6578622Z tests/test_agent_memory_sanity.py::TestDemoAgentMemory::test_demo_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:20:41.6579457Z 
+build	UNKNOWN STEP	2026-02-18T18:20:41.6579715Z ======================== 49 passed, 1 skipped in 2.39s =========================
+build	UNKNOWN STEP	2026-02-18T18:20:42.0609308Z py311-agent-memory-sanity: OK ✔ in 40.54 seconds
+build	UNKNOWN STEP	2026-02-18T18:20:42.0610275Z py311-anthropic: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:20:44.2010674Z py311-anthropic: install_package_deps> python -I -m pip install PyYAML anthropic 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:20:59.3001227Z py311-anthropic: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/5/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:21:00.9885753Z py311-anthropic: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:21:01.2358718Z py311-anthropic: annotated-types==0.7.0,anthropic==0.81.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,distro==1.9.0,docstring_parser==0.17.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jiter==0.13.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,sniffio==1.3.1,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/5/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:21:01.2364582Z py311-anthropic: commands[0]> python -c 'from vanna.integrations.anthropic import AnthropicLlmService; print('"'"'✓ Anthropic import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:21:01.8453401Z ✓ Anthropic import successful
+build	UNKNOWN STEP	2026-02-18T18:21:01.9444559Z py311-anthropic: commands[1]> pytest tests/ -v -m anthropic
+build	UNKNOWN STEP	2026-02-18T18:21:02.3076732Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:21:02.3078189Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-anthropic/bin/python
+build	UNKNOWN STEP	2026-02-18T18:21:02.3079306Z cachedir: .tox/py311-anthropic/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:21:02.3079890Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:21:02.3080424Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:21:02.3080865Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:21:02.3081815Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:21:03.3329852Z collecting ... collected 274 items / 273 deselected / 1 selected
+build	UNKNOWN STEP	2026-02-18T18:21:03.3330513Z 
+build	UNKNOWN STEP	2026-02-18T18:21:03.4884108Z tests/test_agents.py::test_anthropic_top_artist SKIPPED (ANTHROPIC_A...) [100%]
+build	UNKNOWN STEP	2026-02-18T18:21:03.4884884Z 
+build	UNKNOWN STEP	2026-02-18T18:21:03.4885286Z ====================== 1 skipped, 273 deselected in 1.03s ======================
+build	UNKNOWN STEP	2026-02-18T18:21:03.7766336Z py311-anthropic: OK ✔ in 21.72 seconds
+build	UNKNOWN STEP	2026-02-18T18:21:03.7767480Z py311-openai: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:21:05.8843109Z py311-openai: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema openai pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:21:21.3322924Z py311-openai: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/6/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:21:23.0499734Z py311-openai: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:21:23.2957555Z py311-openai: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,distro==1.9.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jiter==0.13.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,openai==2.21.0,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,sniffio==1.3.1,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,tqdm==4.67.3,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/6/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:21:23.2961777Z py311-openai: commands[0]> python -c 'from vanna.integrations.openai import OpenAILlmService; print('"'"'✓ OpenAI import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:21:23.8700304Z ✓ OpenAI import successful
+build	UNKNOWN STEP	2026-02-18T18:21:23.9605047Z py311-openai: commands[1]> pytest tests/ -v -m openai
+build	UNKNOWN STEP	2026-02-18T18:21:24.3341121Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:21:24.3342350Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-openai/bin/python
+build	UNKNOWN STEP	2026-02-18T18:21:24.3343395Z cachedir: .tox/py311-openai/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:21:24.3343955Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:21:24.3344489Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:21:24.3344923Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:21:24.3346086Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:21:25.1404312Z collecting ... collected 274 items / 273 deselected / 1 selected
+build	UNKNOWN STEP	2026-02-18T18:21:25.1405106Z 
+build	UNKNOWN STEP	2026-02-18T18:21:25.3479221Z tests/test_agents.py::test_openai_top_artist SKIPPED (OPENAI_API_KEY...) [100%]
+build	UNKNOWN STEP	2026-02-18T18:21:25.3479977Z 
+build	UNKNOWN STEP	2026-02-18T18:21:25.3480359Z ====================== 1 skipped, 273 deselected in 0.81s ======================
+build	UNKNOWN STEP	2026-02-18T18:21:25.6474075Z py311-openai: OK ✔ in 21.87 seconds
+build	UNKNOWN STEP	2026-02-18T18:21:25.6474633Z py311-legacy: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:21:27.7772831Z py311-legacy: install_package_deps> python -I -m pip install PyYAML anthropic 'chromadb>=1.1.0' 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:21:57.1215292Z py311-legacy: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/7/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:21:58.8849661Z py311-legacy: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:21:59.1524003Z py311-legacy: annotated-doc==0.0.4,annotated-types==0.7.0,anthropic==0.81.0,anyio==4.12.1,attrs==25.4.0,backoff==2.2.1,bcrypt==5.0.0,build==1.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,chromadb==1.5.0,click==8.3.1,distro==1.9.0,docstring_parser==0.17.0,durationpy==0.10,filelock==3.24.2,flatbuffers==25.12.19,fsspec==2026.2.0,googleapis-common-protos==1.72.0,greenlet==3.3.1,grpcio==1.78.0,h11==0.16.0,hf-xet==1.2.0,httpcore==1.0.9,httptools==0.7.1,httpx==0.28.1,huggingface_hub==1.4.1,idna==3.11,importlib_metadata==8.7.1,importlib_resources==6.5.2,iniconfig==2.3.0,jiter==0.13.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,kubernetes==35.0.0,markdown-it-py==4.0.0,mdurl==0.1.2,mmh3==5.2.0,mpmath==1.3.0,narwhals==2.16.0,numpy==2.4.2,oauthlib==3.3.1,onnxruntime==1.24.1,opentelemetry-api==1.39.1,opentelemetry-exporter-otlp-proto-common==1.39.1,opentelemetry-exporter-otlp-proto-grpc==1.39.1,opentelemetry-proto==1.39.1,opentelemetry-sdk==1.39.1,opentelemetry-semantic-conventions==0.60b1,orjson==3.11.7,overrides==7.7.0,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,posthog==5.4.0,protobuf==6.33.5,pybase64==1.4.3,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyPika==0.51.1,pyproject_hooks==1.2.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,python-dotenv==1.2.1,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,requests-oauthlib==2.0.0,rich==14.3.2,rpds-py==0.30.0,setuptools==80.9.0,shellingham==1.5.4,six==1.17.0,sniffio==1.3.1,SQLAlchemy==2.0.46,sqlparse==0.5.5,sympy==1.14.0,tabulate==0.9.0,tenacity==9.1.4,tokenizers==0.22.2,tqdm==4.67.3,typer==0.24.0,typer-slim==0.24.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,uvicorn==0.41.0,uvloop==0.22.1,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/7/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,watchfiles==1.1.1,websocket-client==1.9.0,websockets==16.0,zipp==3.23.0
+build	UNKNOWN STEP	2026-02-18T18:21:59.1533392Z py311-legacy: commands[0]> python -c 'from vanna.legacy.adapter import LegacyVannaAdapter; from vanna.legacy.chromadb import ChromaDB_VectorStore; from vanna.legacy.mock import MockLLM; print('"'"'✓ Legacy adapter imports successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:22:00.2421876Z ✓ Legacy adapter imports successful
+build	UNKNOWN STEP	2026-02-18T18:22:00.4116738Z py311-legacy: commands[1]> pytest tests/test_legacy_adapter.py -v -m legacy
+build	UNKNOWN STEP	2026-02-18T18:22:00.7743643Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:22:00.7744878Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-legacy/bin/python
+build	UNKNOWN STEP	2026-02-18T18:22:00.7745898Z cachedir: .tox/py311-legacy/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:22:00.7746420Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:22:00.7746957Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:22:00.7747844Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:22:00.7748843Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:22:01.3917968Z collecting ... collected 2 items
+build	UNKNOWN STEP	2026-02-18T18:22:01.3918630Z 
+build	UNKNOWN STEP	2026-02-18T18:22:05.6172911Z tests/test_legacy_adapter.py::test_legacy_adapter_with_anthropic PASSED  [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:22:06.9488961Z tests/test_legacy_adapter.py::test_legacy_adapter_memory_operations PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:22:06.9489822Z 
+build	UNKNOWN STEP	2026-02-18T18:22:06.9490085Z ============================== 2 passed in 5.90s ===============================
+build	UNKNOWN STEP	2026-02-18T18:22:07.5143238Z py311-legacy: OK ✔ in 41.89 seconds
+build	UNKNOWN STEP	2026-02-18T18:22:07.5144175Z py311-v3-unit: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:22:09.6554565Z py311-v3-unit: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:22:23.8304590Z py311-v3-unit: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/8/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:22:25.5072672Z py311-v3-unit: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:22:25.7554231Z py311-v3-unit: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/8/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:22:25.7562067Z py311-v3-unit: commands[0]> pytest tests/test_sql_security.py tests/test_v3_stream_events.py tests/test_chart_spec_validation.py tests/test_visualization_tool.py tests/test_schema_diff.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py tests/test_legacy_chart_security.py -v
+build	UNKNOWN STEP	2026-02-18T18:22:26.1126884Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:22:26.1129159Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-v3-unit/bin/python
+build	UNKNOWN STEP	2026-02-18T18:22:26.1130234Z cachedir: .tox/py311-v3-unit/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:22:26.1130780Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:22:26.1131291Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:22:26.1131708Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:22:26.1132660Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:22:26.8792724Z collecting ... collected 17 items
+build	UNKNOWN STEP	2026-02-18T18:22:26.8793149Z 
+build	UNKNOWN STEP	2026-02-18T18:22:26.8860082Z tests/test_sql_security.py::test_run_sql_blocks_write_statement_by_default PASSED [  5%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.8879242Z tests/test_sql_security.py::test_run_sql_blocks_multi_statement_by_default PASSED [ 11%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.8922896Z tests/test_sql_security.py::test_run_sql_allows_select_in_read_only_mode PASSED [ 17%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.8932577Z tests/test_v3_stream_events.py::test_chat_event_maps_chart_chunk_to_chart_spec PASSED [ 23%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.8941428Z tests/test_v3_stream_events.py::test_chat_event_done_has_typed_done_event PASSED [ 29%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.8993448Z tests/test_chart_spec_validation.py::test_chart_spec_accepts_valid_vega_lite_spec PASSED [ 35%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9042126Z tests/test_chart_spec_validation.py::test_chart_spec_rejects_invalid_shape PASSED [ 41%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9052373Z tests/test_chart_spec_validation.py::test_chart_spec_rejects_executable_tokens PASSED [ 47%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9123133Z tests/test_visualization_tool.py::test_visualize_data_returns_declarative_chart_spec PASSED [ 52%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9174458Z tests/test_schema_diff.py::test_schema_sync_detects_drift_and_patches_memory PASSED [ 58%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9188466Z tests/test_semantic_planner.py::test_semantic_planner_prefers_semantic_route_when_covered PASSED [ 64%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9201953Z tests/test_semantic_planner.py::test_semantic_planner_falls_back_when_no_coverage PASSED [ 70%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9216576Z tests/test_semantic_planner.py::test_semantic_query_tool_executes_with_mock_adapter PASSED [ 76%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9225671Z tests/test_lineage_capture.py::test_lineage_collector_records_sql_and_confidence PASSED [ 82%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9234712Z tests/test_lineage_capture.py::test_lineage_collector_tracks_retrieved_memories PASSED [ 88%]
+build	UNKNOWN STEP	2026-02-18T18:22:26.9255209Z tests/test_feedback_memory_patching.py::test_feedback_service_patches_negative_and_corrective_memory PASSED [ 94%]
+build	UNKNOWN STEP	2026-02-18T18:22:27.0790531Z tests/test_legacy_chart_security.py::test_legacy_ask_skips_llm_python_chart_execution_by_default PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:22:27.0791392Z 
+build	UNKNOWN STEP	2026-02-18T18:22:27.0791725Z ============================== 17 passed in 0.82s ==============================
+build	UNKNOWN STEP	2026-02-18T18:22:27.3390083Z py311-v3-unit: OK ✔ in 19.83 seconds
+build	UNKNOWN STEP	2026-02-18T18:22:27.3390631Z py311-chromadb: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:22:29.4486487Z py311-chromadb: install_package_deps> python -I -m pip install PyYAML 'chromadb>=1.1.0' 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:22:58.2745262Z py311-chromadb: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/9/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:23:00.0163274Z py311-chromadb: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:23:00.2830705Z py311-chromadb: annotated-doc==0.0.4,annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,backoff==2.2.1,bcrypt==5.0.0,build==1.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,chromadb==1.5.0,click==8.3.1,distro==1.9.0,durationpy==0.10,filelock==3.24.2,flatbuffers==25.12.19,fsspec==2026.2.0,googleapis-common-protos==1.72.0,greenlet==3.3.1,grpcio==1.78.0,h11==0.16.0,hf-xet==1.2.0,httpcore==1.0.9,httptools==0.7.1,httpx==0.28.1,huggingface_hub==1.4.1,idna==3.11,importlib_metadata==8.7.1,importlib_resources==6.5.2,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,kubernetes==35.0.0,markdown-it-py==4.0.0,mdurl==0.1.2,mmh3==5.2.0,mpmath==1.3.0,narwhals==2.16.0,numpy==2.4.2,oauthlib==3.3.1,onnxruntime==1.24.1,opentelemetry-api==1.39.1,opentelemetry-exporter-otlp-proto-common==1.39.1,opentelemetry-exporter-otlp-proto-grpc==1.39.1,opentelemetry-proto==1.39.1,opentelemetry-sdk==1.39.1,opentelemetry-semantic-conventions==0.60b1,orjson==3.11.7,overrides==7.7.0,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,posthog==5.4.0,protobuf==6.33.5,pybase64==1.4.3,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyPika==0.51.1,pyproject_hooks==1.2.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,python-dotenv==1.2.1,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,requests-oauthlib==2.0.0,rich==14.3.2,rpds-py==0.30.0,setuptools==80.9.0,shellingham==1.5.4,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,sympy==1.14.0,tabulate==0.9.0,tenacity==9.1.4,tokenizers==0.22.2,tqdm==4.67.3,typer==0.24.0,typer-slim==0.24.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,uvicorn==0.41.0,uvloop==0.22.1,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/9/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,watchfiles==1.1.1,websocket-client==1.9.0,websockets==16.0,zipp==3.23.0
+build	UNKNOWN STEP	2026-02-18T18:23:00.2838413Z py311-chromadb: commands[0]> pytest tests/test_agent_memory.py::TestLocalAgentMemory -k chromadb -v
+build	UNKNOWN STEP	2026-02-18T18:23:00.6432124Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:23:00.6433282Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-chromadb/bin/python
+build	UNKNOWN STEP	2026-02-18T18:23:00.6434564Z cachedir: .tox/py311-chromadb/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:23:00.6435201Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:23:00.6435792Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:23:00.6436301Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:23:00.6436945Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:23:01.2777915Z collecting ... collected 33 items / 22 deselected / 11 selected
+build	UNKNOWN STEP	2026-02-18T18:23:01.2778504Z 
+build	UNKNOWN STEP	2026-02-18T18:23:02.3923258Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search[chromadb_memory] PASSED [  9%]
+build	UNKNOWN STEP	2026-02-18T18:23:03.0429989Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_memories[chromadb_memory] PASSED [ 18%]
+build	UNKNOWN STEP	2026-02-18T18:23:03.5446518Z tests/test_agent_memory.py::TestLocalAgentMemory::test_tool_filter[chromadb_memory] PASSED [ 27%]
+build	UNKNOWN STEP	2026-02-18T18:23:04.0487838Z tests/test_agent_memory.py::TestLocalAgentMemory::test_clear_memories[chromadb_memory] PASSED [ 36%]
+build	UNKNOWN STEP	2026-02-18T18:23:04.9185886Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_memories[chromadb_memory] PASSED [ 45%]
+build	UNKNOWN STEP	2026-02-18T18:23:05.4490698Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_by_id[chromadb_memory] PASSED [ 54%]
+build	UNKNOWN STEP	2026-02-18T18:23:05.8056368Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search_text_memories[chromadb_memory] PASSED [ 63%]
+build	UNKNOWN STEP	2026-02-18T18:23:06.4923502Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_text_memories[chromadb_memory] PASSED [ 72%]
+build	UNKNOWN STEP	2026-02-18T18:23:07.0313481Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_text_memories[chromadb_memory] PASSED [ 81%]
+build	UNKNOWN STEP	2026-02-18T18:23:07.2394563Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_text_memory[chromadb_memory] PASSED [ 90%]
+build	UNKNOWN STEP	2026-02-18T18:23:08.1107804Z tests/test_agent_memory.py::TestLocalAgentMemory::test_mixed_tool_and_text_memories[chromadb_memory] PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:23:08.1108878Z 
+build	UNKNOWN STEP	2026-02-18T18:23:08.1109150Z ====================== 11 passed, 22 deselected in 7.26s =======================
+build	UNKNOWN STEP	2026-02-18T18:23:08.5894096Z py311-chromadb: OK ✔ in 41.23 seconds
+build	UNKNOWN STEP	2026-02-18T18:23:08.5894772Z py311-qdrant: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:23:10.7248375Z py311-qdrant: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' fastembed 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' 'qdrant-client>=1.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:23:35.8712779Z py311-qdrant: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/10/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:23:37.6320511Z py311-qdrant: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:23:37.8898021Z py311-qdrant: annotated-doc==0.0.4,annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,fastembed==0.7.4,filelock==3.24.2,flatbuffers==25.12.19,fsspec==2026.2.0,greenlet==3.3.1,grpcio==1.78.0,h11==0.16.0,h2==4.3.0,hf-xet==1.2.0,hpack==4.1.0,httpcore==1.0.9,httpx==0.28.1,huggingface_hub==1.4.1,hyperframe==6.1.0,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,loguru==0.7.3,markdown-it-py==4.0.0,mdurl==0.1.2,mmh3==5.2.0,mpmath==1.3.0,narwhals==2.16.0,numpy==2.4.2,onnxruntime==1.24.1,packaging==26.0,pandas==3.0.1,pillow==11.3.0,pip==25.3,plotly==6.5.2,pluggy==1.6.0,portalocker==3.2.0,protobuf==6.33.5,py_rust_stemmers==0.1.5,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,qdrant-client==1.16.2,referencing==0.37.0,requests==2.32.5,rich==14.3.2,rpds-py==0.30.0,setuptools==80.9.0,shellingham==1.5.4,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,sympy==1.14.0,tabulate==0.9.0,tokenizers==0.22.2,tqdm==4.67.3,typer==0.24.0,typer-slim==0.24.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/10/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:23:37.8905065Z py311-qdrant: commands[0]> pytest tests/test_agent_memory.py::TestLocalAgentMemory -k qdrant -v
+build	UNKNOWN STEP	2026-02-18T18:23:38.2522372Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:23:38.2523831Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-qdrant/bin/python
+build	UNKNOWN STEP	2026-02-18T18:23:38.2525065Z cachedir: .tox/py311-qdrant/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:23:38.2525698Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:23:38.2526289Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:23:38.2526822Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:23:38.2527740Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:23:38.9557673Z collecting ... collected 33 items / 22 deselected / 11 selected
+build	UNKNOWN STEP	2026-02-18T18:23:38.9558263Z 
+build	UNKNOWN STEP	2026-02-18T18:23:40.1805945Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search[qdrant_memory] PASSED [  9%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.1969038Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_memories[qdrant_memory] PASSED [ 18%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.2113777Z tests/test_agent_memory.py::TestLocalAgentMemory::test_tool_filter[qdrant_memory] PASSED [ 27%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.2279518Z tests/test_agent_memory.py::TestLocalAgentMemory::test_clear_memories[qdrant_memory] PASSED [ 36%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.2878861Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_memories[qdrant_memory] PASSED [ 45%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.3043166Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_by_id[qdrant_memory] PASSED [ 54%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.3171054Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search_text_memories[qdrant_memory] PASSED [ 63%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.3333903Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_text_memories[qdrant_memory] PASSED [ 72%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.3704551Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_text_memories[qdrant_memory] PASSED [ 81%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.3857557Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_text_memory[qdrant_memory] PASSED [ 90%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.7282459Z tests/test_agent_memory.py::TestLocalAgentMemory::test_mixed_tool_and_text_memories[qdrant_memory] PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:23:40.7283465Z 
+build	UNKNOWN STEP	2026-02-18T18:23:40.7283794Z ====================== 11 passed, 22 deselected in 2.15s =======================
+build	UNKNOWN STEP	2026-02-18T18:23:41.1384406Z py311-qdrant: OK ✔ in 32.56 seconds
+build	UNKNOWN STEP	2026-02-18T18:23:41.1384996Z py311-faiss: install_deps> python -I -m pip install faiss-cpu 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:23:47.0503729Z py311-faiss: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:23:59.0465246Z py311-faiss: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/11/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:24:00.7240573Z py311-faiss: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:24:00.9634143Z py311-faiss: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,faiss-cpu==1.13.2,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/11/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:24:00.9638111Z py311-faiss: commands[0]> pytest tests/test_agent_memory.py::TestLocalAgentMemory -k faiss -v
+build	UNKNOWN STEP	2026-02-18T18:24:01.3196880Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:24:01.3198422Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-faiss/bin/python
+build	UNKNOWN STEP	2026-02-18T18:24:01.3199574Z cachedir: .tox/py311-faiss/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:24:01.3200128Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:24:01.3200648Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:24:01.3201130Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:24:01.3202085Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:24:01.9555006Z collecting ... collected 33 items / 22 deselected / 11 selected
+build	UNKNOWN STEP	2026-02-18T18:24:01.9557774Z 
+build	UNKNOWN STEP	2026-02-18T18:24:01.9891361Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search[faiss_memory] PASSED [  9%]
+build	UNKNOWN STEP	2026-02-18T18:24:01.9930896Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_memories[faiss_memory] PASSED [ 18%]
+build	UNKNOWN STEP	2026-02-18T18:24:01.9963725Z tests/test_agent_memory.py::TestLocalAgentMemory::test_tool_filter[faiss_memory] PASSED [ 27%]
+build	UNKNOWN STEP	2026-02-18T18:24:01.9999481Z tests/test_agent_memory.py::TestLocalAgentMemory::test_clear_memories[faiss_memory] PASSED [ 36%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0452055Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_memories[faiss_memory] PASSED [ 45%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0491873Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_by_id[faiss_memory] PASSED [ 54%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0519695Z tests/test_agent_memory.py::TestLocalAgentMemory::test_save_and_search_text_memories[faiss_memory] PASSED [ 63%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0583302Z tests/test_agent_memory.py::TestLocalAgentMemory::test_multiple_text_memories[faiss_memory] PASSED [ 72%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0822921Z tests/test_agent_memory.py::TestLocalAgentMemory::test_get_recent_text_memories[faiss_memory] PASSED [ 81%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.0851908Z tests/test_agent_memory.py::TestLocalAgentMemory::test_delete_text_memory[faiss_memory] PASSED [ 90%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.2217684Z tests/test_agent_memory.py::TestLocalAgentMemory::test_mixed_tool_and_text_memories[faiss_memory] PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:24:02.2218860Z 
+build	UNKNOWN STEP	2026-02-18T18:24:02.2219270Z ====================== 11 passed, 22 deselected in 0.77s =======================
+build	UNKNOWN STEP	2026-02-18T18:24:02.5108719Z py311-faiss: OK ✔ in 21.37 seconds
+build	UNKNOWN STEP	2026-02-18T18:24:02.5109676Z py311-postgres-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:24:04.6199628Z py311-postgres-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' db-dtypes 'httpx>=0.28.0' jsonschema pandas plotly psycopg2-binary 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:24:21.9570938Z py311-postgres-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/12/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:24:23.6331809Z py311-postgres-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:24:23.8794632Z py311-postgres-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,db-dtypes==1.5.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==2.3.3,pip==25.3,plotly==6.5.2,pluggy==1.6.0,psycopg2-binary==2.9.11,pyarrow==23.0.1,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,pytz==2025.2,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,tzdata==2025.3,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/12/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:24:23.8800626Z py311-postgres-sanity: commands[0]> python -c 'from vanna.integrations.postgres import PostgresRunner; print('"'"'✓ PostgresRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:24:24.5622471Z ✓ PostgresRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:24:24.6826503Z py311-postgres-sanity: commands[1]> pytest tests/test_database_sanity.py::TestPostgresRunner -v
+build	UNKNOWN STEP	2026-02-18T18:24:25.0470793Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:24:25.0472124Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-postgres-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:24:25.0473315Z cachedir: .tox/py311-postgres-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:24:25.0473962Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:24:25.0474478Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:24:25.0474912Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:24:25.0475878Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:24:25.3870527Z collecting ... collected 7 items
+build	UNKNOWN STEP	2026-02-18T18:24:25.3870932Z 
+build	UNKNOWN STEP	2026-02-18T18:24:25.7213861Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_import PASSED [ 14%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.7223943Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_implements_sql_runner PASSED [ 28%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.7233597Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_has_run_sql_method PASSED [ 42%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.7356486Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_instantiation_with_connection_string PASSED [ 57%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.7365997Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_instantiation_with_params PASSED [ 71%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.7375970Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_requires_valid_params PASSED [ 85%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.8971856Z tests/test_database_sanity.py::TestPostgresRunner::test_postgres_runner_checks_psycopg2_import PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:24:25.8972742Z 
+build	UNKNOWN STEP	2026-02-18T18:24:25.8972932Z ============================== 7 passed in 0.69s ===============================
+build	UNKNOWN STEP	2026-02-18T18:24:26.1580021Z py311-postgres-sanity: OK ✔ in 23.65 seconds
+build	UNKNOWN STEP	2026-02-18T18:24:26.1580591Z py311-sqlite-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:24:28.2758761Z py311-sqlite-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:24:42.4875679Z py311-sqlite-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/13/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:24:44.1660726Z py311-sqlite-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:24:44.4156699Z py311-sqlite-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/13/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:24:44.4162416Z py311-sqlite-sanity: commands[0]> python -c 'from vanna.integrations.sqlite import SqliteRunner; print('"'"'✓ SqliteRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:24:45.0145240Z ✓ SqliteRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:24:45.0983461Z py311-sqlite-sanity: commands[1]> pytest tests/test_database_sanity.py::TestSqliteRunner -v
+build	UNKNOWN STEP	2026-02-18T18:24:45.4538881Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:24:45.4540378Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-sqlite-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:24:45.4541296Z cachedir: .tox/py311-sqlite-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:24:45.4541903Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:24:45.4542350Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:24:45.4542718Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:24:45.4543560Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:24:45.7266319Z collecting ... collected 5 items
+build	UNKNOWN STEP	2026-02-18T18:24:45.7266864Z 
+build	UNKNOWN STEP	2026-02-18T18:24:46.0521296Z tests/test_database_sanity.py::TestSqliteRunner::test_sqlite_runner_import PASSED [ 20%]
+build	UNKNOWN STEP	2026-02-18T18:24:46.0530160Z tests/test_database_sanity.py::TestSqliteRunner::test_sqlite_runner_implements_sql_runner PASSED [ 40%]
+build	UNKNOWN STEP	2026-02-18T18:24:46.0539367Z tests/test_database_sanity.py::TestSqliteRunner::test_sqlite_runner_has_run_sql_method PASSED [ 60%]
+build	UNKNOWN STEP	2026-02-18T18:24:46.0548228Z tests/test_database_sanity.py::TestSqliteRunner::test_sqlite_runner_instantiation PASSED [ 80%]
+build	UNKNOWN STEP	2026-02-18T18:24:46.1870716Z tests/test_database_sanity.py::TestSqliteRunner::test_sqlite_uses_builtin_sqlite3 PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:24:46.1872734Z 
+build	UNKNOWN STEP	2026-02-18T18:24:46.1873239Z ============================== 5 passed in 0.60s ===============================
+build	UNKNOWN STEP	2026-02-18T18:24:46.4484227Z py311-sqlite-sanity: OK ✔ in 20.3 seconds
+build	UNKNOWN STEP	2026-02-18T18:24:46.4485014Z py311-snowflake-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:24:48.5767931Z py311-snowflake-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests snowflake-connector-python sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:25:08.1510120Z py311-snowflake-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/14/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:25:09.8626836Z py311-snowflake-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:25:10.1117516Z py311-snowflake-sanity: annotated-types==0.7.0,anyio==4.12.1,asn1crypto==1.5.1,attrs==25.4.0,boto3==1.42.51,botocore==1.42.51,certifi==2026.1.4,cffi==2.0.0,charset-normalizer==3.4.4,click==8.3.1,cryptography==46.0.5,filelock==3.24.2,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jmespath==1.1.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,platformdirs==4.9.2,plotly==6.5.2,pluggy==1.6.0,pycparser==3.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyJWT==2.11.0,pyOpenSSL==25.3.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,pytz==2025.2,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,s3transfer==0.16.0,setuptools==80.9.0,six==1.17.0,snowflake-connector-python==4.3.0,sortedcontainers==2.4.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,tomlkit==0.14.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/14/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:25:10.1124199Z py311-snowflake-sanity: commands[0]> python -c 'from vanna.integrations.snowflake import SnowflakeRunner; print('"'"'✓ SnowflakeRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:25:10.6871723Z ✓ SnowflakeRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:25:10.7724769Z py311-snowflake-sanity: commands[1]> pytest tests/test_database_sanity.py::TestSnowflakeRunner -v
+build	UNKNOWN STEP	2026-02-18T18:25:11.1337227Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:25:11.1338411Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-snowflake-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:25:11.1339587Z cachedir: .tox/py311-snowflake-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:25:11.1340222Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:25:11.1340780Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:25:11.1341315Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:25:11.1342333Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:25:11.4106386Z collecting ... collected 10 items
+build	UNKNOWN STEP	2026-02-18T18:25:11.4106857Z 
+build	UNKNOWN STEP	2026-02-18T18:25:11.7466339Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_import PASSED [ 10%]
+build	UNKNOWN STEP	2026-02-18T18:25:11.7475896Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_implements_sql_runner PASSED [ 20%]
+build	UNKNOWN STEP	2026-02-18T18:25:11.7485373Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_has_run_sql_method PASSED [ 30%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1066441Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_instantiation PASSED [ 40%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1091839Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_key_pair_auth_with_path PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1104959Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_key_pair_auth_with_content PASSED [ 60%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1119640Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_key_pair_auth_without_passphrase PASSED [ 70%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1130261Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_missing_auth_raises_error PASSED [ 80%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.1140036Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_invalid_key_path_raises_error PASSED [ 90%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.2998664Z tests/test_database_sanity.py::TestSnowflakeRunner::test_snowflake_runner_password_auth_backwards_compatible PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:25:12.2999898Z 
+build	UNKNOWN STEP	2026-02-18T18:25:12.3000399Z ============================== 10 passed in 0.98s ==============================
+build	UNKNOWN STEP	2026-02-18T18:25:12.6204503Z py311-snowflake-sanity: OK ✔ in 26.16 seconds
+build	UNKNOWN STEP	2026-02-18T18:25:12.6205218Z py311-mysql-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:25:14.7676738Z py311-mysql-sanity: install_package_deps> python -I -m pip install PyMySQL PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:25:29.2328791Z py311-mysql-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/15/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:25:30.9144245Z py311-mysql-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:25:31.1563553Z py311-mysql-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyMySQL==1.1.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/15/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:25:31.1568596Z py311-mysql-sanity: commands[0]> python -c 'from vanna.integrations.mysql import MySQLRunner; print('"'"'✓ MySQLRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:25:31.7372206Z ✓ MySQLRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:25:31.8311916Z py311-mysql-sanity: commands[1]> pytest tests/test_database_sanity.py::TestMySQLRunner -v
+build	UNKNOWN STEP	2026-02-18T18:25:32.1880581Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:25:32.1881823Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-mysql-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:25:32.1882965Z cachedir: .tox/py311-mysql-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:25:32.1883603Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:25:32.1884137Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:25:32.1884582Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:25:32.1885560Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:25:32.4885423Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:25:32.4885797Z 
+build	UNKNOWN STEP	2026-02-18T18:25:32.8164899Z tests/test_database_sanity.py::TestMySQLRunner::test_mysql_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:25:32.8174242Z tests/test_database_sanity.py::TestMySQLRunner::test_mysql_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:25:32.8183395Z tests/test_database_sanity.py::TestMySQLRunner::test_mysql_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:25:32.9509396Z tests/test_database_sanity.py::TestMySQLRunner::test_mysql_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:25:32.9511107Z 
+build	UNKNOWN STEP	2026-02-18T18:25:32.9511568Z ============================== 4 passed in 0.64s ===============================
+build	UNKNOWN STEP	2026-02-18T18:25:33.2152088Z py311-mysql-sanity: OK ✔ in 20.6 seconds
+build	UNKNOWN STEP	2026-02-18T18:25:33.2152759Z py311-clickhouse-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:25:35.3733197Z py311-clickhouse-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' clickhouse_connect 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:25:51.4725567Z py311-clickhouse-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/16/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:25:53.1490640Z py311-clickhouse-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:25:53.4073427Z py311-clickhouse-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,clickhouse-connect==0.11.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,lz4==4.4.5,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,pytz==2025.2,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/16/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,zstandard==0.25.0
+build	UNKNOWN STEP	2026-02-18T18:25:53.4080585Z py311-clickhouse-sanity: commands[0]> python -c 'from vanna.integrations.clickhouse import ClickHouseRunner; print('"'"'✓ ClickHouseRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:25:53.9922658Z ✓ ClickHouseRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:25:54.0964401Z py311-clickhouse-sanity: commands[1]> pytest tests/test_database_sanity.py::TestClickHouseRunner -v
+build	UNKNOWN STEP	2026-02-18T18:25:54.4522603Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:25:54.4523589Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-clickhouse-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:25:54.4524229Z cachedir: .tox/py311-clickhouse-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:25:54.4524562Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:25:54.4524836Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:25:54.4525072Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:25:54.4525582Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:25:54.7134683Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:25:54.7135155Z 
+build	UNKNOWN STEP	2026-02-18T18:25:55.0381506Z tests/test_database_sanity.py::TestClickHouseRunner::test_clickhouse_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:25:55.0390864Z tests/test_database_sanity.py::TestClickHouseRunner::test_clickhouse_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:25:55.0399624Z tests/test_database_sanity.py::TestClickHouseRunner::test_clickhouse_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:25:55.2436529Z tests/test_database_sanity.py::TestClickHouseRunner::test_clickhouse_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:25:55.2437806Z 
+build	UNKNOWN STEP	2026-02-18T18:25:55.2438098Z ============================== 4 passed in 0.65s ===============================
+build	UNKNOWN STEP	2026-02-18T18:25:55.4900022Z py311-clickhouse-sanity: OK ✔ in 22.29 seconds
+build	UNKNOWN STEP	2026-02-18T18:25:55.4901009Z py311-oracle-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:25:57.6056990Z py311-oracle-sanity: install_package_deps> python -I -m pip install PyYAML 'chromadb<1.0.0' 'click>=8.0.0' 'httpx>=0.28.0' jsonschema oracledb pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:26:28.0001647Z py311-oracle-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/17/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:26:29.7838202Z py311-oracle-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:26:30.0581178Z py311-oracle-sanity: annotated-doc==0.0.4,annotated-types==0.7.0,anyio==4.12.1,asgiref==3.11.1,attrs==25.4.0,backoff==2.2.1,bcrypt==5.0.0,build==1.4.0,certifi==2026.1.4,cffi==2.0.0,charset-normalizer==3.4.4,chroma-hnswlib==0.7.6,chromadb==0.6.3,click==8.3.1,cryptography==46.0.5,distro==1.9.0,durationpy==0.10,fastapi==0.129.0,filelock==3.24.2,flatbuffers==25.12.19,fsspec==2026.2.0,googleapis-common-protos==1.72.0,greenlet==3.3.1,grpcio==1.78.0,h11==0.16.0,hf-xet==1.2.0,httpcore==1.0.9,httptools==0.7.1,httpx==0.28.1,huggingface_hub==1.4.1,idna==3.11,importlib_metadata==8.7.1,importlib_resources==6.5.2,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,kubernetes==35.0.0,markdown-it-py==4.0.0,mdurl==0.1.2,mmh3==5.2.0,mpmath==1.3.0,narwhals==2.16.0,numpy==2.4.2,oauthlib==3.3.1,onnxruntime==1.24.1,opentelemetry-api==1.39.1,opentelemetry-exporter-otlp-proto-common==1.39.1,opentelemetry-exporter-otlp-proto-grpc==1.39.1,opentelemetry-instrumentation==0.60b1,opentelemetry-instrumentation-asgi==0.60b1,opentelemetry-instrumentation-fastapi==0.60b1,opentelemetry-proto==1.39.1,opentelemetry-sdk==1.39.1,opentelemetry-semantic-conventions==0.60b1,opentelemetry-util-http==0.60b1,oracledb==3.4.2,orjson==3.11.7,overrides==7.7.0,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,posthog==7.9.1,protobuf==6.33.5,pycparser==3.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyPika==0.51.1,pyproject_hooks==1.2.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,python-dotenv==1.2.1,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,requests-oauthlib==2.0.0,rich==14.3.2,rpds-py==0.30.0,setuptools==80.9.0,shellingham==1.5.4,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,starlette==0.52.1,sympy==1.14.0,tabulate==0.9.0,tenacity==9.1.4,tokenizers==0.22.2,tqdm==4.67.3,typer==0.24.0,typer-slim==0.24.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,uvicorn==0.41.0,uvloop==0.22.1,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/17/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c,watchfiles==1.1.1,websocket-client==1.9.0,websockets==16.0,wrapt==1.17.3,zipp==3.23.0
+build	UNKNOWN STEP	2026-02-18T18:26:30.0590428Z py311-oracle-sanity: commands[0]> python -c 'from vanna.integrations.oracle import OracleRunner; print('"'"'✓ OracleRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:26:30.6549658Z ✓ OracleRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:26:30.7413701Z py311-oracle-sanity: commands[1]> pytest tests/test_database_sanity.py::TestOracleRunner -v
+build	UNKNOWN STEP	2026-02-18T18:26:31.1110988Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:26:31.1112931Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-oracle-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:26:31.1114064Z cachedir: .tox/py311-oracle-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:26:31.1114587Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:26:31.1115045Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:26:31.1115451Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:26:31.1116337Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:26:31.3818926Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:26:31.3819430Z 
+build	UNKNOWN STEP	2026-02-18T18:26:31.7127345Z tests/test_database_sanity.py::TestOracleRunner::test_oracle_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:26:31.7135695Z tests/test_database_sanity.py::TestOracleRunner::test_oracle_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:26:31.7145058Z tests/test_database_sanity.py::TestOracleRunner::test_oracle_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:26:31.8978543Z tests/test_database_sanity.py::TestOracleRunner::test_oracle_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:26:31.8979513Z 
+build	UNKNOWN STEP	2026-02-18T18:26:31.8979711Z ============================== 4 passed in 0.65s ===============================
+build	UNKNOWN STEP	2026-02-18T18:26:32.1531580Z py311-oracle-sanity: OK ✔ in 36.65 seconds
+build	UNKNOWN STEP	2026-02-18T18:26:32.1532283Z py311-bigquery-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:26:34.2799423Z py311-bigquery-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' google-cloud-bigquery 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:26:52.3309938Z py311-bigquery-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/18/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:26:54.0521177Z py311-bigquery-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:26:54.3084401Z py311-bigquery-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,cffi==2.0.0,charset-normalizer==3.4.4,click==8.3.1,cryptography==46.0.5,google-api-core==2.29.0,google-auth==2.48.0,google-cloud-bigquery==3.40.1,google-cloud-core==2.5.0,google-crc32c==1.8.0,google-resumable-media==2.8.0,googleapis-common-protos==1.72.0,greenlet==3.3.1,grpcio==1.78.0,grpcio-status==1.78.0,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,proto-plus==1.27.1,protobuf==6.33.5,pyasn1==0.6.2,pyasn1_modules==0.4.2,pycparser==3.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,rsa==4.9.1,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/18/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:26:54.3108365Z py311-bigquery-sanity: commands[0]> python -c 'from vanna.integrations.bigquery import BigQueryRunner; print('"'"'✓ BigQueryRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:26:54.8922899Z ✓ BigQueryRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:26:54.9843639Z py311-bigquery-sanity: commands[1]> pytest tests/test_database_sanity.py::TestBigQueryRunner -v
+build	UNKNOWN STEP	2026-02-18T18:26:55.3486814Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:26:55.3490904Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-bigquery-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:26:55.3492138Z cachedir: .tox/py311-bigquery-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:26:55.3492755Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:26:55.3493289Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:26:55.3493723Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:26:55.3494728Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:26:55.6087658Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:26:55.6088096Z 
+build	UNKNOWN STEP	2026-02-18T18:26:55.9537660Z tests/test_database_sanity.py::TestBigQueryRunner::test_bigquery_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:26:55.9546935Z tests/test_database_sanity.py::TestBigQueryRunner::test_bigquery_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:26:55.9556726Z tests/test_database_sanity.py::TestBigQueryRunner::test_bigquery_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:26:56.4123530Z tests/test_database_sanity.py::TestBigQueryRunner::test_bigquery_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:26:56.4124550Z 
+build	UNKNOWN STEP	2026-02-18T18:26:56.4124941Z ============================== 4 passed in 0.85s ===============================
+build	UNKNOWN STEP	2026-02-18T18:26:56.7040222Z py311-bigquery-sanity: OK ✔ in 24.56 seconds
+build	UNKNOWN STEP	2026-02-18T18:26:56.7041015Z py311-duckdb-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:26:58.8131972Z py311-duckdb-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' duckdb 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:27:14.5598241Z py311-duckdb-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/19/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:27:16.2290378Z py311-duckdb-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:27:16.4735622Z py311-duckdb-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,duckdb==1.4.4,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/19/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:27:16.4740337Z py311-duckdb-sanity: commands[0]> python -c 'from vanna.integrations.duckdb import DuckDBRunner; print('"'"'✓ DuckDBRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:27:17.0890244Z ✓ DuckDBRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:27:17.1883718Z py311-duckdb-sanity: commands[1]> pytest tests/test_database_sanity.py::TestDuckDBRunner -v
+build	UNKNOWN STEP	2026-02-18T18:27:17.5452645Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:27:17.5453890Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-duckdb-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:27:17.5455141Z cachedir: .tox/py311-duckdb-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:27:17.5455770Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:27:17.5456338Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:27:17.5456770Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:27:17.5458061Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:27:17.8075517Z collecting ... collected 5 items
+build	UNKNOWN STEP	2026-02-18T18:27:17.8075908Z 
+build	UNKNOWN STEP	2026-02-18T18:27:18.1351067Z tests/test_database_sanity.py::TestDuckDBRunner::test_duckdb_runner_import PASSED [ 20%]
+build	UNKNOWN STEP	2026-02-18T18:27:18.1360479Z tests/test_database_sanity.py::TestDuckDBRunner::test_duckdb_runner_implements_sql_runner PASSED [ 40%]
+build	UNKNOWN STEP	2026-02-18T18:27:18.1369688Z tests/test_database_sanity.py::TestDuckDBRunner::test_duckdb_runner_has_run_sql_method PASSED [ 60%]
+build	UNKNOWN STEP	2026-02-18T18:27:18.1667521Z tests/test_database_sanity.py::TestDuckDBRunner::test_duckdb_runner_instantiation_memory PASSED [ 80%]
+build	UNKNOWN STEP	2026-02-18T18:27:18.2799173Z tests/test_database_sanity.py::TestDuckDBRunner::test_duckdb_runner_instantiation_file PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:27:18.2800252Z 
+build	UNKNOWN STEP	2026-02-18T18:27:18.2800476Z ============================== 5 passed in 0.62s ===============================
+build	UNKNOWN STEP	2026-02-18T18:27:18.5592920Z py311-duckdb-sanity: OK ✔ in 21.83 seconds
+build	UNKNOWN STEP	2026-02-18T18:27:18.5593515Z py311-mssql-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:27:20.6878905Z py311-mssql-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' pyodbc requests sqlalchemy sqlparse tabulate
+build	UNKNOWN STEP	2026-02-18T18:27:35.1089717Z py311-mssql-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/20/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:27:36.7883826Z py311-mssql-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:27:37.0391090Z py311-mssql-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,pyodbc==5.3.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/20/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:27:37.0396614Z py311-mssql-sanity: commands[0]> python -c 'from vanna.integrations.mssql import MSSQLRunner; print('"'"'✓ MSSQLRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:27:37.6203643Z ✓ MSSQLRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:27:37.7066657Z py311-mssql-sanity: commands[1]> pytest tests/test_database_sanity.py::TestMSSQLRunner -v
+build	UNKNOWN STEP	2026-02-18T18:27:38.0798858Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:27:38.0800635Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-mssql-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:27:38.0801785Z cachedir: .tox/py311-mssql-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:27:38.0802378Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:27:38.0802735Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:27:38.0803018Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:27:38.0803636Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:27:38.3422433Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:27:38.3422871Z 
+build	UNKNOWN STEP	2026-02-18T18:27:38.6728346Z tests/test_database_sanity.py::TestMSSQLRunner::test_mssql_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:27:38.6737701Z tests/test_database_sanity.py::TestMSSQLRunner::test_mssql_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:27:38.6746855Z tests/test_database_sanity.py::TestMSSQLRunner::test_mssql_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:27:38.9382776Z tests/test_database_sanity.py::TestMSSQLRunner::test_mssql_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:27:38.9383649Z 
+build	UNKNOWN STEP	2026-02-18T18:27:38.9383936Z ============================== 4 passed in 0.71s ===============================
+build	UNKNOWN STEP	2026-02-18T18:27:39.2106618Z py311-mssql-sanity: OK ✔ in 20.67 seconds
+build	UNKNOWN STEP	2026-02-18T18:27:39.2107525Z py311-presto-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:27:41.3580024Z py311-presto-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' pyhive requests sqlalchemy sqlparse tabulate thrift
+build	UNKNOWN STEP	2026-02-18T18:28:02.9126055Z py311-presto-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/21/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:28:04.6348854Z py311-presto-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:28:04.8801381Z py311-presto-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,future==1.0.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyHive==0.7.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,thrift==0.22.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/21/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:28:04.8807980Z py311-presto-sanity: commands[0]> python -c 'from vanna.integrations.presto import PrestoRunner; print('"'"'✓ PrestoRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:28:05.4582259Z ✓ PrestoRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:28:05.5496784Z py311-presto-sanity: commands[1]> pytest tests/test_database_sanity.py::TestPrestoRunner -v
+build	UNKNOWN STEP	2026-02-18T18:28:05.9194552Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:28:05.9196117Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-presto-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:28:05.9197537Z cachedir: .tox/py311-presto-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:28:05.9198178Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:28:05.9198456Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:28:05.9198701Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:28:05.9199358Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:28:06.1833099Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:28:06.1833444Z 
+build	UNKNOWN STEP	2026-02-18T18:28:06.5091186Z tests/test_database_sanity.py::TestPrestoRunner::test_presto_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:28:06.5099859Z tests/test_database_sanity.py::TestPrestoRunner::test_presto_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:28:06.5109410Z tests/test_database_sanity.py::TestPrestoRunner::test_presto_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:28:06.7268338Z tests/test_database_sanity.py::TestPrestoRunner::test_presto_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:28:06.7269569Z 
+build	UNKNOWN STEP	2026-02-18T18:28:06.7270178Z ============================== 4 passed in 0.64s ===============================
+build	UNKNOWN STEP	2026-02-18T18:28:06.9851494Z py311-presto-sanity: OK ✔ in 27.77 seconds
+build	UNKNOWN STEP	2026-02-18T18:28:06.9852274Z py311-hive-sanity: install_deps> python -I -m pip install 'pytest-asyncio>=0.21.0' 'pytest>=7.0.0'
+build	UNKNOWN STEP	2026-02-18T18:28:09.1063011Z py311-hive-sanity: install_package_deps> python -I -m pip install PyYAML 'click>=8.0.0' 'httpx>=0.28.0' jsonschema pandas plotly 'pydantic>=2.0.0' pyhive requests sqlalchemy sqlparse tabulate thrift
+build	UNKNOWN STEP	2026-02-18T18:28:23.6901084Z py311-hive-sanity: install_package> python -I -m pip install --force-reinstall --no-deps /home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/22/vanna-2.0.2.tar.gz
+build	UNKNOWN STEP	2026-02-18T18:28:25.3882541Z py311-hive-sanity: freeze> python -m pip freeze --all
+build	UNKNOWN STEP	2026-02-18T18:28:25.6326741Z py311-hive-sanity: annotated-types==0.7.0,anyio==4.12.1,attrs==25.4.0,certifi==2026.1.4,charset-normalizer==3.4.4,click==8.3.1,future==1.0.0,greenlet==3.3.1,h11==0.16.0,httpcore==1.0.9,httpx==0.28.1,idna==3.11,iniconfig==2.3.0,jsonschema==4.26.0,jsonschema-specifications==2025.9.1,narwhals==2.16.0,numpy==2.4.2,packaging==26.0,pandas==3.0.1,pip==25.3,plotly==6.5.2,pluggy==1.6.0,pydantic==2.12.5,pydantic_core==2.41.5,Pygments==2.19.2,PyHive==0.7.0,pytest==9.0.2,pytest-asyncio==1.3.0,python-dateutil==2.9.0.post0,PyYAML==6.0.3,referencing==0.37.0,requests==2.32.5,rpds-py==0.30.0,setuptools==80.9.0,six==1.17.0,SQLAlchemy==2.0.46,sqlparse==0.5.5,tabulate==0.9.0,thrift==0.22.0,typing-inspection==0.4.2,typing_extensions==4.15.0,urllib3==2.6.3,vanna @ file:///home/runner/work/vanna-v3/vanna-v3/.tox/.tmp/package/22/vanna-2.0.2.tar.gz#sha256=48684f4da5a2a3f9d22417947517d58f956e4f7c7c495afa266e999dc9ca388c
+build	UNKNOWN STEP	2026-02-18T18:28:25.6331165Z py311-hive-sanity: commands[0]> python -c 'from vanna.integrations.hive import HiveRunner; print('"'"'✓ HiveRunner import successful'"'"')'
+build	UNKNOWN STEP	2026-02-18T18:28:26.2138975Z ✓ HiveRunner import successful
+build	UNKNOWN STEP	2026-02-18T18:28:26.3023800Z py311-hive-sanity: commands[1]> pytest tests/test_database_sanity.py::TestHiveRunner -v
+build	UNKNOWN STEP	2026-02-18T18:28:26.6586260Z ============================= test session starts ==============================
+build	UNKNOWN STEP	2026-02-18T18:28:26.6587745Z platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /home/runner/work/vanna-v3/vanna-v3/.tox/py311-hive-sanity/bin/python
+build	UNKNOWN STEP	2026-02-18T18:28:26.6588913Z cachedir: .tox/py311-hive-sanity/.pytest_cache
+build	UNKNOWN STEP	2026-02-18T18:28:26.6589510Z rootdir: /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:28:26.6590036Z configfile: pyproject.toml
+build	UNKNOWN STEP	2026-02-18T18:28:26.6590464Z plugins: anyio-4.12.1, asyncio-1.3.0
+build	UNKNOWN STEP	2026-02-18T18:28:26.6591412Z asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+build	UNKNOWN STEP	2026-02-18T18:28:26.9193317Z collecting ... collected 4 items
+build	UNKNOWN STEP	2026-02-18T18:28:26.9193781Z 
+build	UNKNOWN STEP	2026-02-18T18:28:27.2432770Z tests/test_database_sanity.py::TestHiveRunner::test_hive_runner_import PASSED [ 25%]
+build	UNKNOWN STEP	2026-02-18T18:28:27.2441064Z tests/test_database_sanity.py::TestHiveRunner::test_hive_runner_implements_sql_runner PASSED [ 50%]
+build	UNKNOWN STEP	2026-02-18T18:28:27.2450805Z tests/test_database_sanity.py::TestHiveRunner::test_hive_runner_has_run_sql_method PASSED [ 75%]
+build	UNKNOWN STEP	2026-02-18T18:28:27.3830021Z tests/test_database_sanity.py::TestHiveRunner::test_hive_runner_instantiation PASSED [100%]
+build	UNKNOWN STEP	2026-02-18T18:28:27.3831044Z 
+build	UNKNOWN STEP	2026-02-18T18:28:27.3831211Z ============================== 4 passed in 0.60s ===============================
+build	UNKNOWN STEP	2026-02-18T18:28:27.4964746Z .pkg: _exit> python /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/pyproject_api/_backend.py True flit_core.buildapi
+build	UNKNOWN STEP	2026-02-18T18:28:27.5169039Z   ruff: FAIL code 1 (27.72=setup[27.67]+cmd[0.05] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5169555Z   mypy: FAIL code 1 (35.46=setup[22.62]+cmd[12.85] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5169990Z   py311-unit: OK (19.84=setup[18.27]+cmd[1.57] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5170477Z   py311-agent-memory-sanity: OK (40.54=setup[37.20]+cmd[3.35] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5171001Z   py311-anthropic: OK (21.72=setup[19.32]+cmd[0.71,1.69] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5171499Z   py311-openai: OK (21.87=setup[19.67]+cmd[0.66,1.54] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5171936Z   py311-legacy: OK (41.89=setup[33.66]+cmd[1.26,6.97] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5172369Z   py311-v3-unit: OK (19.83=setup[18.37]+cmd[1.46] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5172806Z   py311-chromadb: OK (41.23=setup[33.07]+cmd[8.15] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5173233Z   py311-qdrant: OK (32.56=setup[29.45]+cmd[3.11] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5173620Z   py311-faiss: OK (21.37=setup[19.97]+cmd[1.41] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5174017Z   py311-postgres-sanity: OK (23.65=setup[21.51]+cmd[0.80,1.34] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5174472Z   py311-sqlite-sanity: OK (20.30=setup[18.39]+cmd[0.68,1.22] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5174921Z   py311-snowflake-sanity: OK (26.16=setup[23.79]+cmd[0.66,1.71] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5175361Z   py311-mysql-sanity: OK (20.60=setup[18.68]+cmd[0.67,1.25] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5175807Z   py311-clickhouse-sanity: OK (22.29=setup[20.33]+cmd[0.69,1.27] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5176268Z   py311-oracle-sanity: OK (36.65=setup[34.70]+cmd[0.68,1.28] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5176704Z   py311-bigquery-sanity: OK (24.56=setup[22.29]+cmd[0.68,1.59] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5177384Z   py311-duckdb-sanity: OK (21.83=setup[19.90]+cmd[0.71,1.22] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5177823Z   py311-mssql-sanity: OK (20.67=setup[18.63]+cmd[0.67,1.37] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5178253Z   py311-presto-sanity: OK (27.77=setup[25.80]+cmd[0.67,1.30] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5178675Z   py311-hive-sanity: OK (20.66=setup[18.80]+cmd[0.67,1.19] seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5179020Z   evaluation failed :( (589.22 seconds)
+build	UNKNOWN STEP	2026-02-18T18:28:27.5501660Z ##[error]Process completed with exit code 255.
+build	UNKNOWN STEP	2026-02-18T18:28:27.5608209Z Post job cleanup.
+build	UNKNOWN STEP	2026-02-18T18:28:27.6575558Z [command]/usr/bin/git version
+build	UNKNOWN STEP	2026-02-18T18:28:27.6614083Z git version 2.52.0
+build	UNKNOWN STEP	2026-02-18T18:28:27.6658407Z Temporarily overriding HOME='/home/runner/work/_temp/160b458e-1fd5-4bae-93c2-bad2c263f2d2' before making global git config changes
+build	UNKNOWN STEP	2026-02-18T18:28:27.6659871Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-02-18T18:28:27.6671940Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/vanna-v3/vanna-v3
+build	UNKNOWN STEP	2026-02-18T18:28:27.6710033Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-02-18T18:28:27.6744008Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	UNKNOWN STEP	2026-02-18T18:28:27.7001351Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-02-18T18:28:27.7025894Z http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-02-18T18:28:27.7040071Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-02-18T18:28:27.7075370Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	UNKNOWN STEP	2026-02-18T18:28:27.7321469Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	UNKNOWN STEP	2026-02-18T18:28:27.7355132Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	UNKNOWN STEP	2026-02-18T18:28:27.7727946Z Cleaning up orphan processes

@@ -26,6 +26,7 @@ Thank you for your interest in contributing to Vanna! This guide will help you g
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/vanna.git
    cd vanna
@@ -139,14 +140,43 @@ class MyClass:
 
 ### Test Organization
 
-Tests are organized in the `tests/` directory:
+Tests are organized in the `tests/` directory by category:
 
-- `test_tool_permissions.py` - Tool access control tests
-- `test_llm_context_enhancer.py` - LLM enhancer tests
-- `test_legacy_adapter.py` - Legacy compatibility tests
-- `test_agent_memory.py` - Agent memory tests
-- `test_database_sanity.py` - Database integration tests
-- `test_agents.py` - End-to-end agent tests
+**Core & Security:**
+
+- `test_tool_permissions.py` - Tool access control and group-based permissions
+- `test_sql_security.py` - Read-only SQL enforcement and injection prevention
+- `test_legacy_chart_security.py` - Legacy chart execution security defaults
+
+**Agent & Workflow:**
+
+- `test_agents.py` - End-to-end agent tests (multi-LLM)
+- `test_workflow.py` - Agent workflow and admin command tests
+- `test_memory_tools.py` - Memory tool detailed results and admin/user views
+- `test_llm_context_enhancer.py` - LLM context enhancement tests
+
+**v3 Features:**
+
+- `test_v3_stream_events.py` - Typed streaming event contracts
+- `test_chart_spec_validation.py` - Declarative ChartSpec validation
+- `test_visualization_tool.py` - Visualization tool output tests
+- `test_schema_diff.py` - Schema drift detection and memory patching
+- `test_semantic_planner.py` - Semantic-first planner routing
+- `test_lineage_capture.py` - Lineage and evidence collection
+- `test_feedback_memory_patching.py` - Feedback loop memory patching
+
+**Integration (LLM):**
+
+- `test_gemini_integration.py` - Gemini LLM service unit tests
+- `test_gemini_e2e.py` - Gemini full pipeline e2e tests (Chinook DB)
+- `test_duckdb_public_api.py` - DuckDB + free public data tests
+
+**Integration (Memory & Database):**
+
+- `test_agent_memory.py` - Agent memory backend tests
+- `test_agent_memory_sanity.py` - Memory implementation sanity checks
+- `test_database_sanity.py` - Database runner sanity checks
+- `test_legacy_adapter.py` - Legacy v2 compatibility tests
 
 ### Running Tests
 
@@ -154,11 +184,18 @@ Tests are organized in the `tests/` directory:
 # Run all unit tests (no external dependencies)
 tox -e py311-unit
 
+# Run v3 feature tests
+tox -e py311-v3-unit
+
 # Run specific test file
 pytest tests/test_tool_permissions.py -v
 
 # Run tests with a specific marker
+pytest tests/ -v -m gemini
 pytest tests/ -v -m anthropic
+
+# Run Gemini integration tests
+tox -e py311-gemini
 
 # Run legacy adapter tests
 tox -e py311-legacy
@@ -168,15 +205,19 @@ tox -e py311-legacy
 
 1. **Unit tests** should not require external dependencies (databases, APIs, etc.)
 2. Use **pytest markers** for tests that require external services:
+
    ```python
-   @pytest.mark.anthropic
+   @pytest.mark.gemini       # Requires GEMINI_API_KEY or GOOGLE_API_KEY
+   @pytest.mark.anthropic    # Requires ANTHROPIC_API_KEY
+   @pytest.mark.openai       # Requires OPENAI_API_KEY
    @pytest.mark.asyncio
-   async def test_with_anthropic():
+   async def test_with_llm():
        # Test code here
        pass
    ```
 
 3. **Mock external dependencies** in unit tests:
+
    ```python
    class MockLlmService(LlmService):
        async def send_request(self, request):
@@ -190,6 +231,7 @@ tox -e py311-legacy
 ### Test Coverage
 
 When adding new features, ensure:
+
 - Core functionality is covered by unit tests
 - Integration points are tested
 - Error handling is validated
@@ -243,6 +285,7 @@ git commit -m "feat: add new LLM context enhancer for RAG
 ```
 
 **Commit message format:**
+
 - `feat:` - New feature
 - `fix:` - Bug fix
 - `docs:` - Documentation changes
@@ -257,6 +300,7 @@ git push origin feature/my-new-feature
 ```
 
 Then create a pull request on GitHub with:
+
 - Clear title describing the change
 - Description of what was changed and why
 - Link to any related issues
@@ -277,27 +321,35 @@ Then create a pull request on GitHub with:
 Vanna 2.0+ is built around several key abstractions:
 
 #### 1. **Agent** (`vanna.core.agent`)
+
 The main orchestrator that coordinates tools, memory, and LLM interactions.
 
 #### 2. **Tools** (`vanna.tools`, `vanna.core.tool`)
+
 Modular capabilities that the agent can use. Each tool:
+
 - Has a schema defining its inputs
 - Implements an `execute()` method
 - Declares access control via `access_groups`
 
 #### 3. **Tool Registry** (`vanna.core.registry`)
+
 Manages tool registration and access control.
 
 #### 4. **Agent Memory** (`vanna.capabilities.agent_memory`)
+
 Stores and retrieves tool usage patterns and documentation.
 
 #### 5. **LLM Services** (`vanna.core.llm`)
-Abstract interface for different LLM providers (Anthropic, OpenAI, etc.).
+
+Abstract interface for different LLM providers (Google Gemini, Anthropic, OpenAI, Ollama, Azure OpenAI, etc.).
 
 #### 6. **SQL Runners** (`vanna.capabilities.sql_runner`)
+
 Abstract interface for executing SQL against different databases.
 
 #### 7. **Components** (`vanna.components`)
+
 Rich UI components for rendering results (tables, charts, status cards, etc.).
 
 ### Data Flow

@@ -1,0 +1,86 @@
+name: uk_accounting
+version: "1.0.0"
+description: >
+  UK accounting skill pack. Enables questions about P&L, balance sheet,
+  VAT, HMRC reporting, and UK-specific financial terminology with GBP
+  formatting and UK date conventions.
+
+provenance:
+  author: vanna-team
+  generator_metadata:
+    method: manual
+
+intents:
+  patterns:
+    - "(?i)\\b(P&L|profit.and.loss|balance.sheet|VAT|HMRC|turnover|creditors?|debtors?)\\b"
+    - "(?i)\\b(corporation.tax|national.insurance|PAYE|dividend)\\b"
+    - "(?i)\\b(accounts?.payable|accounts?.receivable|trial.balance)\\b"
+  embedding_hints:
+    - "profit and loss statement"
+    - "balance sheet summary"
+    - "VAT return calculation"
+    - "accounts receivable aging"
+    - "corporation tax liability"
+    - "PAYE summary"
+  tool_routing_hints:
+    - "run_sql"
+
+knowledge:
+  synonyms:
+    revenue:
+      - turnover
+      - sales
+      - income
+    accounts_receivable:
+      - debtors
+      - trade debtors
+    accounts_payable:
+      - creditors
+      - trade creditors
+    profit_and_loss:
+      - P&L
+      - income statement
+    corporation_tax:
+      - CT
+      - company tax
+    VAT:
+      - value added tax
+      - sales tax
+    PAYE:
+      - pay as you earn
+    NI:
+      - national insurance
+      - NIC
+  metric_definitions:
+    gross_profit: "SUM(revenue) - SUM(cost_of_sales)"
+    net_profit: "SUM(revenue) - SUM(cost_of_sales) - SUM(operating_expenses)"
+    vat_liability: "SUM(output_vat) - SUM(input_vat)"
+    current_ratio: "SUM(current_assets) / SUM(current_liabilities)"
+  semantic_mappings: {}
+
+policies:
+  tool_allowlist: []
+  tool_denylist: []
+  required_filters:
+    - "tenant_id = :tenant_id"
+  row_redaction_rules: []
+  column_redaction_rules:
+    - "bank_account_number"
+    - "sort_code"
+    - "ni_number"
+  sql_limits:
+    read_only: true
+    max_rows: 500
+    max_runtime_seconds: 30
+    require_limit: true
+    forbid_ddl_dml: true
+
+rendering:
+  currency: GBP
+  locale: en-GB
+  date_format: "DD/MM/YYYY"
+  preferred_output_layout: table
+
+eval_suite:
+  pass_rate_threshold: 0.8
+  min_score: 0.7

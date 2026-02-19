@@ -121,3 +121,32 @@ class AgentConfig(BaseModel):
     max_tokens: Optional[int] = Field(default=None, gt=0)
     ui_features: UiFeatures = Field(default_factory=UiFeatures)
     audit_config: AuditConfig = Field(default_factory=AuditConfig)
+
+    # --- Personalization ---
+    enable_personalization: bool = Field(
+        default=False,
+        description="Master switch for personalization features (tenant default)",
+    )
+    session_memory_retention_days: int = Field(
+        default=7,
+        ge=1,
+        description="Days to retain ephemeral session memory entries",
+    )
+
+    # --- Skill Fabric ---
+    enable_skill_generation: bool = Field(
+        default=False,
+        description="Allow LLM-based skill generation (disabled by default)",
+    )
+    allow_skill_publish_roles: List[str] = Field(
+        default_factory=lambda: ["admin"],
+        description="Roles allowed to promote skills beyond draft",
+    )
+    skill_eval_required: bool = Field(
+        default=True,
+        description="Require eval suite to pass before skill promotion",
+    )
+    pack_search_paths: List[str] = Field(
+        default_factory=lambda: ["skill_packs"],
+        description="Directories where skill pack YAML files are discovered",
+    )

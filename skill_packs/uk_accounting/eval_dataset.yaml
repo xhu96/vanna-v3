@@ -1,0 +1,110 @@
+questions:
+  - question: "What is the gross profit for this financial year?"
+    constraints:
+      - "calculates revenue minus cost of sales"
+      - "applies financial year date filter"
+    expected_tool: run_sql
+    tags: [profit, financial_year]
+
+  - question: "Show the P&L summary by month"
+    constraints:
+      - "groups by month"
+      - "shows revenue, costs, and profit"
+      - "ordered chronologically"
+    expected_tool: run_sql
+    tags: [pnl, time_series]
+
+  - question: "What is our VAT liability for Q1?"
+    constraints:
+      - "calculates output VAT minus input VAT"
+      - "filters to Q1"
+    expected_tool: run_sql
+    tags: [vat, tax]
+
+  - question: "Show accounts receivable aging"
+    constraints:
+      - "groups by age bracket (30/60/90 days)"
+      - "sums outstanding amounts"
+    expected_tool: run_sql
+    tags: [debtors, aging]
+
+  - question: "What is the current ratio?"
+    constraints:
+      - "divides current assets by current liabilities"
+      - "returns ratio"
+    expected_tool: run_sql
+    tags: [balance_sheet, ratio]
+
+  - question: "Show corporation tax estimate for this year"
+    constraints:
+      - "calculates taxable profit"
+      - "applies CT rate"
+      - "filters to current year"
+    expected_tool: run_sql
+    tags: [tax, corporation_tax]
+
+  - question: "What are our top 10 creditors by amount owed?"
+    constraints:
+      - "groups by supplier/creditor"
+      - "orders by amount descending"
+      - "limits to 10"
+    expected_tool: run_sql
+    tags: [creditors, ranking]
+
+  - question: "Show the balance sheet summary"
+    constraints:
+      - "shows assets, liabilities, equity"
+      - "includes totals"
+    expected_tool: run_sql
+    tags: [balance_sheet, summary]
+
+  - question: "What is our PAYE liability this month?"
+    constraints:
+      - "references payroll or PAYE data"
+      - "filters to current month"
+    expected_tool: run_sql
+    tags: [paye, payroll]
+
+  - question: "Show turnover by quarter for this year"
+    constraints:
+      - "groups by quarter"
+      - "sums revenue/turnover"
+      - "filters to current year"
+    expected_tool: run_sql
+    tags: [turnover, quarters]
+
+  - question: "What dividends have been declared this year?"
+    constraints:
+      - "references dividend records"
+      - "filters to current year"
+      - "shows amounts and dates"
+    expected_tool: run_sql
+    tags: [dividends, corporate]
+
+  - question: "Show outstanding invoices over 90 days"
+    constraints:
+      - "filters by invoice age > 90 days"
+      - "shows customer and amount"
+    expected_tool: run_sql
+    tags: [debtors, overdue]
+
+  - question: "What is our net profit margin?"
+    constraints:
+      - "calculates net profit / revenue"
+      - "returns percentage"
+    expected_tool: run_sql
+    tags: [margin, metric]
+
+  - question: "Show national insurance contributions by employee"
+    constraints:
+      - "groups by employee"
+      - "sums NI amounts"
+    expected_tool: run_sql
+    tags: [ni, payroll]
+
+  - question: "Compare revenue this quarter vs last quarter"
+    constraints:
+      - "calculates for both quarters"
+      - "shows comparison"
+    expected_tool: run_sql
+    tags: [revenue, comparison]

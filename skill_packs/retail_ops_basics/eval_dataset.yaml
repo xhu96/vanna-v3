@@ -1,0 +1,119 @@
+questions:
+  - question: "What was the total revenue last month?"
+    constraints:
+      - "uses SUM on order_total or revenue column"
+      - "applies date filter for last month"
+      - "excludes cancelled orders"
+    expected_tool: run_sql
+    tags: [revenue, time_filter]
+
+  - question: "Show me the top 10 best-selling products"
+    constraints:
+      - "uses ORDER BY with DESC"
+      - "uses LIMIT 10"
+      - "counts or sums quantity sold"
+    expected_tool: run_sql
+    tags: [products, ranking]
+
+  - question: "How many customers placed orders this quarter?"
+    constraints:
+      - "uses COUNT with DISTINCT on customer_id"
+      - "applies date filter for current quarter"
+    expected_tool: run_sql
+    tags: [customers, time_filter]
+
+  - question: "What is the average order value?"
+    constraints:
+      - "uses AVG function"
+      - "calculates on order_total"
+      - "excludes cancelled or refunded orders"
+    expected_tool: run_sql
+    tags: [aov, metric]
+
+  - question: "Show the refund rate for the past 6 months"
+    constraints:
+      - "calculates ratio of refunded to total orders"
+      - "applies date filter"
+      - "returns percentage or ratio"
+    expected_tool: run_sql
+    tags: [refunds, metric]
+
+  - question: "What is the revenue breakdown by product category?"
+    constraints:
+      - "groups by category"
+      - "aggregates revenue"
+      - "returns multiple categories"
+    expected_tool: run_sql
+    tags: [revenue, categories]
+
+  - question: "Which customers have the highest lifetime value?"
+    constraints:
+      - "aggregates total spend per customer"
+      - "uses ORDER BY DESC"
+      - "returns top customers"
+    expected_tool: run_sql
+    tags: [customers, ranking]
+
+  - question: "Show monthly revenue trend for this year"
+    constraints:
+      - "groups by month"
+      - "aggregates revenue"
+      - "covers multiple months"
+      - "ordered chronologically"
+    expected_tool: run_sql
+    tags: [revenue, time_series]
+
+  - question: "What is the gross margin by product?"
+    constraints:
+      - "calculates (revenue - cost) / revenue"
+      - "groups by product"
+      - "returns percentage"
+    expected_tool: run_sql
+    tags: [margin, products]
+
+  - question: "How many orders were placed today?"
+    constraints:
+      - "uses COUNT"
+      - "filters to today's date"
+    expected_tool: run_sql
+    tags: [orders, time_filter]
+
+  - question: "What is the GMV (gross merchandise value) this quarter?"
+    constraints:
+      - "sums order totals"
+      - "applies quarterly date filter"
+      - "excludes cancelled orders"
+    expected_tool: run_sql
+    tags: [gmv, metric]
+
+  - question: "Which products have low inventory levels?"
+    constraints:
+      - "references inventory or stock quantity"
+      - "filters for low values or uses threshold"
+      - "returns product names"
+    expected_tool: run_sql
+    tags: [inventory, products]
+
+  - question: "Show revenue by region for Q4"
+    constraints:
+      - "groups by region or geography"
+      - "aggregates revenue"
+      - "filters to Q4"
+    expected_tool: run_sql
+    tags: [revenue, regional]
+
+  - question: "What is the customer churn rate?"
+    constraints:
+      - "identifies customers who stopped purchasing"
+      - "calculates ratio"
+      - "uses time-based comparison"
+    expected_tool: run_sql
+    tags: [churn, customers]
+
+  - question: "Compare this month's sales to last month"
+    constraints:
+      - "calculates revenue for two months"
+      - "shows comparison or delta"
+      - "uses appropriate date filters"
+    expected_tool: run_sql
+    tags: [revenue, comparison]
