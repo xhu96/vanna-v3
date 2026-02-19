@@ -135,14 +135,18 @@ sequenceDiagram
     participant W as 🌐 <vanna-chat>
     participant S as 🐍 Your Server
     participant A as 🤖 Agent
-    participant T as 🧰 Tools
+    participant LLM as 🧠 OpenRouter
+    participant T as 🧰 Tools / Skills
 
     U->>W: "Show Q4 sales"
     W->>S: POST /api/vanna/v3/chat/events (with auth)
     S->>A: User(id=alice, groups=[read_sales])
-    A->>T: Execute SQL tool (user-aware)
+    A->>T: Detect missing skill → Ad-Hoc Generate
+    A->>LLM: Formulate SQL via optimal model
+    LLM-->>A: Generated read-only SQL
+    A->>T: Execute SQL (user-aware RLS)
     T->>T: Apply row-level security
-    T->>A: Filtered results
+    T-->>A: Filtered Data Results
     A->>W: Stream: Table → Chart → Summary
     W->>U: Display beautiful UI
 ```
