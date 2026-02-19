@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .compiler import SkillCompiler
@@ -160,7 +160,7 @@ class SkillGenerator:
                 generator_metadata={
                     "method": "template",
                     "tables": tables,
-                    "generated_at": datetime.utcnow().isoformat(),
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                 },
             ),
             intents=IntentTrigger(

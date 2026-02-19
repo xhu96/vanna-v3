@@ -79,6 +79,15 @@ class ToolRegistry:
             # No access restrictions, register as-is
             self._tools[tool.name] = tool
 
+    def register(self, tool: Tool[Any], access_groups: Optional[List[str]] = None) -> None:
+        """Convenience alias for registering a tool.
+
+        Historically examples and downstream code used `ToolRegistry.register(tool)`.
+        The canonical API is `register_local_tool(tool, access_groups=...)`.
+        This helper preserves compatibility and defaults to no access restrictions.
+        """
+        self.register_local_tool(tool, access_groups or [])
+
     async def get_tool(self, name: str) -> Optional[Tool[Any]]:
         """Get a tool by name."""
         return self._tools.get(name)

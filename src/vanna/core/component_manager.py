@@ -3,7 +3,7 @@ Component state management and update protocol for rich components.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Union
 
@@ -39,7 +39,7 @@ class ComponentUpdate(BaseModel):
     component: Optional[RichComponent] = None  # New/updated component data
     updates: Optional[Dict[str, Any]] = None  # Partial updates for UPDATE operation
     position: Optional[Position] = None  # For positioning operations
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     batch_id: Optional[str] = None  # For grouping related updates
 
     def serialize_for_frontend(self) -> Dict[str, Any]:
@@ -130,7 +130,7 @@ class ComponentTree(BaseModel):
         component_data = node.component.model_dump()
         component_data.update(updates)
         component_data["lifecycle"] = ComponentLifecycle.UPDATE
-        component_data["timestamp"] = datetime.utcnow().isoformat()
+        component_data["timestamp"] = datetime.now(timezone.utc).isoformat()
 
         updated_component = node.component.__class__(**component_data)
         node.component = updated_component

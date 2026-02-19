@@ -26,6 +26,7 @@
 | Google Gemini | `vanna.integrations.google.GeminiLlmService`           | `py311-gemini`      |
 | Anthropic     | `vanna.integrations.anthropic.AnthropicLlmService`     | `py311-anthropic`   |
 | OpenAI        | `vanna.integrations.openai.OpenAILlmService`           | `py311-openai`      |
+| OpenRouter    | `vanna.integrations.openrouter.OpenRouterLlmService`   | `py311-openrouter`  |
 | Azure OpenAI  | `vanna.integrations.azureopenai.AzureOpenAILlmService` | `py311-azureopenai` |
 | Ollama        | `vanna.integrations.ollama.OllamaLlmService`           | `py311-ollama`      |
 
@@ -43,6 +44,7 @@ tox -e py311-skills
 GEMINI_API_KEY=... tox -e py311-gemini
 ANTHROPIC_API_KEY=... tox -e py311-anthropic
 OPENAI_API_KEY=... tox -e py311-openai
+OPENROUTER_API_KEY=... tox -e py311-openrouter
 
 # Database sanity tests
 tox -e py311-sqlite-sanity

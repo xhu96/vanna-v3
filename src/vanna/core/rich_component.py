@@ -6,7 +6,7 @@ for the component system.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, TypeVar
 
@@ -77,7 +77,7 @@ class RichComponent(BaseModel):
     lifecycle: ComponentLifecycle = ComponentLifecycle.CREATE
     data: Dict[str, Any] = Field(default_factory=dict)
     children: List[str] = Field(default_factory=list)  # Child component IDs
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     visible: bool = True
     interactive: bool = False
 
@@ -86,7 +86,7 @@ class RichComponent(BaseModel):
         updated_data = self.model_dump()
         updated_data.update(kwargs)
         updated_data["lifecycle"] = ComponentLifecycle.UPDATE
-        updated_data["timestamp"] = datetime.utcnow().isoformat()
+        updated_data["timestamp"] = datetime.now(timezone.utc).isoformat()
         return self.__class__(**updated_data)
 
     def hide(self: T) -> T:

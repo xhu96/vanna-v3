@@ -5,7 +5,7 @@ This module defines the UiComponent class which is the return type for tool exec
 It's placed in core/ because it's a fundamental type that tools return, not just a UI concern.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
@@ -21,7 +21,7 @@ class UiComponent(BaseModel):
     Type validation happens at runtime through validators.
     """
 
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     rich_component: Any = Field(
         ..., description="Rich component for advanced rendering"
     )

@@ -21,6 +21,16 @@ from vanna.core.llm import (
 from vanna.core.tool import ToolCall, ToolSchema
 
 
+# NOTE:
+# The unit tests patch `vanna.integrations.azureopenai.llm.AzureOpenAI`.
+# Importing at module scope keeps the integration easy to mock without
+# requiring the OpenAI SDK at import-time in all environments.
+try:  # pragma: no cover
+    from openai import AzureOpenAI as AzureOpenAI  # type: ignore
+except Exception:  # pragma: no cover
+    AzureOpenAI = None  # type: ignore
+
+
 # Models that don't support temperature and other sampling parameters
 REASONING_MODELS: Set[str] = {
     "o1",
@@ -68,13 +78,11 @@ class AzureOpenAILlmService(LlmService):
         azure_ad_token_provider: Optional[Any] = None,
         **extra_client_kwargs: Any,
     ) -> None:
-        try:
-            from openai import AzureOpenAI
-        except Exception as e:  # pragma: no cover
+        if AzureOpenAI is None:  # pragma: no cover
             raise ImportError(
                 "openai package is required. Install with: pip install 'vanna[azureopenai]' "
                 "or 'pip install openai'"
-            ) from e
+            )
 
         # Model/deployment name is required for Azure OpenAI
         self.model = model or os.getenv("AZURE_OPENAI_MODEL")

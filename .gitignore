@@ -26,3 +26,13 @@ frontends/**/static/
 frontends/**/.storybook-static/
 frontends/**/package-lock.json
 frontends/**/.mypy_cache/
+
+# Runtime artifacts
+.pytest_cache/
+query_results_*.csv
+
+# Patch Archives and Unpacked Dirs
+*.zip
+37a8eec1ce19687d/
+vanna-v3-patch/
+vanna-v3-main_Xhu_edits/

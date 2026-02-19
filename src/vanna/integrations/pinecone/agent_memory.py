@@ -81,7 +81,7 @@ class PineconeAgentMemory(AgentMemory):
         # TODO: Replace with actual embedding model
         import hashlib
 
-        hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+        hash_val = int(hashlib.sha256(text.encode()).hexdigest(), 16)
         return [(hash_val >> i) % 100 / 100.0 for i in range(self.dimension)]
 
     async def save_tool_usage(

@@ -4,7 +4,7 @@ Session memory — ephemeral, auto-expiring per-session memory.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from .models import SessionMemoryEntry
@@ -38,7 +38,7 @@ class SessionMemoryService:
             user_id=user_id,
             tenant_id=tenant_id,
             content=result.text,
-            expires_at=datetime.utcnow() + timedelta(days=self._retention_days),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=self._retention_days),
         )
         return await self._store.save(entry)
 

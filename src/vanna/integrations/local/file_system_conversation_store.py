@@ -6,14 +6,56 @@ interface that persists conversations to disk as a directory structure.
 """
 
 import json
+import logging
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 
 from vanna.core.storage import ConversationStore, Conversation, Message
 from vanna.core.user import User
+
+logger = logging.getLogger(__name__)
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    """Coerce naive datetimes to UTC.
+
+    This keeps backward compatibility with older persisted data that used
+    naive UTC timestamps.
+    """
+
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _parse_iso_datetime(value: str) -> datetime:
+    return _ensure_utc(datetime.fromisoformat(value))
+
+
+def _atomic_write_json(path: Path, payload: Dict) -> None:
+    """Atomically write JSON to disk (tempfile + replace)."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        delete=False,
+        dir=str(path.parent),
+        prefix=path.name,
+        suffix=".tmp",
+    ) as tmp:
+        json.dump(payload, tmp, indent=2)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_path = Path(tmp.name)
+
+    os.replace(tmp_path, path)
 
 
 class FileSystemConversationStore(ConversationStore):
@@ -60,8 +102,7 @@ class FileSystemConversationStore(ConversationStore):
         }
 
         metadata_path = self._get_metadata_path(conversation.id)
-        with open(metadata_path, "w") as f:
-            json.dump(metadata, f, indent=2)
+        _atomic_write_json(metadata_path, metadata)
 
     def _load_messages(self, conversation_id: str) -> List[Message]:
         """Load all messages for a conversation."""
@@ -76,12 +117,12 @@ class FileSystemConversationStore(ConversationStore):
 
         for file_path in message_files:
             try:
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 message = Message.model_validate(data)
                 messages.append(message)
             except (json.JSONDecodeError, ValueError) as e:
-                print(f"Failed to load message from {file_path}: {e}")
+                logger.warning("Failed to load message from %s: %s", file_path, e)
                 continue
 
         return messages
@@ -93,13 +134,13 @@ class FileSystemConversationStore(ConversationStore):
         messages_dir = self._get_messages_dir(conversation_id)
         messages_dir.mkdir(parents=True, exist_ok=True)
 
-        # Use timestamp + index to ensure unique, ordered filenames
-        timestamp = int(time.time() * 1000000)  # microseconds
+        # Use timestamp + index to ensure unique, ordered filenames.
+        # time_ns reduces collision risk under concurrency.
+        timestamp = time.time_ns()
         filename = f"{timestamp}_{index:06d}.json"
         file_path = messages_dir / filename
 
-        with open(file_path, "w") as f:
-            json.dump(message.model_dump(mode="json"), f, indent=2)
+        _atomic_write_json(file_path, message.model_dump(mode="json"))
 
     async def create_conversation(
         self, conversation_id: str, user: User, initial_message: str
@@ -130,7 +171,7 @@ class FileSystemConversationStore(ConversationStore):
 
         try:
             # Load metadata
-            with open(metadata_path, "r") as f:
+            with open(metadata_path, "r", encoding="utf-8") as f:
                 metadata = json.load(f)
 
             # Verify ownership
@@ -145,19 +186,19 @@ class FileSystemConversationStore(ConversationStore):
                 id=metadata["id"],
                 user=User.model_validate(metadata["user"]),
                 messages=messages,
-                created_at=datetime.fromisoformat(metadata["created_at"]),
-                updated_at=datetime.fromisoformat(metadata["updated_at"]),
+                created_at=_parse_iso_datetime(metadata["created_at"]),
+                updated_at=_parse_iso_datetime(metadata["updated_at"]),
             )
 
             return conversation
         except (json.JSONDecodeError, ValueError, KeyError) as e:
-            print(f"Failed to load conversation {conversation_id}: {e}")
+            logger.warning("Failed to load conversation %s: %s", conversation_id, e)
             return None
 
     async def update_conversation(self, conversation: Conversation) -> None:
         """Update conversation with new messages."""
         # Update the updated_at timestamp
-        conversation.updated_at = datetime.now()
+        conversation.updated_at = datetime.now(timezone.utc)
 
         # Save updated metadata
         self._save_metadata(conversation)
@@ -185,24 +226,18 @@ class FileSystemConversationStore(ConversationStore):
             return False
 
         try:
-            # Delete all message files
-            messages_dir = self._get_messages_dir(conversation_id)
-            if messages_dir.exists():
-                for file_path in messages_dir.glob("*.json"):
-                    file_path.unlink()
-                messages_dir.rmdir()
+            # Safety: ensure the directory to delete is inside base_dir.
+            conv_dir_resolved = conv_dir.resolve()
+            conv_dir_resolved.relative_to(self.base_dir.resolve())
+        except Exception:
+            logger.error("Refusing to delete path outside base_dir: %s", conv_dir)
+            return False
 
-            # Delete metadata
-            metadata_path = self._get_metadata_path(conversation_id)
-            if metadata_path.exists():
-                metadata_path.unlink()
-
-            # Delete conversation directory
-            conv_dir.rmdir()
-
+        try:
+            shutil.rmtree(conv_dir)
             return True
         except OSError as e:
-            print(f"Failed to delete conversation {conversation_id}: {e}")
+            logger.warning("Failed to delete conversation %s: %s", conversation_id, e)
             return False
 
     async def list_conversations(
@@ -225,7 +260,7 @@ class FileSystemConversationStore(ConversationStore):
 
             try:
                 # Load metadata
-                with open(metadata_path, "r") as f:
+                with open(metadata_path, "r", encoding="utf-8") as f:
                     metadata = json.load(f)
 
                 # Skip conversations not owned by this user
@@ -240,12 +275,12 @@ class FileSystemConversationStore(ConversationStore):
                     id=metadata["id"],
                     user=User.model_validate(metadata["user"]),
                     messages=messages,
-                    created_at=datetime.fromisoformat(metadata["created_at"]),
-                    updated_at=datetime.fromisoformat(metadata["updated_at"]),
+                    created_at=_parse_iso_datetime(metadata["created_at"]),
+                    updated_at=_parse_iso_datetime(metadata["updated_at"]),
                 )
                 conversations.append(conversation)
             except (json.JSONDecodeError, ValueError, KeyError) as e:
-                print(f"Failed to load conversation from {conv_dir}: {e}")
+                logger.warning("Failed to load conversation from %s: %s", conv_dir, e)
                 continue
 
         # Sort by updated_at desc

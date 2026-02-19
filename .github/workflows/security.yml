@@ -1,0 +1,61 @@
+name: Security Scans
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 03:30 UTC
+    - cron: "30 3 * * *"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  dependency-audit:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+      - name: Run pip-audit
+        run: |
+          pip-audit -r requirements.txt -f json -o pip-audit.json
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit
+          path: pip-audit.json
+
+  sast:
+    name: SAST (bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+      - name: Run bandit (high severity/confidence)
+        run: |
+          bandit -r src/vanna -q -lll -iii -f json -o bandit.json
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit
+          path: bandit.json

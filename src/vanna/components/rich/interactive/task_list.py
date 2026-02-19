@@ -1,7 +1,7 @@
 """Task list component for interactive task tracking."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from ....core.rich_component import RichComponent, ComponentType
@@ -15,7 +15,7 @@ class Task(BaseModel):
     description: Optional[str] = None
     status: str = "pending"  # "pending", "in_progress", "completed", "error"
     progress: Optional[float] = None  # 0.0 to 1.0
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     completed_at: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
@@ -53,6 +53,6 @@ class TaskListComponent(RichComponent):
         return self.update_task(
             task_id,
             status="completed",
-            completed_at=datetime.utcnow().isoformat(),
+            completed_at=datetime.now(timezone.utc).isoformat(),
             progress=1.0,
         )

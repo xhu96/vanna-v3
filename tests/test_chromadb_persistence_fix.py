@@ -10,9 +10,12 @@ import tempfile
 import shutil
 import asyncio
 
-from vanna.integrations.chromadb import ChromaAgentMemory
 from vanna.core.user import User
 from vanna.core.tool import ToolContext
+
+
+# These tests require the optional `chromadb` dependency.
+pytestmark = pytest.mark.chromadb
 
 
 @pytest.fixture

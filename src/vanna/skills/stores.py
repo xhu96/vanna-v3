@@ -5,7 +5,7 @@ Storage interfaces and in-memory implementations for the Skill Registry.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from .models import (
@@ -81,7 +81,7 @@ class InMemorySkillRegistryStore(SkillRegistryStore):
         return results
 
     async def update(self, entry: SkillRegistryEntry) -> SkillRegistryEntry:
-        entry.updated_at = datetime.utcnow()
+        entry.updated_at = datetime.now(timezone.utc)
         self._entries[entry.skill_id] = entry
         return entry
 

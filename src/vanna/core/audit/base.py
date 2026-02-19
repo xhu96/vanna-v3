@@ -274,11 +274,8 @@ class AuditLogger(ABC):
         Returns:
             Tuple of (sanitized_parameters, was_sanitized)
         """
-        sanitized = parameters.copy()
-        was_sanitized = False
-
-        # Common sensitive field patterns
-        sensitive_patterns = [
+        # Common sensitive field patterns (key-based).
+        sensitive_patterns = (
             "password",
             "secret",
             "token",
@@ -288,12 +285,52 @@ class AuditLogger(ABC):
             "auth",
             "private_key",
             "access_key",
-        ]
+        )
 
-        for key in list(sanitized.keys()):
-            key_lower = key.lower()
-            if any(pattern in key_lower for pattern in sensitive_patterns):
-                sanitized[key] = "[REDACTED]"
-                was_sanitized = True
+        def looks_like_private_key(value: Any) -> bool:
+            if not isinstance(value, str):
+                return False
+            lowered = value.lower()
+            return "-----begin" in lowered and "private key" in lowered
 
-        return sanitized, was_sanitized
+        def sanitize(value: Any, *, parent_key: Optional[str] = None) -> tuple[Any, bool]:
+            """Recursively sanitize nested structures.
+
+            Redacts:
+            - any dict field whose key matches a sensitive pattern
+            - obvious private key blobs
+            """
+            changed = False
+
+            if isinstance(value, dict):
+                out: Dict[str, Any] = {}
+                for k, v in value.items():
+                    key_lower = str(k).lower()
+                    if any(p in key_lower for p in sensitive_patterns):
+                        out[k] = "[REDACTED]"
+                        changed = True
+                        continue
+                    sv, sc = sanitize(v, parent_key=str(k))
+                    out[k] = sv
+                    changed = changed or sc
+                return out, changed
+
+            if isinstance(value, list):
+                out_list: List[Any] = []
+                for item in value:
+                    sv, sc = sanitize(item, parent_key=parent_key)
+                    out_list.append(sv)
+                    changed = changed or sc
+                return out_list, changed
+
+            if looks_like_private_key(value):
+                return "[REDACTED]", True
+
+            return value, False
+
+        sanitized_value, was_sanitized = sanitize(parameters)
+        # Top-level is expected to be a dict; keep the return type stable.
+        return (
+            sanitized_value if isinstance(sanitized_value, dict) else parameters,
+            was_sanitized,
+        )

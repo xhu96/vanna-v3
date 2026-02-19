@@ -4,7 +4,7 @@ Storage domain models.
 This module contains data models for conversation storage.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -18,7 +18,8 @@ class Message(BaseModel):
 
     role: str = Field(description="Message role (user/assistant/system/tool)")
     content: str = Field(description="Message content")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    # Use timezone-aware UTC timestamps for consistent persistence & comparison.
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: Dict[str, Any] = Field(default_factory=dict)
     tool_calls: Optional[List[ToolCall]] = Field(default=None)
     tool_call_id: Optional[str] = Field(
@@ -34,8 +35,8 @@ class Conversation(BaseModel):
     messages: List[Message] = Field(
         default_factory=list, description="Messages in conversation"
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional conversation metadata"
     )
@@ -43,4 +44,4 @@ class Conversation(BaseModel):
     def add_message(self, message: Message) -> None:
         """Add a message to the conversation."""
         self.messages.append(message)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shlex
 import sys
+from pathlib import Path
 from typing import Any, List, Optional, Sequence, Type
 
 from pydantic import BaseModel, Field
@@ -42,8 +43,30 @@ class RunPythonFileArgs(BaseModel):
 class RunPythonFileTool(Tool[RunPythonFileArgs]):
     """Execute a Python file using the provided file system service."""
 
-    def __init__(self, file_system: Optional[FileSystem] = None):
-        self.file_system = file_system or LocalFileSystem()
+    def __init__(
+        self,
+        file_system: Optional[FileSystem] = None,
+        *,
+        allow_shell: bool = False,
+        allowed_commands: Optional[Sequence[str]] = None,
+    ):
+        # Safe-by-default: shell execution is disabled unless explicitly enabled.
+        if file_system is not None:
+            self.file_system = file_system
+        else:
+            default_allowlist: Optional[List[str]] = None
+            if allow_shell and allowed_commands is None:
+                # Allow only the current interpreter by default.
+                default_allowlist = [Path(sys.executable).name]
+            final_allowlist = (
+                list(allowed_commands)
+                if allowed_commands is not None
+                else default_allowlist
+            )
+            self.file_system = LocalFileSystem(
+                allow_shell=allow_shell,
+                allowed_commands=final_allowlist,
+            )
 
     @property
     def name(self) -> str:
@@ -74,6 +97,8 @@ class RunPythonFileTool(Tool[RunPythonFileArgs]):
                 context,
                 timeout=args.timeout_seconds,
             )
+        except PermissionError as exc:
+            return _error_result(str(exc))
         except TimeoutError as exc:
             message = str(exc)
             return _error_result(message)
@@ -107,8 +132,28 @@ class PipInstallArgs(BaseModel):
 class PipInstallTool(Tool[PipInstallArgs]):
     """Install Python packages using pip inside the workspace environment."""
 
-    def __init__(self, file_system: Optional[FileSystem] = None):
-        self.file_system = file_system or LocalFileSystem()
+    def __init__(
+        self,
+        file_system: Optional[FileSystem] = None,
+        *,
+        allow_shell: bool = False,
+        allowed_commands: Optional[Sequence[str]] = None,
+    ):
+        if file_system is not None:
+            self.file_system = file_system
+        else:
+            default_allowlist: Optional[List[str]] = None
+            if allow_shell and allowed_commands is None:
+                default_allowlist = [Path(sys.executable).name]
+            final_allowlist = (
+                list(allowed_commands)
+                if allowed_commands is not None
+                else default_allowlist
+            )
+            self.file_system = LocalFileSystem(
+                allow_shell=allow_shell,
+                allowed_commands=final_allowlist,
+            )
 
     @property
     def name(self) -> str:
@@ -135,6 +180,8 @@ class PipInstallTool(Tool[PipInstallArgs]):
                 context,
                 timeout=args.timeout_seconds,
             )
+        except PermissionError as exc:
+            return _error_result(str(exc))
         except TimeoutError as exc:
             return _error_result(str(exc))
 
@@ -148,10 +195,25 @@ class PipInstallTool(Tool[PipInstallArgs]):
         return _result_from_command(summary, command, result, success=success)
 
 
-def create_python_tools(file_system: Optional[FileSystem] = None) -> List[Tool[Any]]:
+def create_python_tools(
+    file_system: Optional[FileSystem] = None,
+    *,
+    allow_shell: bool = False,
+    allowed_commands: Optional[Sequence[str]] = None,
+) -> List[Tool[Any]]:
     """Create Python-specific tools backed by a shared file system service."""
 
-    fs = file_system or LocalFileSystem()
+    default_allowlist: Optional[List[str]] = None
+    if allow_shell and allowed_commands is None:
+        default_allowlist = [Path(sys.executable).name]
+    final_allowlist = (
+        list(allowed_commands) if allowed_commands is not None else default_allowlist
+    )
+
+    fs = file_system or LocalFileSystem(
+        allow_shell=allow_shell,
+        allowed_commands=final_allowlist,
+    )
     return [
         RunPythonFileTool(fs),
         PipInstallTool(fs),

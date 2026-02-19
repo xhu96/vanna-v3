@@ -53,7 +53,13 @@ class OpenAILlmService(LlmService):
         self.model = model or os.getenv("OPENAI_MODEL", "gpt-5")
         api_key = api_key or os.getenv("OPENAI_API_KEY")
         organization = organization or os.getenv("OPENAI_ORG")
-        base_url = base_url or os.getenv("OPENAI_BASE_URL")
+        # Support common aliases used by OpenAI-compatible providers.
+        base_url = (
+            base_url
+            or os.getenv("OPENAI_BASE_URL")
+            or os.getenv("OPENAI_API_BASE")
+            or os.getenv("OPENAI_API_URL")
+        )
 
         client_kwargs: Dict[str, Any] = {**extra_client_kwargs}
         if api_key:

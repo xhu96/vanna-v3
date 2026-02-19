@@ -1,11 +1,17 @@
-"""
-OpenAI example using OpenAILlmService.
+"""OpenRouter example using OpenRouterLlmService.
 
-Loads environment from .env (via python-dotenv), uses model 'gpt-5' by default,
-and sends a simple message through a Agent.
+OpenRouter is OpenAI-compatible. This demo loads environment from .env (via
+python-dotenv if installed), then sends a simple message through an Agent.
 
 Run:
-  PYTHONPATH=. python vanna/examples/openai_quickstart.py
+  PYTHONPATH=. python vanna/examples/openrouter_quickstart.py
+
+Required env:
+  - OPENROUTER_API_KEY
+
+Recommended env:
+  - OPENROUTER_MODEL (e.g. "openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet")
+  - OPENROUTER_HTTP_REFERER, OPENROUTER_APP_TITLE
 """
 
 import asyncio
@@ -18,16 +24,15 @@ def ensure_env() -> None:
     if importlib.util.find_spec("dotenv") is not None:
         from dotenv import load_dotenv
 
-        # Load from local .env without overriding existing env
         load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"), override=False)
     else:
         print(
             "[warn] python-dotenv not installed; skipping .env load. Install with: pip install python-dotenv"
         )
 
-    if not os.getenv("OPENAI_API_KEY"):
+    if not os.getenv("OPENROUTER_API_KEY"):
         print(
-            "[error] OPENAI_API_KEY is not set. Add it to your environment or .env file."
+            "[error] OPENROUTER_API_KEY is not set. Add it to your environment or .env file."
         )
         sys.exit(1)
 
@@ -35,12 +40,11 @@ def ensure_env() -> None:
 async def main() -> None:
     ensure_env()
 
-    # Lazy import after env load to allow custom base_url/org via env
     try:
-        from vanna.integrations.openai import OpenAILlmService
-    except ImportError as e:
+        from vanna.integrations.openrouter import OpenRouterLlmService
+    except ImportError:
         print(
-            "[error] openai extra not installed. Install with: pip install -e .[openai]"
+            "[error] openrouter extra not installed. Install with: pip install -e .[openrouter]"
         )
         raise
 
@@ -48,18 +52,14 @@ async def main() -> None:
     from vanna.core.registry import ToolRegistry
     from vanna.tools import ListFilesTool
 
-    # Default to 'gpt-5' for this demo; override via $OPENAI_MODEL if desired
-    model = os.getenv("OPENAI_MODEL", "gpt-5")
-    print(f"Using OpenAI model: {model}")
+    model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    print(f"Using OpenRouter model: {model}")
 
-    llm = OpenAILlmService(model=model)
+    llm = OpenRouterLlmService(model=model)
 
-    # Create tool registry and register the list_files tool
     tool_registry = ToolRegistry()
-    list_files_tool = ListFilesTool()
-    tool_registry.register(list_files_tool)
+    tool_registry.register(ListFilesTool())
 
-    # Some models (e.g., reasoning/gpt-5) only support the default temperature=1.0
     agent = Agent(
         llm_service=llm,
         config=AgentConfig(stream_responses=False, temperature=1.0),
@@ -67,7 +67,7 @@ async def main() -> None:
     )
 
     user = User(id="demo-user", username="demo")
-    conversation_id = "openai-demo"
+    conversation_id = "openrouter-demo"
 
     print("Sending: 'List the files in the current directory'\n")
     async for component in agent.send_message(

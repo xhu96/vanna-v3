@@ -78,6 +78,24 @@ class SkillRegistry:
         )
         return await self._store.register(entry)
 
+    async def register_skill_with_compilation(
+        self,
+        spec: SkillSpec,
+        compiled_skill: Any,
+        *,
+        actor: str,
+        tenant_id: Optional[str] = None,
+    ) -> SkillRegistryEntry:
+        """Register a new draft skill and attach its compiled artifact.
+
+        This is useful for ad-hoc skill generation flows where you want the
+        skill to be immediately discoverable by the router (which requires
+        compiled_skill to be present).
+        """
+        entry = await self.register_skill(spec, actor=actor, tenant_id=tenant_id)
+        entry.compiled_skill = compiled_skill
+        return await self._store.update(entry)
+
     async def get_skill(self, skill_id: str) -> Optional[SkillRegistryEntry]:
         return await self._store.get(skill_id)
 

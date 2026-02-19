@@ -8,7 +8,7 @@ glossary entries, and ephemeral session memory. No free-form blobs.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -21,7 +21,7 @@ class Provenance(BaseModel):
     source: str = Field(
         default="api", description="Origin of the change (api, import, migration)"
     )
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserProfile(BaseModel):
@@ -78,8 +78,8 @@ class UserProfile(BaseModel):
     provenance: Optional[Provenance] = Field(
         default=None, description="Who created / last modified this profile"
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TenantProfile(BaseModel):
@@ -105,8 +105,8 @@ class TenantProfile(BaseModel):
 
     # Timestamps
     provenance: Optional[Provenance] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class GlossaryEntry(BaseModel):
@@ -137,8 +137,8 @@ class GlossaryEntry(BaseModel):
 
     # Timestamps
     provenance: Optional[Provenance] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class SessionMemoryEntry(BaseModel):
@@ -148,5 +148,5 @@ class SessionMemoryEntry(BaseModel):
     user_id: str = Field(description="User who owns this session")
     tenant_id: str = Field(description="Tenant context")
     content: str = Field(description="Session memory content (already redacted)")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: datetime = Field(description="When this memory auto-expires")

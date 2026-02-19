@@ -50,8 +50,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-logger.info("Loaded vanna.core.agent.agent module")
-
 if TYPE_CHECKING:
     pass
 
@@ -89,15 +87,15 @@ class Agent:
         user_resolver: UserResolver,
         agent_memory: AgentMemory,
         conversation_store: Optional[ConversationStore] = None,
-        config: AgentConfig = AgentConfig(),
-        system_prompt_builder: SystemPromptBuilder = DefaultSystemPromptBuilder(),
-        lifecycle_hooks: List[LifecycleHook] = [],
-        llm_middlewares: List[LlmMiddleware] = [],
+        config: Optional[AgentConfig] = None,
+        system_prompt_builder: Optional[SystemPromptBuilder] = None,
+        lifecycle_hooks: Optional[List[LifecycleHook]] = None,
+        llm_middlewares: Optional[List[LlmMiddleware]] = None,
         workflow_handler: Optional[WorkflowHandler] = None,
         error_recovery_strategy: Optional[ErrorRecoveryStrategy] = None,
-        context_enrichers: List[ToolContextEnricher] = [],
+        context_enrichers: Optional[List[ToolContextEnricher]] = None,
         llm_context_enhancer: Optional[LlmContextEnhancer] = None,
-        conversation_filters: List[ConversationFilter] = [],
+        conversation_filters: Optional[List[ConversationFilter]] = None,
         observability_provider: Optional[ObservabilityProvider] = None,
         audit_logger: Optional[AuditLogger] = None,
         semantic_planner: Optional[SemanticFirstPlanner] = None,
@@ -114,10 +112,11 @@ class Agent:
             conversation_store = MemoryConversationStore()
 
         self.conversation_store = conversation_store
-        self.config = config
-        self.system_prompt_builder = system_prompt_builder
-        self.lifecycle_hooks = lifecycle_hooks
-        self.llm_middlewares = llm_middlewares
+        # Avoid shared mutable defaults across Agent instances.
+        self.config = config or AgentConfig()
+        self.system_prompt_builder = system_prompt_builder or DefaultSystemPromptBuilder()
+        self.lifecycle_hooks = lifecycle_hooks or []
+        self.llm_middlewares = llm_middlewares or []
 
         # Use DefaultWorkflowHandler if none provided
         if workflow_handler is None:
@@ -125,14 +124,14 @@ class Agent:
         self.workflow_handler = workflow_handler
 
         self.error_recovery_strategy = error_recovery_strategy
-        self.context_enrichers = context_enrichers
+        self.context_enrichers = context_enrichers or []
 
         # Use DefaultLlmContextEnhancer if none provided
         if llm_context_enhancer is None:
             llm_context_enhancer = DefaultLlmContextEnhancer(agent_memory)
         self.llm_context_enhancer = llm_context_enhancer
 
-        self.conversation_filters = conversation_filters
+        self.conversation_filters = conversation_filters or []
         self.observability_provider = observability_provider
         self.audit_logger = audit_logger
         self.semantic_planner = semantic_planner
@@ -551,6 +550,11 @@ class Agent:
             metadata={
                 "ui_features_available": ui_features_available,
                 "lineage_collector": lineage_collector,
+                # Make the current user message available to context enrichers.
+                # This enables enrichers (e.g., skills, routing, policy) to make
+                # decisions based on the current request without changing the
+                # ToolContextEnricher interface.
+                "user_message": message,
             },
         )
 
@@ -646,6 +650,13 @@ class Agent:
         system_prompt = await self.system_prompt_builder.build_system_prompt(
             user, tool_schemas
         )
+
+        # Allow context enrichers to append additional runtime instructions
+        # (e.g., skill context, policy constraints) without changing the
+        # SystemPromptBuilder interface.
+        prompt_appendix = context.metadata.get("system_prompt_appendix")
+        if isinstance(prompt_appendix, str) and prompt_appendix.strip():
+            system_prompt = (system_prompt or "") + "\n\n" + prompt_appendix.strip()
 
         # Enforce semantic-first preference instruction when planner coverage exists.
         if planner_decision and planner_decision.route == "semantic_preferred":

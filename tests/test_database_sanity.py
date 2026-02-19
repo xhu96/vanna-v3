@@ -14,6 +14,15 @@ import pytest
 from abc import abstractmethod
 from inspect import signature, iscoroutinefunction
 import pandas as pd
+import importlib.util
+
+
+def _has_module(module: str) -> bool:
+    """Return True if an importable module spec exists."""
+    try:
+        return importlib.util.find_spec(module) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 class TestSqlRunnerInterface:
@@ -87,6 +96,10 @@ class TestRunSqlToolArgsModel:
         assert issubclass(RunSqlToolArgs, BaseModel)
 
 
+@pytest.mark.skipif(
+    not _has_module("psycopg2"),
+    reason="psycopg2 not installed (install with: pip install 'vanna[postgres]')",
+)
 class TestPostgresRunner:
     """Sanity tests for PostgresRunner implementation."""
 
@@ -324,6 +337,10 @@ class TestLegacyVannaAdapter:
         assert issubclass(LegacyVannaAdapter, ToolRegistry)
 
 
+@pytest.mark.skipif(
+    not _has_module("snowflake"),
+    reason="snowflake connector not installed (install with: pip install 'vanna[snowflake]')",
+)
 class TestSnowflakeRunner:
     """Sanity tests for SnowflakeRunner implementation."""
 
@@ -467,6 +484,10 @@ class TestSnowflakeRunner:
         assert runner.private_key_content is None
 
 
+@pytest.mark.skipif(
+    not _has_module("pymysql"),
+    reason="PyMySQL not installed (install with: pip install 'vanna[mysql]')",
+)
 class TestMySQLRunner:
     """Sanity tests for MySQLRunner implementation."""
 
@@ -501,6 +522,10 @@ class TestMySQLRunner:
         assert runner.host == "localhost"
 
 
+@pytest.mark.skipif(
+    not _has_module("clickhouse_connect"),
+    reason="clickhouse-connect not installed (install with: pip install 'vanna[clickhouse]')",
+)
 class TestClickHouseRunner:
     """Sanity tests for ClickHouseRunner implementation."""
 
@@ -535,6 +560,10 @@ class TestClickHouseRunner:
         assert runner.host == "localhost"
 
 
+@pytest.mark.skipif(
+    not _has_module("oracledb"),
+    reason="oracledb not installed (install with: pip install 'vanna[oracle]')",
+)
 class TestOracleRunner:
     """Sanity tests for OracleRunner implementation."""
 
@@ -569,6 +598,10 @@ class TestOracleRunner:
         assert runner.user == "test-user"
 
 
+@pytest.mark.skipif(
+    not _has_module("google.cloud.bigquery"),
+    reason="google-cloud-bigquery not installed (install with: pip install 'vanna[bigquery]')",
+)
 class TestBigQueryRunner:
     """Sanity tests for BigQueryRunner implementation."""
 
@@ -601,6 +634,10 @@ class TestBigQueryRunner:
         assert runner.project_id == "test-project"
 
 
+@pytest.mark.skipif(
+    not _has_module("duckdb"),
+    reason="duckdb not installed (install with: pip install 'vanna[duckdb]')",
+)
 class TestDuckDBRunner:
     """Sanity tests for DuckDBRunner implementation."""
 
@@ -641,6 +678,10 @@ class TestDuckDBRunner:
         assert runner.database_path == "/tmp/test.duckdb"
 
 
+@pytest.mark.skipif(
+    not _has_module("pyodbc"),
+    reason="pyodbc not installed (install with: pip install pyodbc)",
+)
 class TestMSSQLRunner:
     """Sanity tests for MSSQLRunner implementation."""
 
@@ -674,6 +715,10 @@ class TestMSSQLRunner:
         assert runner is not None
 
 
+@pytest.mark.skipif(
+    not _has_module("pyhive"),
+    reason="pyhive not installed (install with: pip install pyhive)",
+)
 class TestPrestoRunner:
     """Sanity tests for PrestoRunner implementation."""
 
@@ -706,6 +751,10 @@ class TestPrestoRunner:
         assert runner.host == "localhost"
 
 
+@pytest.mark.skipif(
+    not _has_module("pyhive"),
+    reason="pyhive not installed (install with: pip install pyhive)",
+)
 class TestHiveRunner:
     """Sanity tests for HiveRunner implementation."""
 

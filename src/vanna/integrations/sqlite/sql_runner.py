@@ -40,25 +40,18 @@ class SqliteRunner(SqlRunner):
             # Execute the query
             cursor.execute(args.sql)
 
-            # Determine if this is a SELECT query or modification query
-            query_type = args.sql.strip().upper().split()[0]
-
-            if query_type == "SELECT":
-                # Fetch results for SELECT queries
+            # SQLite statements like PRAGMA/EXPLAIN return result sets even though
+            # they are not "SELECT". Prefer cursor.description to detect this.
+            if cursor.description is not None:
                 rows = cursor.fetchall()
                 if not rows:
-                    # Return empty DataFrame
                     return pd.DataFrame()
+                return pd.DataFrame([dict(row) for row in rows])
 
-                # Convert rows to list of dictionaries
-                results_data = [dict(row) for row in rows]
-                return pd.DataFrame(results_data)
-            else:
-                # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
-                conn.commit()
-                rows_affected = cursor.rowcount
-                # Return a DataFrame indicating rows affected
-                return pd.DataFrame({"rows_affected": [rows_affected]})
+            # No result set -> treat as modification statement
+            conn.commit()
+            rows_affected = cursor.rowcount
+            return pd.DataFrame({"rows_affected": [rows_affected]})
 
         finally:
             cursor.close()

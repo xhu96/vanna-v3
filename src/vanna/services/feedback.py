@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
@@ -48,7 +48,7 @@ class FeedbackService:
         self, request: FeedbackRequest, context: ToolContext
     ) -> FeedbackResult:
         feedback_id = f"fb_{uuid.uuid4().hex[:10]}"
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         patched = 0
 
         provenance = {

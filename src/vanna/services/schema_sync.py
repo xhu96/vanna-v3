@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -42,7 +42,7 @@ class PortableSchemaCatalogService(SchemaCatalog):
         columns = await self._fetch_columns(context)
         schema_hash = self._compute_hash(columns)
         return SchemaSnapshot(
-            snapshot_id=f"snap_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            snapshot_id=f"snap_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
             dialect=self.dialect,
             schema_hash=schema_hash,
             columns=columns,
@@ -66,7 +66,7 @@ class PortableSchemaCatalogService(SchemaCatalog):
         if not self.cron_schedule:
             return None
 
-        now = now or datetime.utcnow()
+        now = now or datetime.now(timezone.utc)
         if not _cron_matches(self.cron_schedule, now):
             return None
 

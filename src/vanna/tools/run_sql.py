@@ -99,7 +99,19 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             # Determine query type
             query_type = args.sql.strip().upper().split()[0]
 
-            if query_type == "SELECT":
+            # Some "read" statements return result sets even when not SELECT
+            # (e.g. SQLite PRAGMA, EXPLAIN). Treat these as result-producing.
+            is_result_set_query = query_type in {
+                "SELECT",
+                "WITH",
+                "PRAGMA",
+                "EXPLAIN",
+                "SHOW",
+                "DESCRIBE",
+                "DESC",
+            }
+
+            if is_result_set_query:
                 # Handle SELECT queries with results
                 if df.empty:
                     result = "Query executed successfully. No rows returned."
@@ -166,7 +178,14 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             else:
                 # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
                 # The SqlRunner should return a DataFrame with affected row count
-                rows_affected = len(df) if not df.empty else 0
+                # Prefer explicit rows_affected column if present.
+                if not df.empty and "rows_affected" in df.columns:
+                    try:
+                        rows_affected = int(df["rows_affected"].iloc[0])
+                    except Exception:
+                        rows_affected = 0
+                else:
+                    rows_affected = 0
                 result = (
                     f"Query executed successfully. {rows_affected} row(s) affected."
                 )

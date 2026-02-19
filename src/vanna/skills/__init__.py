@@ -14,6 +14,7 @@ from .models import (
     SkillSpec,
 )
 from .stores import InMemorySkillRegistryStore, SkillRegistryStore
+from .enricher import SkillAdHocContextEnricher, SkillAdHocConfig
 
 __all__ = [
     "SkillSpec",
@@ -24,4 +25,6 @@ __all__ = [
     "SkillEnvironment",
     "SkillRegistryStore",
     "InMemorySkillRegistryStore",
+    "SkillAdHocContextEnricher",
+    "SkillAdHocConfig",
 ]

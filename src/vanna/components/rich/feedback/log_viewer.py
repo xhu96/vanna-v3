@@ -1,7 +1,7 @@
 """Log viewer component."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from ....core.rich_component import RichComponent, ComponentType
@@ -10,7 +10,7 @@ from ....core.rich_component import RichComponent, ComponentType
 class LogEntry(BaseModel):
     """Log entry for tool execution."""
 
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     level: str = "info"  # "debug", "info", "warning", "error"
     message: str
     data: Optional[Dict[str, Any]] = None

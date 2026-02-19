@@ -87,7 +87,7 @@ class FAISSAgentMemory(AgentMemory):
         """Create a simple embedding from text (placeholder)."""
         import hashlib
 
-        hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+        hash_val = int(hashlib.sha256(text.encode()).hexdigest(), 16)
         embedding = np.array(
             [(hash_val >> i) % 100 / 100.0 for i in range(self.dimension)],
             dtype=np.float32,

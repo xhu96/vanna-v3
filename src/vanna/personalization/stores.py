@@ -7,7 +7,7 @@ All stores follow the ABC pattern for pluggable backends.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from .models import GlossaryEntry, SessionMemoryEntry, TenantProfile, UserProfile
@@ -68,7 +68,7 @@ class InMemoryProfileStore(ProfileStore):
         return self._user_profiles.get((user_id, tenant_id))
 
     async def upsert_user_profile(self, profile: UserProfile) -> UserProfile:
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
         self._user_profiles[(profile.user_id, profile.tenant_id)] = profile
         return profile
 
@@ -91,7 +91,7 @@ class InMemoryProfileStore(ProfileStore):
         return self._tenant_profiles.get(tenant_id)
 
     async def upsert_tenant_profile(self, profile: TenantProfile) -> TenantProfile:
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
         self._tenant_profiles[profile.tenant_id] = profile
         return profile
 
@@ -176,7 +176,7 @@ class InMemoryGlossaryStore(GlossaryStore):
         return entry
 
     async def update_entry(self, entry: GlossaryEntry) -> GlossaryEntry:
-        entry.updated_at = datetime.utcnow()
+        entry.updated_at = datetime.now(timezone.utc)
         self._entries[entry.entry_id] = entry
         return entry
 
@@ -242,7 +242,7 @@ class InMemorySessionMemoryStore(SessionMemoryStore):
     async def get_recent(
         self, user_id: str, session_id: str, *, limit: int = 20
     ) -> List[SessionMemoryEntry]:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         results = [
             e
             for e in self._entries
@@ -254,7 +254,7 @@ class InMemorySessionMemoryStore(SessionMemoryStore):
         return results[:limit]
 
     async def cleanup_expired(self) -> int:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         before = len(self._entries)
         self._entries = [e for e in self._entries if e.expires_at > now]
         return before - len(self._entries)

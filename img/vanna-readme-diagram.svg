@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="100%" height="100%" style="background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Patterns -->
+    <pattern id="gridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.05" />
+    </pattern>
+    <pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#ffffff" fill-opacity="0.08" />
+    </pattern>
+
+    <!-- Gradients -->
+    <linearGradient id="trainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00C6FF" />
+      <stop offset="100%" stop-color="#0072FF" />
+    </linearGradient>
+
+    <linearGradient id="askGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF512F" />
+      <stop offset="100%" stop-color="#DD2476" />
+    </linearGradient>
+
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A2942" />
+      <stop offset="100%" stop-color="#0D1423" />
+    </linearGradient>
+    
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#161b29" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#0d111a" stop-opacity="0.9" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="glowTrain" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="glowAsk" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+    
+    <!-- Markers -->
+    <marker id="arrowTrain" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#00C6FF" />
+    </marker>
+    <marker id="arrowAsk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#FF512F" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#0b0f19" />
+  <rect width="100%" height="100%" fill="url(#gridPattern)" />
+  <rect width="100%" height="100%" fill="url(#dotPattern)" mask="url(#fadeMask)" />
+
+  <g transform="translate(425, 60)">
+    <!-- Logo Icon -->
+    <rect x="-20" y="-15" width="40" height="40" rx="8" fill="url(#trainGrad)" filter="url(#glowTrain)" opacity="0.15" />
+    <path d="M -10 -5 L 10 15 L 20 -5 L 12 -5 L 5 4 L -4 -5 Z" fill="#00C6FF" />
+    <path d="M -10 -5 L -4 -5 L 5 4 L 12 -5 L 20 -5 L 5 -15 Z" fill="#0072FF" />
+    <!-- Title -->
+    <text x="35" y="10" fill="#ffffff" font-size="28" font-weight="800" font-family="'Inter', sans-serif" letter-spacing="0.5">Vanna.AI</text>
+  </g>
+
+  <!-- =============================== -->
+  <!-- TRAIN PIPELINE (LEFT)           -->
+  <!-- =============================== -->
+  
+  <rect x="50" y="140" width="340" height="480" rx="24" fill="none" stroke="url(#trainGrad)" stroke-width="2" stroke-dasharray="10 10" opacity="0.4" />
+  <g transform="translate(220, 140)">
+    <rect x="-60" y="-20" width="120" height="40" rx="20" fill="#0072FF" filter="url(#glowTrain)" opacity="0.2" />
+    <text x="0" y="6" fill="#00C6FF" font-size="20" font-weight="800" text-anchor="middle" letter-spacing="1">TRAIN</text>
+  </g>
+
+  <!-- Step 1: Input Data -->
+  <g transform="translate(220, 220)" filter="url(#dropShadow)">
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="-140" y="-35" width="6" height="70" rx="3" fill="url(#trainGrad)" />
+    <text x="-115" y="-5" fill="#f8fafc" font-size="16" font-weight="600">Provide Knowledge</text>
+    <text x="-115" y="15" fill="#94a3b8" font-size="13">DDL, Docs, &amp; Prior SQL Queries</text>
+    <path d="M -125 -10 h 2 M -125 0 h 2 M -125 10 h 2" stroke="#00C6FF" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Step 2: Embeddings -->
+  <g transform="translate(220, 350)" filter="url(#dropShadow)">
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="-140" y="-35" width="6" height="70" rx="3" fill="url(#trainGrad)" />
+    <text x="-115" y="-5" fill="#f8fafc" font-size="16" font-weight="600">Generate Embeddings</text>
+    <text x="-115" y="15" fill="#94a3b8" font-size="13">Vectorize textual information</text>
+  </g>
+
+  <!-- Step 3: Store -->
+  <g transform="translate(220, 480)" filter="url(#dropShadow)">
+    <rect x="-140" y="-40" width="280" height="80" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="-140" y="-40" width="6" height="80" rx="3" fill="url(#trainGrad)" />
+    <text x="-115" y="-12" fill="#f8fafc" font-size="16" font-weight="600">Store Vectors</text>
+    <text x="-115" y="8" fill="#94a3b8" font-size="13">Save embeddings and</text>
+    <text x="-115" y="26" fill="#94a3b8" font-size="13">relevant metadata map</text>
+  </g>
+
+  <!-- Train Connecting Lines -->
+  <line x1="220" y1="255" x2="220" y2="305" stroke="#00C6FF" stroke-width="3" opacity="0.6" marker-end="url(#arrowTrain)" />
+  <line x1="220" y1="385" x2="220" y2="430" stroke="#00C6FF" stroke-width="3" opacity="0.6" marker-end="url(#arrowTrain)" />
+
+
+  <!-- =============================== -->
+  <!-- VECTOR DB (CENTER)              -->
+  <!-- =============================== -->
+  <g transform="translate(500, 480)" filter="url(#dropShadow)">
+    <path d="M -70 -40 L -70 40 A 70 20 0 0 0 70 40 L 70 -40 Z" fill="url(#dbGrad)" stroke="#1e293b" stroke-width="2" />
+    <ellipse cx="0" cy="-40" rx="70" ry="20" fill="#1e293b" stroke="#334155" stroke-width="2" />
+    <path d="M -70 -15 A 70 20 0 0 0 70 -15" fill="none" stroke="#00C6FF" stroke-width="2" opacity="0.3" />
+    <path d="M -70 10 A 70 20 0 0 0 70 10" fill="none" stroke="#FF512F" stroke-width="2" opacity="0.3" />
+    
+    <text x="0" y="5" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Vector</text>
+    <text x="0" y="27" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Database</text>
+    <!-- Cross connecting lines -->
+    <line x1="-135" y1="0" x2="-80" y2="0" stroke="#00C6FF" stroke-width="3" opacity="0.6" marker-end="url(#arrowTrain)" />
+    <line x1="80" y1="0" x2="135" y2="0" stroke="#FF512F" stroke-width="3" opacity="0.6" stroke-dasharray="6 4" marker-end="url(#arrowAsk)" />
+  </g>
+
+
+  <!-- =============================== -->
+  <!-- ASK PIPELINE (RIGHT)            -->
+  <!-- =============================== -->
+  
+  <rect x="610" y="140" width="340" height="480" rx="24" fill="none" stroke="url(#askGrad)" stroke-width="2" stroke-dasharray="10 10" opacity="0.4" />
+  <g transform="translate(780, 140)">
+    <rect x="-60" y="-20" width="120" height="40" rx="20" fill="#DD2476" filter="url(#glowAsk)" opacity="0.2" />
+    <text x="0" y="6" fill="#FF512F" font-size="20" font-weight="800" text-anchor="middle" letter-spacing="1">ASK</text>
+  </g>
+
+  <!-- Step 1: Question -->
+  <g transform="translate(780, 220)" filter="url(#dropShadow)">
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="134" y="-35" width="6" height="70" rx="3" fill="url(#askGrad)" />
+    <text x="-115" y="-5" fill="#f8fafc" font-size="16" font-weight="600">User Question</text>
+    <text x="-115" y="15" fill="#94a3b8" font-size="13">"Show top 10 customers by revenue"</text>
+    <circle cx="-120" cy="0" r="4" fill="#FF512F" />
+  </g>
+
+  <!-- Step 2: Embed Query -->
+  <g transform="translate(780, 310)" filter="url(#dropShadow)">
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="134" y="-35" width="6" height="70" rx="3" fill="url(#askGrad)" />
+    <text x="-115" y="-5" fill="#f8fafc" font-size="16" font-weight="600">Embed Question</text>
+    <text x="-115" y="15" fill="#94a3b8" font-size="13">Vectorize user intent</text>
+  </g>
+
+  <!-- Step 3: Similarity Search -->
+  <g transform="translate(780, 480)" filter="url(#dropShadow)">
+    <rect x="-140" y="-40" width="280" height="80" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="134" y="-40" width="6" height="80" rx="3" fill="url(#askGrad)" />
+    <text x="-115" y="-12" fill="#f8fafc" font-size="16" font-weight="600">Retrieve Context</text>
+    <text x="-115" y="8" fill="#94a3b8" font-size="13">Find relative matching DDL, docs,</text>
+    <text x="-115" y="26" fill="#94a3b8" font-size="13">and historical reference SQL</text>
+  </g>
+
+  <!-- Step 4: LLM Generation -->
+  <g transform="translate(780, 580)" filter="url(#dropShadow)">
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#cardGrad)" stroke="#1f2937" stroke-width="2" />
+    <rect x="-140" y="-35" width="280" height="70" rx="16" fill="url(#askGrad)" opacity="0.1" />
+    <rect x="134" y="-35" width="6" height="70" rx="3" fill="url(#askGrad)" />
+    <text x="-115" y="-5" fill="#f8fafc" font-size="16" font-weight="600">LLM Generation</text>
+    <text x="-115" y="15" fill="#94a3b8" font-size="13">Inject context into prompt &amp; execute</text>
+    
+    <!-- LLM Icon shape -->
+    <path d="M 110 -10 L 120 -10 L 120 10 L 110 10 Z" fill="#FF512F" opacity="0.5"/>
+  </g>
+  
+  <rect x="420" y="555" width="160" height="50" rx="25" fill="#ffffff" filter="url(#dropShadow)" />
+  <text x="500" y="587" fill="#0b0f19" font-size="20" font-weight="800" text-anchor="middle">Valid SQL</text>
+
+  <!-- Ask Connecting Lines -->
+  <line x1="780" y1="255" x2="780" y2="265" stroke="#FF512F" stroke-width="3" opacity="0.6" marker-end="url(#arrowAsk)" />
+  <line x1="780" y1="345" x2="780" y2="430" stroke="#FF512F" stroke-width="3" opacity="0.6" marker-end="url(#arrowAsk)" />
+  <line x1="780" y1="520" x2="780" y2="535" stroke="#FF512F" stroke-width="3" opacity="0.6" marker-end="url(#arrowAsk)" />
+  <line x1="640" y1="580" x2="590" y2="580" stroke="#FF512F" stroke-width="4" marker-end="url(#arrowAsk)" />
+
+</svg>

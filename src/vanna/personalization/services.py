@@ -6,7 +6,7 @@ All operations enforce RBAC, PII redaction, and audit logging.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .models import GlossaryEntry, Provenance, TenantProfile, UserProfile
@@ -85,7 +85,7 @@ class ProfileService:
             setattr(profile, tag_list_attr, cleaned)
 
         # Set provenance before policy check
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
         if profile.provenance is None:
             profile.provenance = Provenance(
                 author=requesting_user_id, source="api"
@@ -144,7 +144,7 @@ class ProfileService:
     ) -> TenantProfile:
         if not self._is_admin(requesting_user_groups or []):
             raise AuthorizationError("Tenant profile updates require admin role")
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(timezone.utc)
         return await self._store.upsert_tenant_profile(profile)
 
 
@@ -227,7 +227,7 @@ class GlossaryService:
         r = redact_pii(entry.definition)
         entry.definition = r.text
         entry.synonyms = [redact_pii(s).text for s in entry.synonyms]
-        entry.updated_at = datetime.utcnow()
+        entry.updated_at = datetime.now(timezone.utc)
         return await self._store.update_entry(entry)
 
     async def delete_entry(
@@ -272,7 +272,7 @@ class ConsentManager:
             )
         else:
             profile.personalization_enabled = True
-            profile.updated_at = datetime.utcnow()
+            profile.updated_at = datetime.now(timezone.utc)
         return await self._store.upsert_user_profile(profile)
 
     async def disable_personalization(
@@ -289,7 +289,7 @@ class ConsentManager:
             )
         else:
             profile.personalization_enabled = False
-            profile.updated_at = datetime.utcnow()
+            profile.updated_at = datetime.now(timezone.utc)
         return await self._store.upsert_user_profile(profile)
 
     async def is_enabled(self, user_id: str, tenant_id: str) -> bool:

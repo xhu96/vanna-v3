@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -18,7 +18,7 @@ class SchemaColumn(BaseModel):
 
 class SchemaSnapshot(BaseModel):
     snapshot_id: str
-    captured_at: datetime = Field(default_factory=datetime.utcnow)
+    captured_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     dialect: str = "unknown"
     schema_hash: str
     columns: List[SchemaColumn] = Field(default_factory=list)

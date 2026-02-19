@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -45,7 +45,7 @@ class SkillProvenance(BaseModel):
         default=None,
         description="Metadata from the generator (model, prompt hash, etc.)",
     )
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class IntentTrigger(BaseModel):
@@ -215,7 +215,7 @@ class CompiledSkill(BaseModel):
     skill_spec_hash: str = Field(
         description="SHA-256 of the canonical SkillSpec JSON"
     )
-    compiled_at: datetime = Field(default_factory=datetime.utcnow)
+    compiled_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     version: str = Field(description="SkillSpec version at compilation time")
 
     # Pre-computed indices
@@ -258,7 +258,7 @@ class SkillAuditEntry(BaseModel):
 
     action: str = Field(description="e.g. created, promoted, disabled, deleted")
     actor: str = Field(description="User who performed the action")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     from_env: Optional[SkillEnvironment] = None
     to_env: Optional[SkillEnvironment] = None
     details: Dict[str, Any] = Field(default_factory=dict)
@@ -278,5 +278,5 @@ class SkillRegistryEntry(BaseModel):
     tenant_id: Optional[str] = None
     created_by: str = Field(default="system")
     audit_log: List[SkillAuditEntry] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

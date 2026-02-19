@@ -7,6 +7,7 @@ The tools accept a FileSystem instance via dependency injection.
 """
 
 import asyncio
+import shlex
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -123,13 +124,21 @@ class FileSystem(ABC):
 class LocalFileSystem(FileSystem):
     """Local file system implementation with per-user isolation."""
 
-    def __init__(self, working_directory: str = "."):
+    def __init__(
+        self,
+        working_directory: str = ".",
+        *,
+        allow_shell: bool = False,
+        allowed_commands: Optional[List[str]] = None,
+    ):
         """Initialize with a working directory.
 
         Args:
             working_directory: Base directory where user-specific folders will be created
         """
         self.working_directory = Path(working_directory)
+        self.allow_shell = allow_shell
+        self.allowed_commands = [c.strip() for c in (allowed_commands or []) if c.strip()]
 
     def _get_user_directory(self, context: ToolContext) -> Path:
         """Get the user-specific directory by hashing the user ID.
@@ -164,7 +173,7 @@ class LocalFileSystem(FileSystem):
 
         # Ensure the path is within the user's directory (prevent directory traversal)
         try:
-            resolved.resolve().relative_to(user_dir.resolve())
+            resolved.resolve(strict=False).relative_to(user_dir.resolve(strict=False))
         except ValueError:
             raise PermissionError(
                 f"Access denied: path '{path}' is outside user directory"
@@ -307,13 +316,36 @@ class LocalFileSystem(FileSystem):
     ) -> CommandResult:
         """Execute a bash command within the user's isolated space."""
 
+        if not self.allow_shell:
+            raise PermissionError(
+                "Shell execution is disabled for this FileSystem instance. "
+                "Instantiate LocalFileSystem(allow_shell=True, allowed_commands=[...]) "
+                "or provide a sandboxed FileSystem implementation."
+            )
+
+        if not self.allowed_commands:
+            raise PermissionError(
+                "Shell execution requires an explicit allowed_commands allowlist. "
+                "For example: LocalFileSystem(allow_shell=True, allowed_commands=['python3'])."
+            )
+
         if not command.strip():
             raise ValueError("Command must not be empty")
 
+        args = shlex.split(command)
+        if not args:
+            raise ValueError("Command must not be empty")
+
+        executable = Path(args[0]).name
+        if executable not in self.allowed_commands:
+            raise PermissionError(
+                f"Command '{executable}' is not in the allowed_commands allowlist"
+            )
+
         user_dir = self._get_user_directory(context)
 
-        process = await asyncio.create_subprocess_shell(
-            command,
+        process = await asyncio.create_subprocess_exec(
+            *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=str(user_dir),
