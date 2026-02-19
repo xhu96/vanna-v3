@@ -28,25 +28,20 @@ from vanna import (
     ToolResult,
     User,
     UiComponent,
-)
-from vanna.core.interfaces import LlmService
-from vanna.core.models import (
+    LlmService,
     LlmRequest,
     LlmResponse,
     LlmStreamChunk,
     ToolCall,
     ToolSchema,
-)
-from vanna.core.rich_components import (
     CardComponent,
     NotificationComponent,
-    ComponentType,
-)
-from vanna.core.simple_components import (
     SimpleTextComponent,
 )
 from vanna.tools import RunSqlTool
 from vanna.integrations.sqlite import SqliteRunner
+from vanna.agents.basic import SimpleUserResolver, SimpleAgentMemory
+from vanna.core.user.request_context import RequestContext
 
 
 class MockSqliteLlmService(LlmService):
@@ -131,7 +126,7 @@ def create_demo_agent() -> Agent:
     """
     # Get the path to the Chinook database
     database_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "Chinook.sqlite"
+        os.path.dirname(__file__), "..", "..", "..", "response.sqlite"
     )
     database_path = os.path.abspath(database_path)
 
@@ -143,13 +138,17 @@ def create_demo_agent() -> Agent:
     tool_registry = ToolRegistry()
     sqlite_runner = SqliteRunner(database_path=database_path)
     sql_tool = RunSqlTool(sql_runner=sqlite_runner)
-    tool_registry.register(sql_tool)
+    tool_registry.register_local_tool(sql_tool, access_groups=[])
 
     llm_service = MockSqliteLlmService()
+    user_resolver = SimpleUserResolver()
+    agent_memory = SimpleAgentMemory()
 
     return Agent(
         llm_service=llm_service,
         tool_registry=tool_registry,
+        user_resolver=user_resolver,
+        agent_memory=agent_memory,
         config=AgentConfig(
             stream_responses=False,
             include_thinking_indicators=False,
@@ -165,7 +164,7 @@ async def main() -> None:
     tool_registry = agent.tool_registry
 
     # Create a test user
-    user = User(id="user123", username="testuser", permissions=[])
+    user = User(id="user123", username="testuser", group_memberships=[])
 
     # Test the tool directly
     print("Testing SQL tool directly:")
@@ -175,7 +174,12 @@ async def main() -> None:
         arguments={"sql": "SELECT name FROM sqlite_master WHERE type='table'"},
     )
 
-    context = ToolContext(user=user, conversation_id="test", request_id="test")
+    context = ToolContext(
+        user=user,
+        conversation_id="test",
+        request_id="test",
+        agent_memory=agent.agent_memory,
+    )
 
     result = await tool_registry.execute(tool_call, context)
     print(
@@ -192,12 +196,13 @@ async def main() -> None:
     print("=" * 50)
 
     conversation_id = "sqlite-demo"
+    request_context = RequestContext()
 
     # Run multiple queries to show different results
     for i in range(3):
         print(f"\n--- Query {i + 1} ---")
         async for component in agent.send_message(
-            user=user,
+            request_context=request_context,
             message=f"Show me some data from the database (query {i + 1})",
             conversation_id=conversation_id,
         ):
