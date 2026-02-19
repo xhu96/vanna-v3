@@ -1,21 +1,21 @@
-# Vanna 3.0: Turn Questions into Data Insights
+# Vanna 3: Turn Questions into Data Insights
 
-**Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, and feedback loops.
+**Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, ad-hoc skill generation, and feedback loops.
 
 > [!IMPORTANT]
-> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. This fork builds v3.0 on top of the upstream v2.0.2 release, adding production-grade security, observability, and reliability features. The upstream project is maintained by the Vanna team at [vanna-ai/vanna](https://github.com/vanna-ai/vanna).
+> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. This fork builds v3 on top of the upstream v2.0.2 release, adding production-grade security, observability, and reliability features. The upstream project is maintained by the Vanna team at [vanna-ai/vanna](https://github.com/vanna-ai/vanna).
 
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230.svg)](https://github.com/astral-sh/ruff)
 
 https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
-![Vanna Architecture](img/architecture.png)
+![Vanna Architecture](img/architecture.svg)
 
 ---
 
-## What's New in 3.0
+## What's New in 3
 
 🛡️ **Secure-by-Default** — No LLM-generated Python `exec()` for charts; read-only SQL policy; auth middleware templates
 
@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
 > **Upgrading from 0.x → 2.0?** See the [Migration Guide](MIGRATION_GUIDE.md)
 >
-> **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
+> **Upgrading from 2.0 → 3?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
 
 ---
 
@@ -83,7 +83,7 @@ All streamed in real-time to your web component.
 
 ---
 
-## Why Vanna 3.0?
+## Why Vanna 3?
 
 ### ✅ Get Started Instantly
 
@@ -123,7 +123,7 @@ All streamed in real-time to your web component.
 
 ## Architecture
 
-![Vanna 3.0 Architecture](img/vanna3.svg)
+![Vanna 3 Architecture](img/vanna3.svg)
 
 ---
 
@@ -262,7 +262,7 @@ tools.register(EmailTool())
 
 ## Advanced Features
 
-Vanna 3.0 includes powerful enterprise features for production use:
+Vanna 3 includes powerful enterprise features for production use:
 
 **Lifecycle Hooks** — Add quota checking, custom logging, content filtering at key points in the request lifecycle
 
@@ -352,9 +352,9 @@ Features: PII redaction (5 types), explicit consent, data export/delete, session
 
 Vanna 2.0+ is a complete rewrite focused on user-aware agents and production deployments. See the [0.x → 2.0 Migration Guide](MIGRATION_GUIDE.md).
 
-**Upgrading from Vanna 2.x to 3.0?**
+**Upgrading from Vanna 2.x to 3?**
 
-Vanna 3.0 is an incremental evolution — v2 routes and `LegacyVannaAdapter` remain fully available. Key additions:
+Vanna 3 is an incremental evolution — v2 routes and `LegacyVannaAdapter` remain fully available. Key additions:
 
 - **Secure-by-default**: No Python `exec()` for charts, read-only SQL policy
 - **Declarative charts**: `ChartSpec` replaces code execution
