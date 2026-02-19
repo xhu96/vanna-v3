@@ -79,8 +79,8 @@
     <!-- Title -->
     <text x="75" y="38" fill="#ffffff" font-size="38" font-weight="800" letter-spacing="0.5">Vanna.AI <tspan fill="#94a3b8" font-size="28" font-weight="500">Architecture</tspan></text>
   </g>
-  <rect x="1330" y="40" width="210" height="46" rx="23" fill="#1e293b" stroke="#334155" stroke-width="2" />
-  <text x="1435" y="70" fill="#38ef7d" font-family="'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" text-anchor="middle">pip install vanna</text>
+  <rect x="1300" y="40" width="240" height="46" rx="23" fill="#1e293b" stroke="#334155" stroke-width="2" />
+  <text x="1420" y="70" fill="#38ef7d" font-family="'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="600" text-anchor="middle">git clone xhu96/vanna-v3</text>
 
   <!-- ======================== -->
   <!-- LEFT COLUMN (Client)   -->
