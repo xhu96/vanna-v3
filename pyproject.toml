@@ -90,6 +90,7 @@ exclude = [
     "frontends/",
     "tests/",
     "notebooks/",
+    "skill_packs/",
     ".github/",
     "tox.ini",
 ]
@@ -111,6 +112,8 @@ markers = [
     "slow: marks tests as slow running",
     "postgres: marks tests requiring PostgreSQL",
     "mysql: marks tests requiring MySQL",
+    "personalization: marks tests for personalization subsystem",
+    "skills: marks tests for skill fabric subsystem",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",

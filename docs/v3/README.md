@@ -6,6 +6,19 @@
 - Migration guide: `docs/v3/migration-v2-to-v3.md`
 - Contributing & testing: `CONTRIBUTING.md`
 
+### Personalization & Profiles
+
+- Personalization overview: `docs/v3/personalization.md`
+- Glossary & ontology: `docs/v3/glossary.md`
+
+### Skill Fabric
+
+- SkillSpec reference: `docs/v3/skillspec-reference.md`
+- Skill lifecycle & governance: `docs/v3/skill-lifecycle.md`
+- Skill generation guide: `docs/v3/skill-generation.md`
+- Manual skill authoring: `docs/v3/skill-authoring.md`
+- Threat model: `docs/v3/threat-model.md`
+
 ## Supported LLM Providers
 
 | Provider      | Integration                                            | Tox Environment     |
@@ -21,6 +34,10 @@
 ```bash
 # All unit tests (no external dependencies)
 tox -e py311-unit && tox -e py311-v3-unit
+
+# Personalization & skill fabric tests
+tox -e py311-personalization
+tox -e py311-skills
 
 # LLM integration tests (require API keys)
 GEMINI_API_KEY=... tox -e py311-gemini

@@ -178,6 +178,22 @@ Tests are organized in the `tests/` directory by category:
 - `test_database_sanity.py` - Database runner sanity checks
 - `test_legacy_adapter.py` - Legacy v2 compatibility tests
 
+**Personalization:**
+
+- `test_personalization_models.py` - User/tenant profile model validation
+- `test_profile_service.py` - Profile/glossary CRUD, RBAC, consent
+- `test_pii_redaction.py` - PII detection and storage policy
+- `test_preference_resolver.py` - Preference injection into system prompt
+
+**Skill Fabric:**
+
+- `test_skill_models.py` - SkillSpec, CompiledSkill model validation
+- `test_skill_compiler.py` - Deterministic compiler validation rules
+- `test_skill_registry.py` - Skill lifecycle, promotion, rollback, RBAC
+- `test_skill_router.py` - Skill matching, context merging
+- `test_skill_generator.py` - Template/LLM generation, safety guarantees
+- `test_e2e_personalization_skills.py` - Full pipeline integration test
+
 ### Running Tests
 
 ```bash
@@ -196,6 +212,12 @@ pytest tests/ -v -m anthropic
 
 # Run Gemini integration tests
 tox -e py311-gemini
+
+# Run personalization tests
+tox -e py311-personalization
+
+# Run skill fabric tests
+tox -e py311-skills
 
 # Run legacy adapter tests
 tox -e py311-legacy

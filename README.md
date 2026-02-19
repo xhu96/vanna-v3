@@ -33,6 +33,10 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
 ⚡ **Typed Streaming Events** — Versioned SSE/poll event contract (`v3`) with namespaced API routes
 
+🧩 **Declarative Skill Fabric** — Versioned, reviewable, testable skill packs that extend agent capabilities without code
+
+👤 **Privacy-Safe Personalization** — Tenant/user profiles, glossary injection, PII redaction, and explicit consent
+
 > **Upgrading from 0.x → 2.0?** See the [Migration Guide](MIGRATION_GUIDE.md)
 >
 > **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
@@ -282,6 +286,42 @@ Vanna 3.0 includes powerful enterprise features for production use:
 
 **Agent Configuration** — Control streaming, temperature, max iterations, and more
 
+### 🧩 Skill Fabric
+
+Declarative skill packs extend agent capabilities without code or elevated permissions:
+
+```yaml
+# skill_packs/retail_ops_basics/skill.yaml
+name: retail_ops_basics
+version: "1.0.0"
+knowledge:
+  synonyms:
+    revenue: [sales, turnover]
+  metric_definitions:
+    GMV: "SUM(order_total) WHERE status != 'cancelled'"
+policies:
+  required_filters: ["tenant_id = :tenant_id"]
+  sql_limits:
+    read_only: true
+    forbid_ddl_dml: true
+```
+
+Skills follow a **governed lifecycle**: `draft → tested → approved → default` with RBAC, eval gates, and full audit logging. Two sample packs are included: `retail_ops_basics` and `uk_accounting`.
+
+### 👤 Personalization
+
+Privacy-safe user/tenant preferences injected deterministically into the system prompt:
+
+```python
+from vanna.personalization.preference_resolver import PreferenceResolverEnhancer
+
+# Enhancer merges tenant defaults + user overrides + approved glossary terms
+enhancer = PreferenceResolverEnhancer(profile_store, glossary_store)
+agent = Agent(..., context_enhancers=[enhancer])
+```
+
+Features: PII redaction (5 types), explicit consent, data export/delete, session memory with TTL.
+
 ---
 
 ## Use Cases
@@ -339,6 +379,13 @@ See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
 - 🔀 [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
 - 📘 [Golden-Path Examples](examples/v3/)
 - 📖 [Upstream Vanna Docs](https://vanna.ai/docs)
+- 👤 [Personalization Guide](docs/v3/personalization.md)
+- 📚 [Glossary & Ontology](docs/v3/glossary.md)
+- 🧩 [SkillSpec Reference](docs/v3/skillspec-reference.md)
+- 🔄 [Skill Lifecycle & Governance](docs/v3/skill-lifecycle.md)
+- ⚙️ [Skill Generation Guide](docs/v3/skill-generation.md)
+- ✍️ [Manual Skill Authoring](docs/v3/skill-authoring.md)
+- 🔒 [Threat Model](docs/v3/threat-model.md)
 
 ---
 

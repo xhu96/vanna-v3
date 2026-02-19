@@ -1,0 +1,29 @@
+# Core dependencies (from pyproject.toml)
+pydantic>=2.0.0
+click>=8.0.0
+pandas
+httpx>=0.28.0
+PyYAML
+plotly
+tabulate
+sqlparse
+sqlalchemy
+requests
+jsonschema
+
+# Server
+fastapi>=0.68.0
+uvicorn>=0.15.0
+
+# Development & Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+pytest-cov>=4.0.0
+tox>=4.0.0
+mypy
+ruff
+pandas-stubs
+types-PyYAML
+types-requests
+types-tabulate
