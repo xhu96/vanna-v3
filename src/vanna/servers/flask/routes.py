@@ -85,6 +85,56 @@ def register_chat_routes(
             "schema_snapshot_id": latest.snapshot_id,
         }
 
+    def _run_scheduled_schema_sync(
+        request_context: RequestContext,
+        *,
+        conversation_id: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> None:
+        service = config.get("schema_sync_service")
+        if service is None:
+            return
+
+        tool_context = _build_tool_context(request_context)
+        if conversation_id:
+            tool_context.conversation_id = conversation_id
+        if request_id:
+            tool_context.request_id = request_id
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(service.run_scheduled_sync_if_due(tool_context))
+        except Exception:
+            traceback.print_stack()
+            traceback.print_exc()
+        finally:
+            loop.close()
+
+    def _prepare_chat_request(data: Dict[str, Any]) -> ChatRequest:
+        request_context = RequestContext(
+            cookies=dict(request.cookies),
+            headers=dict(request.headers),
+            remote_addr=request.remote_addr,
+            query_params=dict(request.args),
+            metadata=dict(data.get("metadata", {})),
+        )
+        data["request_context"] = request_context
+        chat_request = ChatRequest(**data)
+        _run_request_guard(chat_request, request_context)
+        _run_scheduled_schema_sync(
+            request_context,
+            conversation_id=chat_request.conversation_id,
+            request_id=chat_request.request_id,
+        )
+        merged_metadata = {
+            **chat_request.metadata,
+            **_load_schema_metadata_sync(),
+        }
+        chat_request.metadata = merged_metadata
+        request_context.metadata = merged_metadata
+        return chat_request
+
     if enable_default_ui_route:
 
         @app.route("/")
@@ -108,22 +158,7 @@ def register_chat_routes(
             data = request.get_json()
             if not data:
                 return jsonify({"error": "JSON body required"}), 400
-            data["metadata"] = {
-                **data.get("metadata", {}),
-                **_load_schema_metadata_sync(),
-            }
-
-            # Extract request context for user resolution
-            data["request_context"] = RequestContext(
-                cookies=dict(request.cookies),
-                headers=dict(request.headers),
-                remote_addr=request.remote_addr,
-                query_params=dict(request.args),
-                metadata=data.get("metadata", {}),
-            )
-
-            chat_request = ChatRequest(**data)
-            _run_request_guard(chat_request, chat_request.request_context)
+            chat_request = _prepare_chat_request(data)
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()
@@ -168,20 +203,7 @@ def register_chat_routes(
             data = request.get_json()
             if not data:
                 return jsonify({"error": "JSON body required"}), 400
-            data["metadata"] = {
-                **data.get("metadata", {}),
-                **_load_schema_metadata_sync(),
-            }
-
-            data["request_context"] = RequestContext(
-                cookies=dict(request.cookies),
-                headers=dict(request.headers),
-                remote_addr=request.remote_addr,
-                query_params=dict(request.args),
-                metadata=data.get("metadata", {}),
-            )
-            chat_request = ChatRequest(**data)
-            _run_request_guard(chat_request, chat_request.request_context)
+            chat_request = _prepare_chat_request(data)
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()
@@ -234,20 +256,7 @@ def register_chat_routes(
             data = request.get_json()
             if not data:
                 return jsonify({"error": "JSON body required"}), 400
-            data["metadata"] = {
-                **data.get("metadata", {}),
-                **_load_schema_metadata_sync(),
-            }
-
-            data["request_context"] = RequestContext(
-                cookies=dict(request.cookies),
-                headers=dict(request.headers),
-                remote_addr=request.remote_addr,
-                query_params=dict(request.args),
-                metadata=data.get("metadata", {}),
-            )
-            chat_request = ChatRequest(**data)
-            _run_request_guard(chat_request, chat_request.request_context)
+            chat_request = _prepare_chat_request(data)
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()
@@ -390,22 +399,7 @@ def register_chat_routes(
             data = request.get_json()
             if not data:
                 return jsonify({"error": "JSON body required"}), 400
-            data["metadata"] = {
-                **data.get("metadata", {}),
-                **_load_schema_metadata_sync(),
-            }
-
-            # Extract request context for user resolution
-            data["request_context"] = RequestContext(
-                cookies=dict(request.cookies),
-                headers=dict(request.headers),
-                remote_addr=request.remote_addr,
-                query_params=dict(request.args),
-                metadata=data.get("metadata", {}),
-            )
-
-            chat_request = ChatRequest(**data)
-            _run_request_guard(chat_request, chat_request.request_context)
+            chat_request = _prepare_chat_request(data)
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()

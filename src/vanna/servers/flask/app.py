@@ -11,6 +11,7 @@ from flask_cors import CORS
 from ...core import Agent
 from ..base import ChatHandler
 from .routes import register_chat_routes
+from .lineage_routes import register_lineage_routes
 
 
 class VannaFlaskServer:
@@ -69,6 +70,17 @@ class VannaFlaskServer:
 
         # Register routes
         register_chat_routes(app, self.chat_handler, self.config)
+        register_lineage_routes(app, self.chat_handler)
+
+        # --- Personalization (opt-in) ---
+        personalization_config = self.config.get("personalization")
+        if personalization_config is not None:
+            self._register_personalization_routes(app, personalization_config)
+
+        # --- Skills (opt-in) ---
+        skills_config = self.config.get("skills")
+        if skills_config is not None:
+            self._register_skill_routes(app, skills_config)
 
         # Add health check
         @app.route("/health")
@@ -76,6 +88,45 @@ class VannaFlaskServer:
             return {"status": "healthy", "service": "vanna"}
 
         return app
+
+    def _register_personalization_routes(self, app: Flask, personalization_config: Dict[str, Any]) -> None:
+        from vanna.personalization.stores import InMemoryProfileStore, InMemoryGlossaryStore
+        from vanna.personalization.services import ProfileService, GlossaryService, ConsentManager
+        from .personalization_routes import register_personalization_routes
+
+        profile_store = personalization_config.get("profile_store") or InMemoryProfileStore()
+        glossary_store = personalization_config.get("glossary_store") or InMemoryGlossaryStore()
+        admin_roles = personalization_config.get("admin_roles")
+
+        profile_service = personalization_config.get("profile_service") or ProfileService(profile_store, admin_roles=admin_roles)
+        glossary_service = personalization_config.get("glossary_service") or GlossaryService(glossary_store, admin_roles=admin_roles)
+        consent_manager = personalization_config.get("consent_manager") or ConsentManager(profile_store)
+
+        register_personalization_routes(
+            app, profile_service, glossary_service, consent_manager,
+            user_resolver=self.agent.user_resolver,
+        )
+
+    def _register_skill_routes(self, app: Flask, skills_config: Dict[str, Any]) -> None:
+        from vanna.skills.stores import InMemorySkillRegistryStore
+        from vanna.skills.registry import SkillRegistry
+        from vanna.skills.compiler import SkillCompiler
+        from vanna.skills.approval import ApprovalWorkflow
+        from vanna.skills.generator import SkillGenerator
+        from .skill_routes import register_skill_routes
+
+        skill_store = skills_config.get("store") or InMemorySkillRegistryStore()
+        publish_roles = skills_config.get("publish_roles")
+
+        registry = skills_config.get("registry") or SkillRegistry(skill_store, publish_roles=publish_roles)
+        compiler = skills_config.get("compiler") or SkillCompiler()
+        approval_workflow = skills_config.get("approval_workflow") or ApprovalWorkflow(registry, compiler)
+        generator = skills_config.get("generator") or SkillGenerator(compiler=compiler)
+
+        register_skill_routes(
+            app, registry, compiler, approval_workflow, generator,
+            user_resolver=self.agent.user_resolver,
+        )
 
     def run(self, **kwargs: Any) -> None:
         """Run the Flask server.

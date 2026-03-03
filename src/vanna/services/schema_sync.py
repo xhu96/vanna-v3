@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -23,6 +24,9 @@ from vanna.core.tool import ToolContext
 
 class PortableSchemaCatalogService(SchemaCatalog):
     """Schema catalog implementation using portable SQL catalog queries."""
+
+    _TABLE_MEMORY_LIMIT = 100
+    _TABLE_MEMORY_CHUNK_SIZE = 25
 
     def __init__(
         self,
@@ -55,7 +59,7 @@ class PortableSchemaCatalogService(SchemaCatalog):
         self._persist_snapshot(current)
 
         if diff.has_drift:
-            await self._patch_memory_for_drift(context, diff)
+            await self._patch_memory_for_drift(context, current, diff)
 
         return SchemaSyncResult(snapshot=current, diff=diff)
 
@@ -84,7 +88,6 @@ class PortableSchemaCatalogService(SchemaCatalog):
         return SchemaSnapshot.model_validate(payload["snapshot"])
 
     async def _fetch_columns(self, context: ToolContext) -> List[SchemaColumn]:
-        # Portable baseline query for most warehouse/OLTP engines.
         info_schema_sql = """
             SELECT
                 table_schema AS schema_name,
@@ -105,7 +108,6 @@ class PortableSchemaCatalogService(SchemaCatalog):
             if not df.empty:
                 return self._columns_from_dataframe(df)
         except Exception:
-            # Continue to sqlite fallback for engines without information_schema.
             pass
 
         return await self._fetch_sqlite_columns(context)
@@ -190,10 +192,25 @@ class PortableSchemaCatalogService(SchemaCatalog):
     def _column_key(self, column: SchemaColumn) -> Tuple[str, str, str]:
         return (column.schema_name or "", column.table_name, column.column_name)
 
+    def _table_key(self, column: SchemaColumn) -> Tuple[str, str]:
+        return (column.schema_name or "", column.table_name)
+
     def _to_index(
         self, columns: Iterable[SchemaColumn]
     ) -> Dict[Tuple[str, str, str], SchemaColumn]:
         return {self._column_key(column): column for column in columns}
+
+    def _group_columns_by_table(
+        self, columns: Iterable[SchemaColumn]
+    ) -> DefaultDict[Tuple[str, str], List[SchemaColumn]]:
+        grouped: DefaultDict[Tuple[str, str], List[SchemaColumn]] = defaultdict(list)
+        for column in columns:
+            grouped[self._table_key(column)].append(column)
+
+        for grouped_columns in grouped.values():
+            grouped_columns.sort(key=lambda item: item.column_name.lower())
+
+        return grouped
 
     def _diff_snapshots(
         self, previous: Optional[SchemaSnapshot], current: SchemaSnapshot
@@ -223,22 +240,92 @@ class PortableSchemaCatalogService(SchemaCatalog):
             changed_columns=changed,
         )
 
+    def _format_column_descriptor(self, column: SchemaColumn) -> str:
+        nullability = "nullable" if column.is_nullable else "not null"
+        return f"{column.column_name} {column.data_type} {nullability}"
+
+    def _chunk_columns(
+        self, columns: List[SchemaColumn], chunk_size: int
+    ) -> Iterable[List[SchemaColumn]]:
+        for start in range(0, len(columns), chunk_size):
+            yield columns[start : start + chunk_size]
+
     async def _patch_memory_for_drift(
-        self, context: ToolContext, diff: SchemaDiff
+        self, context: ToolContext, current: SchemaSnapshot, diff: SchemaDiff
     ) -> None:
+        grouped_columns = self._group_columns_by_table(current.columns)
+        impacted_table_keys = sorted(
+            {
+                self._table_key(column)
+                for column in diff.added_columns + diff.changed_columns
+            }
+        )
+
+        total_tables = len(grouped_columns)
+        total_columns = len(current.columns)
+        impacted_labels = [
+            f"{schema_name or 'default'}.{table_name}"
+            for schema_name, table_name in impacted_table_keys[:10]
+        ]
         summary = (
-            f"Schema drift detected. Added: {len(diff.added_columns)}, "
-            f"Removed: {len(diff.removed_columns)}, Changed: {len(diff.changed_columns)}. "
+            "Schema drift detected. "
+            "Schema snapshot synced. "
+            f"Dialect: {current.dialect}. "
+            f"Tables: {total_tables}. Columns: {total_columns}. "
+            f"Added: {len(diff.added_columns)}. "
+            f"Removed: {len(diff.removed_columns)}. "
+            f"Changed: {len(diff.changed_columns)}. "
             f"Current schema hash: {diff.current_schema_hash}."
         )
+        if impacted_labels:
+            summary += f" Impacted tables: {', '.join(impacted_labels)}."
         await context.agent_memory.save_text_memory(summary, context)
+
+        if grouped_columns:
+            table_listing = ", ".join(
+                f"{schema_name or 'default'}.{table_name}"
+                for schema_name, table_name in sorted(grouped_columns)
+            )
+            await context.agent_memory.save_text_memory(
+                f"Schema tables available: {table_listing}.",
+                context,
+            )
+
+        tables_to_publish = impacted_table_keys[: self._TABLE_MEMORY_LIMIT]
+        for schema_name, table_name in tables_to_publish:
+            columns = grouped_columns.get((schema_name, table_name), [])
+            if not columns:
+                continue
+
+            total_chunks = max(
+                1,
+                (len(columns) + self._TABLE_MEMORY_CHUNK_SIZE - 1)
+                // self._TABLE_MEMORY_CHUNK_SIZE,
+            )
+            for chunk_index, chunk in enumerate(
+                self._chunk_columns(columns, self._TABLE_MEMORY_CHUNK_SIZE), start=1
+            ):
+                descriptor = "; ".join(
+                    self._format_column_descriptor(column) for column in chunk
+                )
+                chunk_suffix = ""
+                if total_chunks > 1:
+                    chunk_suffix = f" Part {chunk_index} of {total_chunks}."
+                await context.agent_memory.save_text_memory(
+                    (
+                        f"Schema table: {schema_name or 'default'}.{table_name}."
+                        f" Columns: {descriptor}.{chunk_suffix}"
+                    ),
+                    context,
+                )
 
         for column in (diff.added_columns + diff.changed_columns)[:25]:
             await context.agent_memory.save_text_memory(
                 (
-                    f"Schema entity updated: "
-                    f"{column.schema_name or 'default'}.{column.table_name}.{column.column_name} "
-                    f"type={column.data_type} nullable={column.is_nullable}"
+                    "Schema entity updated: "
+                    f"{column.schema_name or 'default'}.{column.table_name}."
+                    f"{column.column_name} type={column.data_type} "
+                    f"nullable={column.is_nullable}"
                 ),
                 context,
             )

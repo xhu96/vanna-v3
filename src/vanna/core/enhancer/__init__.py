@@ -6,6 +6,7 @@ with additional context before LLM calls (e.g., from memory, RAG, documentation)
 """
 
 from .base import LlmContextEnhancer
+from .composite import CompositeEnhancer
 from .default import DefaultLlmContextEnhancer
 
-__all__ = ["LlmContextEnhancer", "DefaultLlmContextEnhancer"]
+__all__ = ["LlmContextEnhancer", "CompositeEnhancer", "DefaultLlmContextEnhancer"]

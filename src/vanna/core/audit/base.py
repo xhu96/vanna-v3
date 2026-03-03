@@ -233,7 +233,7 @@ class AuditLogger(ABC):
             response_length_chars=len(response_text),
             response_text=response_text if include_full_text else None,
             response_hash=response_hash,
-            model_name=model_info.get("model") if model_info else None,
+            llm_model_name=model_info.get("model") if model_info else None,
             temperature=model_info.get("temperature") if model_info else None,
             tool_calls_count=len(tool_calls),
             tool_names=[tc.name for tc in tool_calls],

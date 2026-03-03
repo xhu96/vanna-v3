@@ -3,7 +3,7 @@ Framework-agnostic chat handling logic.
 """
 
 import uuid
-from typing import AsyncGenerator, List
+from typing import Any, AsyncGenerator, List, Optional
 
 from ...core import Agent
 from .models import ChatRequest, ChatResponse, ChatStreamChunk
@@ -22,6 +22,10 @@ class ChatHandler:
             agent: The agent to handle chat requests
         """
         self.agent = agent
+
+        # Latest lineage evidence — populated after each completed chat turn.
+        self._latest_lineage: Optional[Any] = None
+        self._latest_lineage_collector: Optional[Any] = None
 
     async def handle_stream(
         self, request: ChatRequest
@@ -43,7 +47,18 @@ class ChatHandler:
             message=request.message,
             conversation_id=conversation_id,
         ):
+            # Capture lineage evidence from the CardComponent emitted at end
+            # of each turn by the agent.
+            rc = getattr(component, "rich_component", None)
+            if rc is not None and getattr(rc, "title", None) == "Evidence and Lineage":
+                self._capture_lineage(rc)
+
             yield ChatStreamChunk.from_component(component, conversation_id, request_id)
+
+    def _capture_lineage(self, rc: Any) -> None:
+        """Snapshot the latest lineage evidence from the evidence card component."""
+        self._latest_lineage = rc.data.get("evidence")
+        self._latest_lineage_markdown = rc.content
 
     async def handle_poll(self, request: ChatRequest) -> ChatResponse:
         """Handle polling-based chat.

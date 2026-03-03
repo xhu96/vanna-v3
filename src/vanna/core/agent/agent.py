@@ -7,7 +7,8 @@ between LLM services, tools, and conversation storage.
 
 import traceback
 import uuid
-from typing import TYPE_CHECKING, AsyncGenerator, List, Optional
+from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Optional
+import dataclasses
 
 from vanna.components import (
     UiComponent,
@@ -1204,6 +1205,7 @@ You can:
                 collapsible=True,
                 collapsed=True,
                 markdown=True,
+                data={"evidence": dataclasses.asdict(lineage_collector.evidence)}
             ),
             simple_component=None,
         )

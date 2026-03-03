@@ -2,6 +2,7 @@
 FastAPI server factory for Vanna Agents.
 """
 
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
@@ -11,6 +12,9 @@ from fastapi.staticfiles import StaticFiles
 from ...core import Agent
 from ..base import ChatHandler
 from .routes import register_chat_routes
+from .lineage_routes import register_lineage_routes
+
+logger = logging.getLogger(__name__)
 
 
 class VannaFastAPIServer:
@@ -86,6 +90,17 @@ class VannaFastAPIServer:
 
         # Register routes
         register_chat_routes(app, self.chat_handler, self.config)
+        register_lineage_routes(app, self.chat_handler)
+
+        # --- Personalization (opt-in) ---
+        personalization_config = self.config.get("personalization")
+        if personalization_config is not None:
+            self._register_personalization_routes(app, personalization_config)
+
+        # --- Skills (opt-in) ---
+        skills_config = self.config.get("skills")
+        if skills_config is not None:
+            self._register_skill_routes(app, skills_config)
 
         # Add health check
         @app.get("/health")
@@ -93,6 +108,85 @@ class VannaFastAPIServer:
             return {"status": "healthy", "service": "vanna"}
 
         return app
+
+    def _register_personalization_routes(
+        self, app: FastAPI, personalization_config: Dict[str, Any]
+    ) -> None:
+        """Wire personalization routes with config-driven service init."""
+        from vanna.personalization.services import (
+            ConsentManager,
+            GlossaryService,
+            ProfileService,
+        )
+        from vanna.personalization.stores import (
+            InMemoryGlossaryStore,
+            InMemoryProfileStore,
+        )
+
+        from .personalization_routes import register_personalization_routes
+
+        profile_store = personalization_config.get(
+            "profile_store", InMemoryProfileStore()
+        )
+        glossary_store = personalization_config.get(
+            "glossary_store", InMemoryGlossaryStore()
+        )
+        admin_roles = personalization_config.get("admin_roles")
+
+        profile_service = personalization_config.get(
+            "profile_service"
+        ) or ProfileService(profile_store, admin_roles=admin_roles)
+        glossary_service = personalization_config.get(
+            "glossary_service"
+        ) or GlossaryService(glossary_store, admin_roles=admin_roles)
+        consent_manager = personalization_config.get(
+            "consent_manager"
+        ) or ConsentManager(profile_store)
+
+        register_personalization_routes(
+            app,
+            profile_service,
+            glossary_service,
+            consent_manager,
+            user_resolver=self.agent.user_resolver,
+        )
+        logger.info("Personalization routes registered at /api/v1/")
+
+    def _register_skill_routes(
+        self, app: FastAPI, skills_config: Dict[str, Any]
+    ) -> None:
+        """Wire skill routes with config-driven service init."""
+        from vanna.skills.approval import ApprovalWorkflow
+        from vanna.skills.compiler import SkillCompiler
+        from vanna.skills.generator import SkillGenerator
+        from vanna.skills.registry import SkillRegistry
+        from vanna.skills.stores import InMemorySkillRegistryStore
+
+        from .skill_routes import register_skill_routes
+
+        skill_store = skills_config.get("store", InMemorySkillRegistryStore())
+        publish_roles = skills_config.get("publish_roles")
+
+        registry = skills_config.get("registry") or SkillRegistry(
+            skill_store, publish_roles=publish_roles
+        )
+        compiler = skills_config.get("compiler") or SkillCompiler()
+        approval_workflow = skills_config.get(
+            "approval_workflow"
+        ) or ApprovalWorkflow(registry, compiler)
+        generator = skills_config.get("generator") or SkillGenerator(
+            compiler=compiler
+        )
+
+        register_skill_routes(
+            app,
+            registry,
+            compiler,
+            approval_workflow,
+            generator,
+            user_resolver=self.agent.user_resolver,
+        )
+        logger.info("Skill routes registered at /api/v1/skills/")
 
     def run(self, **kwargs: Any) -> None:
         """Run the FastAPI server.

@@ -141,7 +141,7 @@ class AiResponseEvent(AuditEvent):
     response_hash: str  # SHA256 for integrity verification
 
     # Model info
-    model_name: Optional[str] = None
+    llm_model_name: Optional[str] = None
     temperature: Optional[float] = None
 
     # Tool calls in response

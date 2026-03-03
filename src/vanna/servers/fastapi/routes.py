@@ -77,6 +77,48 @@ def register_chat_routes(
             "schema_snapshot_id": latest.snapshot_id,
         }
 
+    async def _run_scheduled_schema_sync(
+        request_context: RequestContext,
+        *,
+        conversation_id: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> None:
+        service = config.get("schema_sync_service")
+        if service is None:
+            return
+
+        try:
+            tool_context = await _build_tool_context(
+                request_context=request_context,
+                conversation_id=conversation_id,
+                request_id=request_id,
+            )
+            await service.run_scheduled_sync_if_due(tool_context)
+        except Exception:
+            logger.exception("Scheduled schema sync failed")
+
+    async def _prepare_chat_request(
+        chat_request: ChatRequest,
+        http_request: Request,
+    ) -> None:
+        request_context = RequestContext(
+            cookies=dict(http_request.cookies),
+            headers=dict(http_request.headers),
+            remote_addr=http_request.client.host if http_request.client else None,
+            query_params=dict(http_request.query_params),
+            metadata=dict(chat_request.metadata),
+        )
+        chat_request.request_context = request_context
+        await _run_request_guard(chat_request, request_context)
+        await _run_scheduled_schema_sync(
+            request_context,
+            conversation_id=chat_request.conversation_id,
+            request_id=chat_request.request_id,
+        )
+        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
+        chat_request.metadata = merged_metadata
+        request_context.metadata = merged_metadata
+
     if enable_default_ui_route:
 
         @app.get("/", response_class=HTMLResponse)
@@ -98,17 +140,7 @@ def register_chat_routes(
         chat_request: ChatRequest, http_request: Request
     ) -> StreamingResponse:
         """Server-Sent Events endpoint for streaming chat."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        # Extract request context for user resolution
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        await _prepare_chat_request(chat_request, http_request)
 
         async def generate() -> AsyncGenerator[str, None]:
             """Generate SSE stream."""
@@ -142,16 +174,7 @@ def register_chat_routes(
         chat_request: ChatRequest, http_request: Request
     ) -> StreamingResponse:
         """Versioned v3 SSE endpoint with typed events."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        await _prepare_chat_request(chat_request, http_request)
 
         async def generate() -> AsyncGenerator[str, None]:
             last_conversation_id = chat_request.conversation_id or ""
@@ -194,16 +217,7 @@ def register_chat_routes(
         chat_request: ChatRequest, http_request: Request
     ) -> Dict[str, Any]:
         """Versioned v3 polling endpoint returning typed events."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        await _prepare_chat_request(chat_request, http_request)
 
         try:
             events = []
@@ -323,19 +337,29 @@ def register_chat_routes(
                 try:
                     data = await websocket.receive_json()
 
-                    # Extract request context for user resolution
                     metadata = data.get("metadata", {})
-                    metadata = {**metadata, **(await _load_schema_metadata())}
-                    data["request_context"] = RequestContext(
+                    request_context = RequestContext(
                         cookies=dict(websocket.cookies),
                         headers=dict(websocket.headers),
                         remote_addr=websocket.client.host if websocket.client else None,
                         query_params=dict(websocket.query_params),
-                        metadata=metadata,
+                        metadata=dict(metadata),
                     )
+                    data["request_context"] = request_context
 
                     chat_request = ChatRequest(**data)
-                    await _run_request_guard(chat_request, chat_request.request_context)
+                    await _run_request_guard(chat_request, request_context)
+                    await _run_scheduled_schema_sync(
+                        request_context,
+                        conversation_id=chat_request.conversation_id,
+                        request_id=chat_request.request_id,
+                    )
+                    merged_metadata = {
+                        **chat_request.metadata,
+                        **(await _load_schema_metadata()),
+                    }
+                    chat_request.metadata = merged_metadata
+                    request_context.metadata = merged_metadata
                 except Exception as e:
                     logger.exception("WebSocket receive error")
                     await websocket.send_json(
@@ -399,17 +423,7 @@ def register_chat_routes(
         chat_request: ChatRequest, http_request: Request
     ) -> ChatResponse:
         """Polling endpoint for chat."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        # Extract request context for user resolution
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        await _prepare_chat_request(chat_request, http_request)
 
         try:
             result = await chat_handler.handle_poll(chat_request)

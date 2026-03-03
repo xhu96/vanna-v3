@@ -22,6 +22,7 @@ from .semantic_query import SemanticQueryTool
 from .statistical_analysis import TTestTool, CorrelationTool
 from .export_data import ExportToCSVTool
 from .dbt_deploy import DbtDeployArgs, DbtDeployTool
+from .fetch_url import FetchUrlTool
 
 __all__ = [
     # File system
@@ -50,4 +51,6 @@ __all__ = [
     # dbt deploy
     "DbtDeployTool",
     "DbtDeployArgs",
+    # URL fetch
+    "FetchUrlTool",
 ]

@@ -1,0 +1,458 @@
+{
+  "snapshot": {
+    "snapshot_id": "snap_20260303202535",
+    "captured_at": "2026-03-03T20:25:35.066072Z",
+    "dialect": "sqlite",
+    "schema_hash": "fc65f1f233c57d62ace203c890772e3d4698a0b5e951d43c5655e516e778f5d7",
+    "columns": [
+      {
+        "schema_name": "main",
+        "table_name": "Album",
+        "column_name": "AlbumId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Album",
+        "column_name": "Title",
+        "data_type": "NVARCHAR(160)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Album",
+        "column_name": "ArtistId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Artist",
+        "column_name": "ArtistId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Artist",
+        "column_name": "Name",
+        "data_type": "NVARCHAR(120)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "CustomerId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "FirstName",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "LastName",
+        "data_type": "NVARCHAR(20)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Company",
+        "data_type": "NVARCHAR(80)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Address",
+        "data_type": "NVARCHAR(70)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "City",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "State",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Country",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "PostalCode",
+        "data_type": "NVARCHAR(10)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Phone",
+        "data_type": "NVARCHAR(24)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Fax",
+        "data_type": "NVARCHAR(24)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "Email",
+        "data_type": "NVARCHAR(60)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Customer",
+        "column_name": "SupportRepId",
+        "data_type": "INTEGER",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "EmployeeId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "LastName",
+        "data_type": "NVARCHAR(20)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "FirstName",
+        "data_type": "NVARCHAR(20)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Title",
+        "data_type": "NVARCHAR(30)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "ReportsTo",
+        "data_type": "INTEGER",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "BirthDate",
+        "data_type": "DATETIME",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "HireDate",
+        "data_type": "DATETIME",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Address",
+        "data_type": "NVARCHAR(70)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "City",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "State",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Country",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "PostalCode",
+        "data_type": "NVARCHAR(10)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Phone",
+        "data_type": "NVARCHAR(24)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Fax",
+        "data_type": "NVARCHAR(24)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Employee",
+        "column_name": "Email",
+        "data_type": "NVARCHAR(60)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Genre",
+        "column_name": "GenreId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Genre",
+        "column_name": "Name",
+        "data_type": "NVARCHAR(120)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "InvoiceId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "CustomerId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "InvoiceDate",
+        "data_type": "DATETIME",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "BillingAddress",
+        "data_type": "NVARCHAR(70)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "BillingCity",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "BillingState",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "BillingCountry",
+        "data_type": "NVARCHAR(40)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "BillingPostalCode",
+        "data_type": "NVARCHAR(10)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Invoice",
+        "column_name": "Total",
+        "data_type": "NUMERIC(10,2)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "InvoiceLine",
+        "column_name": "InvoiceLineId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "InvoiceLine",
+        "column_name": "InvoiceId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "InvoiceLine",
+        "column_name": "TrackId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "InvoiceLine",
+        "column_name": "UnitPrice",
+        "data_type": "NUMERIC(10,2)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "InvoiceLine",
+        "column_name": "Quantity",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "MediaType",
+        "column_name": "MediaTypeId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "MediaType",
+        "column_name": "Name",
+        "data_type": "NVARCHAR(120)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Playlist",
+        "column_name": "PlaylistId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Playlist",
+        "column_name": "Name",
+        "data_type": "NVARCHAR(120)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "PlaylistTrack",
+        "column_name": "PlaylistId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "PlaylistTrack",
+        "column_name": "TrackId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "TrackId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "Name",
+        "data_type": "NVARCHAR(200)",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "AlbumId",
+        "data_type": "INTEGER",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "MediaTypeId",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "GenreId",
+        "data_type": "INTEGER",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "Composer",
+        "data_type": "NVARCHAR(220)",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "Milliseconds",
+        "data_type": "INTEGER",
+        "is_nullable": false
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "Bytes",
+        "data_type": "INTEGER",
+        "is_nullable": true
+      },
+      {
+        "schema_name": "main",
+        "table_name": "Track",
+        "column_name": "UnitPrice",
+        "data_type": "NUMERIC(10,2)",
+        "is_nullable": false
+      }
+    ]
+  }
+}
