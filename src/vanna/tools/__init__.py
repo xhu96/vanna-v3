@@ -19,6 +19,9 @@ from vanna.integrations.plotly import PlotlyChartGenerator
 from .run_sql import RunSqlTool
 from .visualize_data import VisualizeDataTool
 from .semantic_query import SemanticQueryTool
+from .statistical_analysis import TTestTool, CorrelationTool
+from .export_data import ExportToCSVTool
+from .dbt_deploy import DbtDeployArgs, DbtDeployTool
 
 __all__ = [
     # File system
@@ -40,4 +43,11 @@ __all__ = [
     # Visualization
     "PlotlyChartGenerator",
     "VisualizeDataTool",
+    # Data Engineering & Stats
+    "TTestTool",
+    "CorrelationTool",
+    "ExportToCSVTool",
+    # dbt deploy
+    "DbtDeployTool",
+    "DbtDeployArgs",
 ]

@@ -23,7 +23,7 @@ class ToolNotFoundError(AgentError):
     pass
 
 
-class PermissionError(AgentError):
+class VannaPermissionError(AgentError):
     """User lacks required permissions."""
 
     pass
@@ -41,7 +41,7 @@ class LlmServiceError(AgentError):
     pass
 
 
-class ValidationError(AgentError):
+class VannaValidationError(AgentError):
     """Data validation error."""
 
     pass

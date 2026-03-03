@@ -34,7 +34,7 @@ class ExecutionError(Exception):
     pass
 
 
-class ValidationError(Exception):
+class VannaValidationError(Exception):
     """Raise for validations"""
 
     pass

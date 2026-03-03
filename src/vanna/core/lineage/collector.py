@@ -5,7 +5,19 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable
 
 from .confidence import ConfidenceScorer
-from .models import LineageEvidence, MemoryEvidence, SqlEvidence, ToolLineageRecord
+from .models import (
+    LineageEvidence,
+    MemoryEvidence,
+    SqlEvidence,
+    ToolLineageRecord,
+)
+
+# Column lineage extraction is an optional enhancement; import lazily so that
+# the rest of the lineage system works without sqlglot installed.
+try:
+    from .column_lineage import extract_column_lineage as _extract_column_lineage
+except ImportError:  # pragma: no cover
+    _extract_column_lineage = None  # type: ignore[assignment]
 
 
 class LineageCollector:
@@ -59,6 +71,10 @@ class LineageCollector:
                     execution_time_ms=metadata.get("execution_time_ms"),
                 )
             )
+            # Best-effort column-level lineage extraction (requires sqlglot).
+            if _extract_column_lineage is not None:
+                edges = _extract_column_lineage(sql_text)
+                self.evidence.column_lineage.extend(edges)
 
         retrieved = metadata.get("retrieved_memories")
         if isinstance(retrieved, list):
@@ -99,6 +115,17 @@ class LineageCollector:
                 )
         else:
             lines.append("- SQL executions: 0")
+
+        if evidence.column_lineage:
+            lines.append(f"- Column lineage edges: {len(evidence.column_lineage)}")
+            seen: set[str] = set()
+            for edge in evidence.column_lineage[:10]:
+                label = f"{edge.source_table}.{edge.column}"
+                if edge.alias:
+                    label += f" → {edge.alias}"
+                if label not in seen:
+                    lines.append(f"  - `{label}`")
+                    seen.add(label)
 
         lines.append(f"- Retrieved memories/docs: {len(evidence.retrieved_memories)}")
         lines.append(

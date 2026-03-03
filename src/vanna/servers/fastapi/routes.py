@@ -3,13 +3,16 @@ FastAPI route implementations for Vanna Agents.
 """
 
 import json
-import traceback
+import logging
 import uuid
 import inspect
 from typing import Any, AsyncGenerator, Dict, Optional, Callable, Awaitable
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, HTMLResponse
+from pydantic import BaseModel
+
+
 
 from ..base import ChatHandler, ChatRequest, ChatResponse
 from ..base.events_v3 import ChatEvent
@@ -17,6 +20,8 @@ from ..base.templates import get_index_html
 from ...core.user.request_context import RequestContext
 from ...core.tool import ToolContext
 from ...services.feedback import FeedbackRequest
+
+logger = logging.getLogger(__name__)
 
 
 def register_chat_routes(
@@ -113,11 +118,10 @@ def register_chat_routes(
                     yield f"data: {chunk_json}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
-                traceback.print_stack()
-                traceback.print_exc()
+                logger.exception("SSE stream error")
                 error_data = {
                     "type": "error",
-                    "data": {"message": str(e)},
+                    "data": {"message": "An internal error occurred. Please try again."},
                     "conversation_id": chat_request.conversation_id or "",
                     "request_id": chat_request.request_id or "",
                 }
@@ -165,11 +169,12 @@ def register_chat_routes(
                 yield "event: done\n"
                 yield f"data: {done_event.model_dump_json()}\n\n"
             except Exception as e:
+                logger.exception("v3 SSE stream error")
                 error_event = ChatEvent(
                     event_type="error",
                     conversation_id=last_conversation_id,
                     request_id=last_request_id,
-                    payload={"message": str(e)},
+                    payload={"message": "An internal error occurred. Please try again."},
                 )
                 yield "event: error\n"
                 yield f"data: {error_event.model_dump_json()}\n\n"
@@ -200,9 +205,13 @@ def register_chat_routes(
         )
         await _run_request_guard(chat_request, chat_request.request_context)
 
-        events = []
-        async for chunk in chat_handler.handle_stream(chat_request):
-            events.append(ChatEvent.from_chunk(chunk).model_dump())
+        try:
+            events = []
+            async for chunk in chat_handler.handle_stream(chat_request):
+                events.append(ChatEvent.from_chunk(chunk).model_dump())
+        except Exception:
+            logger.exception("Chat poll v3 error")
+            raise HTTPException(status_code=500, detail="Chat failed due to an internal error.")
 
         if events:
             conversation_id = events[0]["conversation_id"]
@@ -234,13 +243,22 @@ def register_chat_routes(
         return result.model_dump(mode="json")
 
     @app.get(f"{v3_prefix}/schema/status")
-    async def schema_status() -> Dict[str, Any]:
+    async def schema_status(http_request: Request) -> Dict[str, Any]:
         """Return latest known schema snapshot metadata."""
         service = config.get("schema_sync_service")
         if service is None:
             raise HTTPException(
                 status_code=501, detail="Schema sync service is not configured."
             )
+        request_context = RequestContext(
+            cookies=dict(http_request.cookies),
+            headers=dict(http_request.headers),
+            remote_addr=http_request.client.host if http_request.client else None,
+            query_params=dict(http_request.query_params),
+            metadata={},
+        )
+        dummy_request = ChatRequest(message="", request_context=request_context)
+        await _run_request_guard(dummy_request, request_context)
         latest = await service.get_latest_snapshot()
         if latest is None:
             return {"status": "empty", "snapshot": None}
@@ -274,11 +292,30 @@ def register_chat_routes(
         )
         result = await feedback_service.process_feedback(feedback_request, tool_context)
         return result.model_dump(mode="json")
+        
+
 
     @app.websocket(f"{v2_prefix}/chat_websocket")
     async def chat_websocket(websocket: WebSocket) -> None:
         """WebSocket endpoint for real-time chat."""
         await websocket.accept()
+
+        # Auth check immediately after accepting — WebSocket protocol requires
+        # accept() before we can close with a reason code (1008 = Policy Violation).
+        if request_guard is not None:
+            try:
+                initial_context = RequestContext(
+                    cookies=dict(websocket.cookies),
+                    headers=dict(websocket.headers),
+                    remote_addr=websocket.client.host if websocket.client else None,
+                    query_params=dict(websocket.query_params),
+                    metadata={},
+                )
+                dummy = ChatRequest(message="", request_context=initial_context)
+                await _run_request_guard(dummy, initial_context)
+            except Exception:
+                await websocket.close(code=1008)
+                return
 
         try:
             while True:
@@ -300,42 +337,42 @@ def register_chat_routes(
                     chat_request = ChatRequest(**data)
                     await _run_request_guard(chat_request, chat_request.request_context)
                 except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
+                    logger.exception("WebSocket receive error")
                     await websocket.send_json(
                         {
                             "type": "error",
-                            "data": {"message": f"Invalid request: {str(e)}"},
+                            "data": {"message": "Invalid request format."},
                         }
                     )
                     continue
 
                 # Stream response
                 try:
+                    last_chunk = None
                     async for chunk in chat_handler.handle_stream(chat_request):
                         await websocket.send_json(chunk.model_dump())
+                        last_chunk = chunk
 
                     # Send completion signal
                     await websocket.send_json(
                         {
                             "type": "completion",
                             "data": {"status": "done"},
-                            "conversation_id": chunk.conversation_id
-                            if "chunk" in locals()
+                            "conversation_id": last_chunk.conversation_id
+                            if last_chunk is not None
                             else "",
-                            "request_id": chunk.request_id
-                            if "chunk" in locals()
+                            "request_id": last_chunk.request_id
+                            if last_chunk is not None
                             else "",
                         }
                     )
 
-                except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
+                except Exception:
+                    logger.exception("WebSocket stream error")
                     await websocket.send_json(
                         {
                             "type": "error",
-                            "data": {"message": str(e)},
+                            "data": {"message": "An internal error occurred."},
                             "conversation_id": chat_request.conversation_id or "",
                             "request_id": chat_request.request_id or "",
                         }
@@ -343,14 +380,13 @@ def register_chat_routes(
 
         except WebSocketDisconnect:
             pass
-        except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
+        except Exception:
+            logger.exception("WebSocket connection error")
             try:
                 await websocket.send_json(
                     {
                         "type": "error",
-                        "data": {"message": f"WebSocket error: {str(e)}"},
+                        "data": {"message": "WebSocket connection error."},
                     }
                 )
             except Exception:
@@ -378,7 +414,6 @@ def register_chat_routes(
         try:
             result = await chat_handler.handle_poll(chat_request)
             return result
-        except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+        except Exception:
+            logger.exception("Chat poll error")
+            raise HTTPException(status_code=500, detail="Chat failed due to an internal error.")

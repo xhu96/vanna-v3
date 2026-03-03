@@ -4,7 +4,7 @@ import re
 import uuid
 from typing import Union
 
-from .exceptions import ImproperlyConfigured, ValidationError
+from .exceptions import ImproperlyConfigured, VannaValidationError
 
 
 def validate_config_path(path):
@@ -45,7 +45,7 @@ def sanitize_model_name(model_name):
 
         return model_name
     except Exception as e:
-        raise ValidationError(e)
+        raise VannaValidationError(e)
 
 
 def deterministic_uuid(content: Union[str, bytes]) -> str:

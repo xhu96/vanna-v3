@@ -16,9 +16,10 @@ export class VannaProgressTracker extends LitElement {
     css`
       :host {
         display: block;
-        background: var(--vanna-background-default);
-        border: 1px solid var(--vanna-outline-default);
-        border-radius: 0 0 var(--vanna-border-radius-lg) var(--vanna-border-radius-lg);
+        background: var(--vanna-background-root);
+        border: 1px solid var(--vanna-outline-dimmer);
+        border-radius: var(--vanna-border-radius-xl);
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
         overflow: hidden;
         font-family: var(--vanna-font-family-default);
       }
@@ -69,32 +70,32 @@ export class VannaProgressTracker extends LitElement {
       }
 
       .progress-item.in_progress {
-        background: rgba(0, 123, 255, 0.05);
-        border-left: 3px solid var(--vanna-accent-primary-default);
+        background: var(--vanna-accent-primary-subtle);
+        border-left: 3px solid var(--vanna-iris);
       }
 
       .progress-item.completed {
-        opacity: 0.7;
+        opacity: 0.8;
       }
 
       .progress-item.error {
         background: var(--vanna-accent-negative-subtle);
-        border-left: 3px solid var(--vanna-accent-negative-default);
+        border-left: 3px solid var(--vanna-rose);
         padding-left: calc(var(--vanna-space-3) - 3px);
       }
 
       .progress-item.error .progress-text {
-        color: var(--vanna-accent-negative-stronger);
+        color: var(--vanna-rose);
       }
 
       .progress-item.error .progress-detail {
-        color: var(--vanna-accent-negative-default);
-        font-weight: 500;
+        color: var(--vanna-rose);
+        opacity: 0.8;
       }
 
       .progress-icon {
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -105,30 +106,33 @@ export class VannaProgressTracker extends LitElement {
 
       .progress-icon.pending {
         background: var(--vanna-outline-default);
+        border: 1px solid var(--vanna-outline-dimmer);
       }
 
       .progress-icon.in_progress {
-        background: var(--vanna-accent-primary-default);
+        background: var(--vanna-iris);
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
       }
 
       .progress-icon.completed {
-        background: var(--vanna-accent-positive-default);
+        background: var(--vanna-emerald);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
       }
 
       .progress-icon.error {
-        background: var(--vanna-accent-negative-default);
-        box-shadow: 0 0 0 2px var(--vanna-accent-negative-subtle);
+        background: var(--vanna-rose);
+        box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
       }
 
       .progress-icon svg {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         color: white;
       }
 
       .progress-icon.error svg {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         color: white;
       }
 
@@ -138,7 +142,7 @@ export class VannaProgressTracker extends LitElement {
         border: 1.5px solid rgba(255, 255, 255, 0.3);
         border-top-color: white;
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        animation: spin 0.8s linear infinite;
       }
 
       .progress-content {

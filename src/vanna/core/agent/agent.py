@@ -199,20 +199,22 @@ class Agent:
                         exc_info=True,
                     )
 
-            # Yield error component to UI (simple, user-friendly message)
-            error_description = "An unexpected error occurred while processing your message. Please try again."
+            # Yield error component to UI
+            error_details = self._get_error_details(e)
+            error_description = error_details["description"]
+            
             if conversation_id:
                 error_description += f"\n\nConversation ID: {conversation_id}"
 
             yield UiComponent(
                 rich_component=StatusCardComponent(
-                    title="Error Processing Message",
+                    title=error_details["title"],
                     status="error",
                     description=error_description,
-                    icon="⚠️",
+                    icon=error_details["icon"],
                 ),
                 simple_component=SimpleTextComponent(
-                    text=f"Error: An unexpected error occurred. Please try again.{f' (Conversation ID: {conversation_id})' if conversation_id else ''}"
+                    text=f"Error: {error_details['title']}. {error_details['description']}{f' (Conversation ID: {conversation_id})' if conversation_id else ''}"
                 ),
             )
 
@@ -231,6 +233,34 @@ class Agent:
                     placeholder="Try again...", disabled=False
                 )
             )
+
+    def _get_error_details(self, e: Exception) -> Dict[str, str]:
+        """Categorize exception and return user-friendly title and description."""
+        error_type = type(e).__name__
+        error_msg = str(e).lower()
+
+        # Check for authentication errors (OpenAI, OpenRouter, etc.)
+        if "auth" in error_msg or "api key" in error_msg or "invalid_api_key" in error_msg or "authentication" in error_msg:
+            return {
+                "title": "LLM Configuration Error",
+                "description": "Your LLM API key is missing or invalid. Please check your `.env` file and ensure `OPENROUTER_API_KEY` is set correctly.",
+                "icon": "🔑"
+            }
+        
+        # Check for quota/billing issues
+        if "quota" in error_msg or "billing" in error_msg or "insufficient_funds" in error_msg:
+            return {
+                "title": "LLM Quota Exceeded",
+                "description": "You have exceeded your LLM quota or billing limit. Please check your provider account.",
+                "icon": "💳"
+            }
+
+        # Default generic error
+        return {
+            "title": "Error Processing Message",
+            "description": "An unexpected error occurred while processing your message. Please try again.",
+            "icon": "⚠️"
+        }
 
     async def _send_message(
         self,

@@ -120,15 +120,10 @@ class VannaFlaskServer:
 
                 nest_asyncio.apply()
             except ImportError:
-                print("Warning: nest_asyncio not installed. Installing...")
-                import subprocess
-
-                subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", "nest_asyncio"]
+                raise ImportError(
+                    "Required package 'nest_asyncio' is not installed. "
+                    "Please install it manually: pip install nest_asyncio"
                 )
-                import nest_asyncio
-
-                nest_asyncio.apply()
 
         # Check if we're specifically in Google Colab for port forwarding
         in_colab = "google.colab" in sys.modules

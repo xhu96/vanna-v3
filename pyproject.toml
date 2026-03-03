@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "vanna"
-version = "3.1.0"
+version = "3.2.0"
 authors = [
   { name="Zain Hoda", email="zain@vanna.ai" },
 ]
@@ -27,6 +27,7 @@ dependencies = [
     "tabulate",
     "sqlparse",
     "sqlalchemy",
+    "scipy",
     "requests",
     "jsonschema",
 ]
@@ -39,8 +40,8 @@ vanna = "vanna.servers.cli.server_runner:main"
 "Bug Tracker" = "https://github.com/vanna-ai/vanna/issues"
 
 [project.optional-dependencies]
-flask = ["flask>=2.0.0", "flask-cors>=4.0.0"]
-fastapi = ["fastapi>=0.68.0", "uvicorn>=0.15.0"]
+flask = ["flask>=2.0.0", "flask-cors>=4.0.0", "nest_asyncio"]
+fastapi = ["fastapi>=0.68.0", "uvicorn>=0.15.0", "nest_asyncio"]
 servers = ["vanna[flask,fastapi]"]
 
 postgres = ["psycopg2-binary", "db-dtypes"]
@@ -81,6 +82,7 @@ oracle = ["oracledb", "chromadb<1.0.0"]
 hive = ["pyhive", "thrift"]
 presto = ["pyhive", "thrift"]
 mssql = ["pyodbc"]
+de = ["PyGitHub>=2.3.0", "dbt-core>=1.7.0"]
 
 [tool.flit.module]
 name = "vanna"
@@ -182,12 +184,10 @@ ignore = [
     "F841",  # unused variable
 
     # Bugbear rules (opinionated or intentional)
-    "B006",  # mutable argument default (sometimes needed)
     "B007",  # unused loop control variable
     "B008",  # do not perform function calls in argument defaults
     "B024",  # abstract base class without abstract method
     "B027",  # empty method without abstract decorator
-    "B904",  # raise without from inside except (intentional in legacy code)
     "B905",  # zip without explicit strict
 
     # Comprehension/collection style

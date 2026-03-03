@@ -34,10 +34,14 @@ class SimpleUserResolver(UserResolver):
 
 
 class SimpleAgentMemory(AgentMemory):
-    """Simple in-memory agent memory implementation (non-persistent)."""
+    """Simple in-memory agent memory implementation (non-persistent).
+
+    Memories survive only for the lifetime of the process.  Use a persistent
+    AgentMemory backend (e.g. ChromaDB, Qdrant) for cross-session recall.
+    """
 
     def __init__(self) -> None:
-        self.tool_memories: List[Dict[str, Any]] = []
+        self.tool_memories: List[ToolMemory] = []
         self.text_memories: List[TextMemory] = []
 
     async def save_tool_usage(
@@ -49,15 +53,28 @@ class SimpleAgentMemory(AgentMemory):
         success: bool = True,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        pass
+        from datetime import datetime, timezone
+
+        self.tool_memories.append(
+            ToolMemory(
+                question=question,
+                tool_name=tool_name,
+                args=args,
+                success=success,
+                metadata=metadata,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            )
+        )
 
     async def save_text_memory(self, content: str, context: ToolContext) -> TextMemory:
-        # Return a dummy memory
-        return TextMemory(
-            memory_id="dummy",
+        from datetime import datetime, timezone
+
+        memory = TextMemory(
             content=content,
-            timestamp=None,
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
+        self.text_memories.append(memory)
+        return memory
 
     async def search_similar_usage(
         self,
@@ -83,12 +100,12 @@ class SimpleAgentMemory(AgentMemory):
     async def get_recent_memories(
         self, context: ToolContext, limit: int = 10
     ) -> List[ToolMemory]:
-        return []
+        return list(self.tool_memories[-limit:])
 
     async def get_recent_text_memories(
         self, context: ToolContext, limit: int = 10
     ) -> List[TextMemory]:
-        return []
+        return list(self.text_memories[-limit:])
 
     async def delete_by_id(self, context: ToolContext, memory_id: str) -> bool:
         return False
@@ -102,7 +119,12 @@ class SimpleAgentMemory(AgentMemory):
         tool_name: Optional[str] = None,
         before_date: Optional[str] = None,
     ) -> int:
-        return 0
+        before = len(self.tool_memories)
+        if tool_name is not None:
+            self.tool_memories = [m for m in self.tool_memories if m.tool_name != tool_name]
+        else:
+            self.tool_memories.clear()
+        return before - len(self.tool_memories)
 
 
 def create_basic_agent(llm_service: LlmService) -> Agent:

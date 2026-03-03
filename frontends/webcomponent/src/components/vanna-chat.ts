@@ -10,6 +10,7 @@ import './rich-task-list.js';
 import './rich-progress-bar.js';
 import './plotly-chart.js';
 import './vega-lite-chart.js';
+import './vanna-settings-panel.js';
 
 @customElement('vanna-chat')
 export class VannaChat extends LitElement {
@@ -34,11 +35,11 @@ export class VannaChat extends LitElement {
         max-width: 1024px;
         margin: 0 auto;
         background: var(--vanna-background-root);
-        border: 1px solid var(--vanna-outline-dimmer);
+        border: 1px solid var(--vanna-outline-dimmest);
         border-radius: var(--vanna-border-radius-2xl);
         box-shadow: var(--vanna-shadow-xl);
         overflow: hidden;
-        transition: box-shadow var(--vanna-duration-300) ease, transform var(--vanna-duration-300) ease;
+        transition: box-shadow var(--vanna-duration-400) cubic-bezier(0.16, 1, 0.3, 1), transform var(--vanna-duration-400) cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
       }
 
@@ -158,27 +159,22 @@ export class VannaChat extends LitElement {
       }
 
       .chat-header {
-        padding: var(--vanna-space-6) var(--vanna-space-7);
-        background: linear-gradient(135deg, var(--chat-primary) 0%, var(--chat-primary-stronger) 100%);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: var(--vanna-space-5) var(--vanna-space-7);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--vanna-outline-default);
         display: flex;
         flex-direction: column;
-        gap: var(--vanna-space-4);
-        color: var(--chat-primary-foreground);
+        gap: var(--vanna-space-2);
+        color: var(--vanna-foreground-default);
         position: relative;
-        overflow: hidden;
+        z-index: var(--vanna-z-sticky);
       }
 
-      .chat-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 100%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-        opacity: 0.6;
-        pointer-events: none;
+      :host([theme="dark"]) .chat-header {
+        background: rgba(15, 23, 42, 0.7);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       }
 
       :host([theme="dark"]) .chat-header {
@@ -212,22 +208,20 @@ export class VannaChat extends LitElement {
       .chat-avatar {
         width: 44px;
         height: 44px;
-        border-radius: var(--vanna-border-radius-lg);
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
+        border-radius: var(--vanna-border-radius-full);
+        background: linear-gradient(135deg, var(--vanna-iris-light), var(--vanna-iris));
         display: grid;
         place-items: center;
         font-weight: 600;
         font-size: 16px;
-        letter-spacing: 0.02em;
-        color: var(--chat-primary-foreground);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
       }
 
       .header-text {
         display: flex;
         flex-direction: column;
-        gap: var(--vanna-space-1);
+        gap: 2px;
         min-width: 0;
       }
 
@@ -235,19 +229,18 @@ export class VannaChat extends LitElement {
         margin: 0;
         font-size: 18px;
         font-weight: 600;
-        letter-spacing: -0.01em;
-        color: var(--chat-primary-foreground);
+        letter-spacing: -0.015em;
+        color: var(--vanna-foreground-default);
       }
 
       .chat-subtitle {
         font-size: 13px;
-        letter-spacing: 0.01em;
-        opacity: 0.9;
-        font-weight: 400;
+        color: var(--vanna-foreground-dimmer);
+        font-weight: 500;
       }
 
       :host([theme="dark"]) .chat-subtitle {
-        opacity: 0.78;
+        color: var(--vanna-foreground-dimmest);
       }
 
       .window-controls {
@@ -427,47 +420,48 @@ export class VannaChat extends LitElement {
       }
 
       .chat-input-area {
-        padding: var(--vanna-space-5) var(--vanna-space-6) var(--vanna-space-6);
-        background: var(--chat-surface);
-        border-top: 1px solid var(--chat-outline);
+        padding: 0 var(--vanna-space-6) var(--vanna-space-6);
+        background: transparent;
         display: flex;
         flex-direction: column;
         gap: var(--vanna-space-4);
-        flex-shrink: 0; /* Prevent input area from shrinking */
-      }
-
-      :host([theme="dark"]) .chat-input-area {
-        border-top-color: rgba(148, 163, 184, 0.22);
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
       }
 
       .chat-input-container {
         display: flex;
         align-items: center;
-        gap: var(--vanna-space-2);
-        padding: 6px 8px 6px 18px;
-        border-radius: 999px;
-        background: var(--chat-muted);
-        border: 1px solid var(--chat-muted-stronger);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-        transition: border-color var(--vanna-duration-200) ease, box-shadow var(--vanna-duration-200) ease, background var(--vanna-duration-200) ease;
+        gap: var(--vanna-space-3);
+        padding: 8px 10px 8px 20px;
+        border-radius: 28px;
+        background: var(--vanna-background-root);
+        border: 1px solid var(--vanna-outline-default);
+        box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.06), 0 0 1px rgba(15, 23, 42, 0.08);
+        transition: box-shadow var(--vanna-duration-300) cubic-bezier(0.16, 1, 0.3, 1), transform var(--vanna-duration-300) ease;
+        margin: 0 auto;
+        width: 100%;
+        max-width: 800px;
       }
 
       .chat-input-container:focus-within {
-        border-color: var(--chat-primary);
-        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.85);
-        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 12px 32px -8px rgba(99, 102, 241, 0.15), 0 0 0 2px var(--vanna-iris-light);
+        border-color: transparent;
+        transform: translateY(-2px);
       }
 
       :host([theme="dark"]) .chat-input-container {
-        background: rgba(15, 23, 42, 0.65);
-        border-color: rgba(100, 116, 139, 0.45);
-        box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.18);
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
       }
 
       :host([theme="dark"]) .chat-input-container:focus-within {
-        border-color: rgba(129, 140, 248, 0.55);
-        box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.45), inset 0 1px 0 rgba(148, 163, 184, 0.25);
-        background: rgba(30, 41, 59, 0.88);
+        box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--vanna-iris);
+        background: rgba(30, 41, 59, 0.9);
       }
 
       .message-input {
@@ -581,50 +575,45 @@ export class VannaChat extends LitElement {
         align-items: center;
         justify-content: center;
         text-align: center;
-        color: var(--vanna-foreground-dimmer);
         padding: var(--vanna-space-12) var(--vanna-space-8);
-        margin: var(--vanna-space-8) var(--vanna-space-6);
-        font-size: 15px;
-        font-weight: 500;
-        line-height: 1.6;
-        background: linear-gradient(135deg, 
-          rgba(255, 255, 255, 0.95) 0%, 
-          rgba(248, 250, 252, 0.9) 50%,
-          rgba(241, 245, 249, 0.85) 100%);
-        border-radius: var(--vanna-border-radius-2xl);
-        border: 2px dashed var(--vanna-accent-primary-default);
-        box-shadow: 
-          var(--vanna-shadow-sm),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(8px);
-        transition: all var(--vanna-duration-300) ease;
+        margin: auto var(--vanna-space-6);
+        animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
-      .empty-state:hover {
-        border-color: var(--vanna-accent-primary-stronger);
-        transform: translateY(-2px);
-        box-shadow: 
-          var(--vanna-shadow-lg),
-          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      .empty-state-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto var(--vanna-space-5);
+        color: var(--vanna-iris);
+        background: var(--vanna-background-root);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 8px 24px -6px rgba(99, 102, 241, 0.25), 0 0 0 1px rgba(99, 102, 241, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      :host([theme="dark"]) .empty-state {
+      :host([theme="dark"]) .empty-state-icon {
+        background: rgba(30, 41, 59, 0.8);
+        box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      .empty-state-text {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--vanna-foreground-default);
+        margin: 0 0 var(--vanna-space-2) 0;
+      }
+
+      .empty-state-subtitle {
+        font-size: 16px;
         color: var(--vanna-foreground-dimmer);
-        background: linear-gradient(135deg, 
-          rgba(24, 29, 39, 0.95) 0%, 
-          rgba(31, 39, 51, 0.9) 50%,
-          rgba(17, 21, 28, 0.85) 100%);
-        border-color: var(--vanna-accent-primary-default);
-        box-shadow: 
-          var(--vanna-shadow-md),
-          inset 0 1px 0 rgba(129, 140, 248, 0.2);
-      }
-
-      :host([theme="dark"]) .empty-state:hover {
-        border-color: var(--vanna-accent-primary-hover);
-        box-shadow: 
-          var(--vanna-shadow-xl),
-          inset 0 1px 0 rgba(129, 140, 248, 0.3);
+        font-weight: 400;
+        max-width: 400px;
+        margin: 0 auto;
+        line-height: 1.5;
       }
 
       .empty-state-icon {
@@ -725,6 +714,7 @@ export class VannaChat extends LitElement {
   @state() private status: 'idle' | 'working' | 'error' | 'success' = 'idle';
   @state() private statusMessage = '';
   @state() private statusDetail = '';
+  @state() private showSettings = false;
   private _windowState: 'normal' | 'maximized' | 'minimized' = 'normal';
 
   @property({ reflect: false })
@@ -1300,6 +1290,16 @@ export class VannaChat extends LitElement {
   }
 
   /**
+   * Called when the config modal dispatches the save event
+   */
+  private handleConfigUpdate(e: CustomEvent) {
+    console.log('[VannaChat] Config updated, resetting chat context', e.detail);
+    this.clearMessages();
+    this.addMessage('Developer Configuration updated successfully! Backend agent memory context has been natively hot-swapped.', 'assistant');
+    this.showSettings = false;
+  }
+
+  /**
    * Add multiple messages at once (useful for testing scrolling)
    */
   addTestMessages(count: number = 10) {
@@ -1336,6 +1336,15 @@ export class VannaChat extends LitElement {
               </div>
               <div class="header-top-actions">
                 <div class="window-controls">
+                  <button
+                    class="window-control-btn settings"
+                    @click=${() => this.showSettings = true}
+                    title="Developer Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                  </button>
                   ${this.allowMinimize ? html`
                     <button
                       class="window-control-btn minimize"
@@ -1374,12 +1383,12 @@ export class VannaChat extends LitElement {
             <!-- Empty state - shown when no components exist -->
             <div class="empty-state" id="empty-state">
               <div class="empty-state-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
               </div>
-              <div class="empty-state-text">Start a conversation</div>
-              <div class="empty-state-subtitle">Type your message below to begin chatting</div>
+              <div class="empty-state-text">Welcome to Vanna</div>
+              <div class="empty-state-subtitle">Ask me anything about your data. I can answer questions, generate SQL, or build interactive charts.</div>
             </div>
 
             <!-- Rich Components Container - all content renders here via ComponentManager -->
@@ -1410,8 +1419,9 @@ export class VannaChat extends LitElement {
                 .disabled=${this.disabled || !this.currentMessage.trim()}
                 @click=${this.sendMessage}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                 </svg>
               </button>
             </div>
@@ -1424,6 +1434,13 @@ export class VannaChat extends LitElement {
           </div>
         ` : ''}
       </div>
+
+      <vanna-settings-panel
+        ?open=${this.showSettings}
+        .apiBase=${this.apiBaseUrl}
+        @settings-closed=${() => this.showSettings = false}
+        @config-updated=${this.handleConfigUpdate}>
+      </vanna-settings-panel>
     `;
   }
 }

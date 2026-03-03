@@ -227,8 +227,21 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 metadata={"error_type": "sql_error", "executed_sql": args.sql},
             )
 
+    # Dangerous keywords that indicate write/mutation operations.
+    DANGEROUS_KEYWORDS: set = {
+        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
+        "CREATE", "REPLACE", "GRANT", "REVOKE", "EXEC", "EXECUTE",
+        "MERGE", "UPSERT", "CALL",
+    }
+
     def _validate_read_only_sql(self, sql: str) -> Optional[str]:
-        """Validate SQL against read-only policy."""
+        """Validate SQL against read-only policy.
+
+        Performs two checks:
+        1. First-keyword allowlist (fast reject for obvious mutations).
+        2. Deep token scan via sqlparse to catch dangerous keywords hidden
+           inside CTEs or subqueries (e.g. WITH x AS (DELETE ...) SELECT ...).
+        """
         statements = [s.strip() for s in sqlparse.split(sql) if s.strip()]
         if not statements:
             return "SQL query cannot be empty."
@@ -248,4 +261,21 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 f"Allowed statement types: {allowed_list}."
             )
 
+        # Deep scan: check all tokens for dangerous keywords to catch
+        # bypass patterns like WITH x AS (DELETE FROM ...) SELECT * FROM x
+        parsed = sqlparse.parse(first_statement)
+        for statement in parsed:
+            for token in statement.flatten():
+                if token.ttype in (
+                    sqlparse.tokens.Keyword,
+                    sqlparse.tokens.Keyword.DDL,
+                    sqlparse.tokens.Keyword.DML,
+                ):
+                    if token.normalized.upper() in self.DANGEROUS_KEYWORDS:
+                        return (
+                            f"Blocked by read-only SQL policy: "
+                            f"dangerous keyword '{token.normalized}' detected."
+                        )
+
         return None
+

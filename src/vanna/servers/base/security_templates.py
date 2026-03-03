@@ -6,6 +6,8 @@ import time
 from collections import defaultdict, deque
 from typing import Any, Callable, Deque, Dict, Optional
 
+from vanna.core.errors import VannaPermissionError
+
 
 def make_fastapi_bearer_auth_middleware(
     token_validator: Callable[[str], bool],
@@ -68,17 +70,36 @@ def make_flask_bearer_auth_middleware(
 
 def make_fixed_window_rate_limiter(
     requests_per_minute: int = 120,
+    trust_proxy_headers: bool = False,
+    max_tracked_clients: int = 10_000,
 ) -> Callable[[Any, Any], None]:
-    """Create a request_guard-compatible rate limit hook."""
+    """Create a request_guard-compatible rate limit hook.
+
+    Args:
+        requests_per_minute: Maximum requests allowed per client per minute.
+        trust_proxy_headers: If True, use the leftmost IP from X-Forwarded-For
+            as the client identity. Only enable this when running behind a trusted
+            reverse proxy that sets the header; otherwise clients can spoof it to
+            bypass rate limiting.
+        max_tracked_clients: Maximum number of distinct clients to track. Oldest
+            entries are evicted once this limit is reached to cap memory usage.
+    """
 
     buckets: Dict[str, Deque[float]] = defaultdict(deque)
 
     def guard(chat_request: Any, request_context: Any) -> None:
-        identity = (
-            request_context.headers.get("x-forwarded-for")
-            or request_context.remote_addr
-            or "unknown"
-        )
+        if trust_proxy_headers:
+            xff = request_context.headers.get("x-forwarded-for", "")
+            # Use only the leftmost IP — the original client address.
+            identity = xff.split(",")[0].strip() or request_context.remote_addr or "unknown"
+        else:
+            identity = request_context.remote_addr or "unknown"
+
+        # Evict the oldest tracked client when the cap is reached.
+        if len(buckets) >= max_tracked_clients and identity not in buckets:
+            oldest_key = next(iter(buckets))
+            del buckets[oldest_key]
+
         now = time.time()
         window_start = now - 60.0
         queue = buckets[identity]
@@ -87,7 +108,7 @@ def make_fixed_window_rate_limiter(
             queue.popleft()
 
         if len(queue) >= requests_per_minute:
-            raise PermissionError("Rate limit exceeded for this client.")
+            raise VannaPermissionError("Rate limit exceeded for this client.")
 
         queue.append(now)
 

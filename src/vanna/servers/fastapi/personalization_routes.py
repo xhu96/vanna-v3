@@ -4,6 +4,7 @@ FastAPI routes for personalization: profile CRUD, glossary, consent, export/dele
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ except ImportError:
         "Install with: pip install 'vanna[fastapi]'"
     )
 
+from vanna.core.user.request_context import RequestContext
 from vanna.personalization.models import (
     GlossaryEntry,
     TenantProfile,
@@ -27,6 +29,8 @@ from vanna.personalization.services import (
     GlossaryService,
     ProfileService,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -92,10 +96,36 @@ def register_personalization_routes(
         consent_manager: Instantiated ConsentManager
         user_resolver: Optional callable to resolve user from request
     """
+    if user_resolver is None:
+        logger.warning(
+            "personalization_routes: user_resolver is not configured; user identity "
+            "will be read from unverified X-User-Id/X-Tenant-Id/X-User-Groups headers. "
+            "Provide a UserResolver or deploy behind a trusted auth proxy."
+        )
+
     router = APIRouter(prefix="/api/v1", tags=["personalization"])
 
-    def _get_user_info(request: Request) -> Dict[str, Any]:
-        """Extract user info from request (simplified; real impl uses UserResolver)."""
+    async def _get_user_info(request: Request) -> Dict[str, Any]:
+        """Extract verified user identity from the request.
+
+        When user_resolver is configured, identity is authenticated through it.
+        Otherwise falls back to X-User-Id/X-Tenant-Id/X-User-Groups headers —
+        only safe when those are set by a trusted, authenticated reverse proxy.
+        """
+        if user_resolver is not None:
+            request_context = RequestContext(
+                cookies=dict(request.cookies),
+                headers=dict(request.headers),
+                remote_addr=request.client.host if request.client else None,
+                query_params=dict(request.query_params),
+                metadata={},
+            )
+            user = await user_resolver.resolve_user(request_context)
+            return {
+                "user_id": user.id,
+                "tenant_id": user.tenant_id or "default",
+                "groups": user.group_memberships,
+            }
         user_id = request.headers.get("X-User-Id", "anonymous")
         tenant_id = request.headers.get("X-Tenant-Id", "default")
         groups = request.headers.get("X-User-Groups", "").split(",")
@@ -110,7 +140,7 @@ def register_personalization_routes(
 
     @router.get("/profile")
     async def get_profile(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             profile = await profile_service.get_user_profile(
                 info["user_id"],
@@ -128,7 +158,7 @@ def register_personalization_routes(
     async def update_profile(
         body: UpdateProfileRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         profile = UserProfile(
             user_id=info["user_id"],
             tenant_id=info["tenant_id"],
@@ -146,7 +176,7 @@ def register_personalization_routes(
 
     @router.delete("/profile")
     async def delete_profile(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             deleted = await profile_service.delete_user_profile(
                 info["user_id"],
@@ -160,7 +190,7 @@ def register_personalization_routes(
 
     @router.get("/profile/export")
     async def export_profile(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             data = await profile_service.export_user_profile(
                 info["user_id"],
@@ -178,7 +208,7 @@ def register_personalization_routes(
     async def update_tenant_profile(
         body: UpdateTenantProfileRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         profile = TenantProfile(
             tenant_id=info["tenant_id"], **body.model_dump()
         )
@@ -194,7 +224,7 @@ def register_personalization_routes(
 
     @router.get("/glossary")
     async def list_glossary(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         entries = await glossary_service.list_entries(info["tenant_id"])
         return {
             "entries": [e.model_dump(mode="json") for e in entries]
@@ -204,7 +234,7 @@ def register_personalization_routes(
     async def create_glossary_entry(
         body: CreateGlossaryRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         entry = GlossaryEntry(
             tenant_id=info["tenant_id"],
             **body.model_dump(),
@@ -220,7 +250,7 @@ def register_personalization_routes(
     async def update_glossary_entry(
         entry_id: str, body: UpdateGlossaryRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         existing = await glossary_service.get_entry(entry_id)
         if existing is None:
             raise HTTPException(status_code=404, detail="Entry not found")
@@ -241,7 +271,7 @@ def register_personalization_routes(
     async def delete_glossary_entry(
         entry_id: str, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             deleted = await glossary_service.delete_entry(
                 entry_id,
@@ -256,7 +286,7 @@ def register_personalization_routes(
 
     @router.post("/consent/enable")
     async def enable_consent(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         profile = await consent_manager.enable_personalization(
             info["user_id"], info["tenant_id"]
         )
@@ -264,7 +294,7 @@ def register_personalization_routes(
 
     @router.post("/consent/disable")
     async def disable_consent(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         profile = await consent_manager.disable_personalization(
             info["user_id"], info["tenant_id"]
         )

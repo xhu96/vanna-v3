@@ -125,15 +125,10 @@ class VannaFastAPIServer:
 
                 nest_asyncio.apply()
             except ImportError:
-                print("Warning: nest_asyncio not installed. Installing...")
-                import subprocess
-
-                subprocess.check_call(
-                    [sys.executable, "-m", "pip", "install", "nest_asyncio"]
+                raise ImportError(
+                    "Required package 'nest_asyncio' is not installed. "
+                    "Please install it manually: pip install nest_asyncio"
                 )
-                import nest_asyncio
-
-                nest_asyncio.apply()
 
         # Now create the app after nest_asyncio is applied
         app = self.create_app()

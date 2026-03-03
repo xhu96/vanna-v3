@@ -47,11 +47,11 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
 ### Try it with Sample Data
 
-[Quickstart](https://vanna.ai/docs/quick-start)
+[Quickstart](https://vanna.ai/docs/quick-start) _(upstream docs — fork APIs may differ)_
 
 ### Configure
 
-[Configure](https://vanna.ai/docs/configure)
+[Configure](https://vanna.ai/docs/configure) _(upstream docs — fork APIs may differ)_
 
 ### Web Component
 
@@ -207,14 +207,15 @@ chat_handler = ChatHandler(agent)
 register_chat_routes(app, chat_handler)
 
 # Now you have:
-# - POST /api/vanna/v2/chat_sse (streaming endpoint)
+# - POST /api/vanna/v3/chat/events (streaming endpoint)
+# - POST /api/vanna/v2/chat_sse     (legacy v2 — still available)
 # - GET / (optional web UI)
 ```
 
 **Then in your frontend:**
 
 ```html
-<vanna-chat sse-endpoint="/api/vanna/v2/chat_sse"></vanna-chat>
+<vanna-chat sse-endpoint="/api/vanna/v3/chat/events"></vanna-chat>
 ```
 
 See [Full Documentation](https://vanna.ai/docs) for custom tools, lifecycle hooks, and advanced configuration
@@ -274,7 +275,13 @@ Vanna 3 includes powerful enterprise features for production use:
 
 **Schema Drift Sync** — Automatically detect and patch schema changes via cron-compatible scheduler
 
-**Semantic Layer Integration** — Route queries through metrics/dimensions before falling back to raw SQL
+**Semantic Layer Integration** — Route queries through metrics/dimensions (Cube.dev, dbt) before falling back to raw SQL
+
+**Data Observability Integration** — Use validation gates (Great Expectations) to interrupt queries to stale tables
+
+**Stream Analytics Runner** — Continuous queries and materialized views via Apache Flink
+
+**Dynamic Data Masking** — Redact PII locally using Microsoft Presidio before the LLM sees records
 
 **Lineage & Confidence** — Every answer includes provenance, evidence panel, and tiered confidence scores
 
@@ -399,4 +406,4 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**Fork maintained by [xhu96](https://github.com/xhu96)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)
+**Fork maintained by [xhu96](https://github.com/xhu96) [Aakash Sindhu](https://github.com/akash-sindu)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)

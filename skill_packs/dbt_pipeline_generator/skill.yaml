@@ -1,0 +1,54 @@
+name: dbt_pipeline_generator
+version: "1.0.0"
+description: >
+  Allows Vanna to generate dbt models (SQL and YML) from conversational insights
+  to automate ETL and pipeline creation based on user queries.
+
+provenance:
+  author: vanna-data-engineering
+  generator_metadata:
+    method: manual
+
+intents:
+  patterns:
+    - "(?i)\\b(dbt|pipeline|model|etl|materialize|daily|schedule|save this as)\\b"
+  embedding_hints:
+    - "generate a dbt model for this query"
+    - "save this as a daily dbt pipeline"
+    - "create an etl job for this"
+    - "materialize this view in dbt"
+  tool_routing_hints:
+    - "generate_dbt_model"
+
+knowledge:
+  synonyms:
+    pipeline:
+      - etl
+      - dbt model
+      - scheduled job
+    materialize:
+      - save as table
+      - create view
+      - build model
+  metric_definitions: {}
+  semantic_mappings: {}
+
+policies:
+  tool_allowlist: ["generate_dbt_model"]
+  tool_denylist: []
+  required_filters: []
+  row_redaction_rules: []
+  column_redaction_rules: []
+  sql_limits:
+    read_only: false
+    max_rows: 1000
+    max_runtime_seconds: 30
+    require_limit: false
+    forbid_ddl_dml: false
+
+rendering:
+  preferred_output_layout: markdown
+
+eval_suite:
+  pass_rate_threshold: 0.8
+  min_score: 0.7

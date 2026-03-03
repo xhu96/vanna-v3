@@ -51,7 +51,6 @@ from .core import (
     StatusCardComponent,
     TaskListComponent,
     # Core implementations
-    Agent,
     AgentConfig,
     DefaultSystemPromptBuilder,
     DefaultWorkflowHandler,
@@ -76,10 +75,10 @@ from .core import (
     AgentError,
     ConversationNotFoundError,
     LlmServiceError,
-    PermissionError,
+    VannaPermissionError,
     ToolExecutionError,
     ToolNotFoundError,
-    ValidationError,
+    VannaValidationError,
 )
 
 # Import basic implementations
@@ -165,8 +164,8 @@ __all__ = [
     "AgentError",
     "ToolExecutionError",
     "ToolNotFoundError",
-    "PermissionError",
+    "VannaPermissionError",
     "ConversationNotFoundError",
     "LlmServiceError",
-    "ValidationError",
+    "VannaValidationError",
 ]

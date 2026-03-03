@@ -61,10 +61,10 @@ from .errors import (
     AgentError,
     ConversationNotFoundError,
     LlmServiceError,
-    PermissionError,
+    VannaPermissionError,
     ToolExecutionError,
     ToolNotFoundError,
-    ValidationError,
+    VannaValidationError,
 )
 
 # Core implementations
@@ -191,8 +191,8 @@ __all__ = [
     "AgentError",
     "ToolExecutionError",
     "ToolNotFoundError",
-    "PermissionError",
+    "VannaPermissionError",
     "ConversationNotFoundError",
     "LlmServiceError",
-    "ValidationError",
+    "VannaValidationError",
 ]

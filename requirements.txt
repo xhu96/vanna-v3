@@ -1,3 +1,7 @@
+# Convenience requirements for development.
+# Canonical install: pip install -e ".[fastapi,dev]"
+# This file is kept in sync with pyproject.toml [project.dependencies] + [project.optional-dependencies.dev]
+
 # Core dependencies (from pyproject.toml)
 pydantic>=2.0.0
 click>=8.0.0
@@ -8,12 +12,14 @@ plotly
 tabulate
 sqlparse
 sqlalchemy
+scipy
 requests
 jsonschema
 
 # Server
 fastapi>=0.68.0
 uvicorn>=0.15.0
+nest_asyncio
 
 # Development & Testing
 pytest>=7.0.0

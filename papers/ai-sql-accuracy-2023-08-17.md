@@ -133,7 +133,6 @@ For the **LLMs** to test, we’ll try the following - 
 2. [**GPT 3.5 Turbo (OpenAI)**](https://platform.openai.com/docs/models/gpt-3-5) - GPT 3.5 until recently was the flagship OpenAI model despite 4 being available because of latency and cost benefits, and not a huge accuracy difference (well - we’ll put that to the test) especially for basic tasks.
 3. [**GPT 4 (OpenAI)**](https://platform.openai.com/docs/models/gpt-4) - The more advanced but less performant OpenAI model. GPT 4 is multi-modal, though we won’t be using that functionality.
 4. [**Llama 2 (Meta)**](https://ai.meta.com/llama/) - We really wanted to include an open source model - and the leading one is Meta’s Llama 2. But our setup through [Replicate](https://replicate.com/replicate/llama-2-70b-chat) quickly conked out, and we weren’t able to fix it in time for publishing this. In our early runs, when it did work, we found performance to be mediocre at best.
-5. [**OpenRouter**](https://openrouter.ai/) - A unified API router that provides access to hundreds of LLMs (including Gemini, Claude, and Llama) via a single standardized OpenAI-compatible interface, offering fallback capabilities and built-in cost management.
 
 ### Choosing the context
 

@@ -2,6 +2,6 @@
 
 from .collector import LineageCollector
 from .confidence import ConfidenceScorer
-from .models import LineageEvidence
+from .models import ColumnLineageEdge, LineageEvidence
 
-__all__ = ["LineageCollector", "ConfidenceScorer", "LineageEvidence"]
+__all__ = ["ColumnLineageEdge", "LineageCollector", "ConfidenceScorer", "LineageEvidence"]

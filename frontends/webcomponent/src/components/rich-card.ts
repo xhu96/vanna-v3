@@ -20,35 +20,44 @@ export class RichCard extends LitElement {
       }
 
       .card {
-        border: 1px solid var(--vanna-outline-default);
-        border-radius: var(--vanna-border-radius-lg);
-        background: var(--vanna-background-default);
-        box-shadow: var(--vanna-shadow-sm);
+        border: 1px solid var(--vanna-outline-dimmer);
+        border-radius: var(--vanna-border-radius-xl);
+        background: var(--vanna-background-root);
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
         overflow: hidden;
-        transition: box-shadow var(--vanna-duration-200) ease;
+        transition: box-shadow var(--vanna-duration-300) ease, transform var(--vanna-duration-300) ease;
       }
 
       .card:hover {
-        box-shadow: var(--vanna-shadow-md);
+        box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
       }
 
       .card-header {
         display: flex;
         align-items: center;
         padding: var(--vanna-space-4) var(--vanna-space-5);
-        background: var(--vanna-background-higher);
-        border-bottom: 1px solid var(--vanna-outline-default);
+        background: var(--vanna-background-root);
+        border-bottom: 1px solid var(--vanna-outline-dimmer);
         gap: var(--vanna-space-3);
       }
 
       .card-header.collapsible {
         cursor: pointer;
+        transition: background-color var(--vanna-duration-200) ease;
+      }
+      
+      .card-header.collapsible:hover {
+        background: var(--vanna-background-higher);
       }
 
       .card-icon {
         font-size: 1.25rem;
         display: flex;
         align-items: center;
+        color: var(--vanna-iris);
+        background: var(--vanna-accent-primary-subtle);
+        padding: 8px;
+        border-radius: var(--vanna-border-radius-md);
       }
 
       .card-title-section {
@@ -60,6 +69,7 @@ export class RichCard extends LitElement {
         font-size: 1rem;
         font-weight: 600;
         color: var(--vanna-foreground-default);
+        letter-spacing: -0.01em;
       }
 
       .card-subtitle {
@@ -70,52 +80,60 @@ export class RichCard extends LitElement {
 
       .card-status {
         padding: var(--vanna-space-1) var(--vanna-space-2);
-        border-radius: var(--vanna-border-radius-md);
-        font-size: 0.75rem;
-        font-weight: 600;
+        border-radius: var(--vanna-border-radius-full);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
       }
 
       .card-status.status-success {
-        background: #d4edda;
-        color: #155724;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--vanna-emerald);
       }
 
       .card-status.status-warning {
-        background: #fff3cd;
-        color: #856404;
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--vanna-amber);
       }
 
       .card-status.status-error {
-        background: #f8d7da;
-        color: #721c24;
+        background: rgba(244, 63, 94, 0.1);
+        color: var(--vanna-rose);
       }
 
       .card-status.status-info {
-        background: #d1ecf1;
-        color: #0c5460;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--vanna-iris);
       }
 
       .card-toggle {
-        background: none;
-        border: none;
+        background: var(--vanna-background-higher);
+        border: 1px solid var(--vanna-outline-dimmer);
         cursor: pointer;
-        font-size: 1rem;
+        font-size: 0.7rem;
         color: var(--vanna-foreground-dimmer);
-        padding: var(--vanna-space-1);
-        border-radius: var(--vanna-border-radius-sm);
-        transition: background-color var(--vanna-duration-200) ease;
+        padding: var(--vanna-space-2);
+        border-radius: var(--vanna-border-radius-full);
+        transition: all var(--vanna-duration-200) ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
       }
 
       .card-toggle:hover {
-        background: var(--vanna-background-root);
+        background: var(--vanna-background-highest);
+        color: var(--vanna-foreground-default);
+        transform: scale(1.05);
       }
 
       .card-content {
-        padding: var(--vanna-space-4) var(--vanna-space-5);
-        line-height: 1.5;
-        color: var(--vanna-foreground-default);
-        transition: all var(--vanna-duration-200) ease;
+        padding: var(--vanna-space-5);
+        line-height: 1.6;
+        color: var(--vanna-foreground-dimmer);
+        transition: all var(--vanna-duration-300) cubic-bezier(0.16, 1, 0.3, 1);
         overflow: hidden;
       }
 
@@ -123,29 +141,36 @@ export class RichCard extends LitElement {
         max-height: 0;
         padding-top: 0;
         padding-bottom: 0;
+        opacity: 0;
       }
 
       .card-content h1,
       .card-content h2,
       .card-content h3 {
-        margin: var(--vanna-space-2) 0;
+        margin: var(--vanna-space-3) 0 var(--vanna-space-2);
         font-weight: 600;
+        color: var(--vanna-foreground-default);
+        letter-spacing: -0.01em;
       }
 
       .card-content h1 {
-        font-size: 1.5rem;
-      }
-
-      .card-content h2 {
         font-size: 1.25rem;
       }
 
-      .card-content h3 {
+      .card-content h2 {
         font-size: 1.125rem;
       }
 
+      .card-content h3 {
+        font-size: 1rem;
+      }
+
       .card-content p {
-        margin: var(--vanna-space-2) 0;
+        margin: 0 0 var(--vanna-space-3) 0;
+      }
+
+      .card-content p:last-child {
+        margin-bottom: 0;
       }
 
       .card-content ul {
@@ -159,48 +184,63 @@ export class RichCard extends LitElement {
 
       .card-content code {
         background: var(--vanna-background-higher);
-        padding: var(--vanna-space-1) var(--vanna-space-2);
+        padding: 2px 4px;
+        border: 1px solid var(--vanna-outline-dimmer);
         border-radius: var(--vanna-border-radius-sm);
-        font-family: monospace;
-        font-size: 0.875em;
+        font-family: var(--vanna-font-family-mono);
+        font-size: 0.85em;
+        color: var(--vanna-foreground-default);
       }
 
       .card-content strong {
         font-weight: 600;
+        color: var(--vanna-foreground-default);
       }
 
       .card-actions {
         padding: var(--vanna-space-3) var(--vanna-space-5);
         background: var(--vanna-background-root);
-        border-top: 1px solid var(--vanna-outline-default);
+        border-top: 1px solid var(--vanna-outline-dimmest);
         display: flex;
+        flex-wrap: wrap;
         gap: var(--vanna-space-2);
       }
 
       .card-action {
-        padding: var(--vanna-space-2) var(--vanna-space-4);
-        border-radius: var(--vanna-border-radius-md);
-        border: 1px solid var(--vanna-outline-default);
-        background: var(--vanna-background-default);
+        padding: 6px 14px;
+        border-radius: 99px;
+        border: 1px solid var(--vanna-outline-dimmer);
+        background: var(--vanna-background-root);
         color: var(--vanna-foreground-default);
         cursor: pointer;
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         font-weight: 500;
         transition: all var(--vanna-duration-200) ease;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
       }
 
       .card-action:hover {
         background: var(--vanna-background-higher);
+        border-color: var(--vanna-outline-default);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+      }
+
+      .card-action:active {
+        transform: translateY(0);
       }
 
       .card-action.primary {
-        background: var(--vanna-accent-primary-default);
+        background: var(--vanna-iris);
         color: white;
-        border-color: var(--vanna-accent-primary-default);
+        border-color: var(--vanna-iris);
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
       }
 
       .card-action.primary:hover {
-        background: var(--vanna-accent-primary-stronger);
+        background: var(--vanna-iris-dark);
+        border-color: var(--vanna-iris-dark);
+        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.25);
       }
     `
   ];
@@ -222,9 +262,19 @@ export class RichCard extends LitElement {
     }
   }
 
-  private _renderMarkdown(text: string): string {
-    // Simple markdown rendering - basic formatting
+  private _escapeHtml(text: string): string {
     return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private _renderMarkdown(text: string): string {
+    // Escape all HTML entities first to prevent XSS, then apply markdown transforms.
+    const escaped = this._escapeHtml(text);
+    return escaped
       .replace(/^### (.*$)/gm, '<h3>$1</h3>')
       .replace(/^## (.*$)/gm, '<h2>$1</h2>')
       .replace(/^# (.*$)/gm, '<h1>$1</h1>')

@@ -40,39 +40,40 @@ export class VannaMessage extends LitElement {
         flex-direction: column;
         gap: var(--vanna-space-2);
         max-width: min(85%, 580px);
-        transition: transform var(--vanna-duration-200) ease, box-shadow var(--vanna-duration-200) ease;
+        transition: transform var(--vanna-duration-300) cubic-bezier(0.16, 1, 0.3, 1), box-shadow var(--vanna-duration-300) ease;
         backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
 
       .message.assistant {
         background: var(--vanna-background-root);
         border: 1px solid var(--vanna-outline-dimmer);
         color: var(--vanna-foreground-default);
-        box-shadow: var(--vanna-shadow-sm);
-        border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-space-2);
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+        border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius-sm);
       }
 
       .message.user {
         margin-left: auto;
         max-width: min(80%, 500px);
-        background: linear-gradient(135deg, var(--vanna-accent-primary-stronger) 0%, var(--vanna-accent-primary-default) 100%);
+        background: linear-gradient(135deg, var(--vanna-iris-light) 0%, var(--vanna-iris) 100%);
         color: white;
-        box-shadow: var(--vanna-shadow-md);
-        border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-space-2) var(--vanna-chat-bubble-radius);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 6px 16px -4px rgba(99, 102, 241, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius-sm) var(--vanna-chat-bubble-radius);
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .message:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
 
       .message.assistant:hover {
-        box-shadow: var(--vanna-shadow-md);
-        border-color: var(--vanna-outline-hover);
+        box-shadow: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+        border-color: var(--vanna-outline-default);
       }
 
       .message.user:hover {
-        box-shadow: var(--vanna-shadow-lg);
+        box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.35);
       }
 
       .message-content {
@@ -146,15 +147,15 @@ export class VannaMessage extends LitElement {
       }
 
       :host([theme="dark"]) .message.assistant {
-        background: var(--vanna-background-higher);
-        border: 1px solid var(--vanna-outline-default);
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         color: var(--vanna-foreground-default);
-        box-shadow: var(--vanna-shadow-md);
+        box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
       }
 
       :host([theme="dark"]) .message.assistant .message-content code {
-        background: var(--vanna-background-highest);
-        border-color: var(--vanna-outline-default);
+        background: rgba(15, 23, 42, 0.8);
+        border-color: rgba(255, 255, 255, 0.05);
       }
 
       :host([theme="dark"]) .message.assistant .message-timestamp {
@@ -162,18 +163,18 @@ export class VannaMessage extends LitElement {
       }
 
       :host([theme="dark"]) .message.assistant .message-timestamp::before {
-        background: var(--vanna-accent-primary-default);
+        background: var(--vanna-iris);
       }
 
       :host([theme="dark"]) .message.user {
-        background: linear-gradient(135deg, var(--vanna-accent-primary-stronger) 0%, var(--vanna-accent-primary-default) 100%);
+        background: linear-gradient(135deg, var(--vanna-iris) 0%, var(--vanna-iris-dark) 100%);
         color: white;
-        box-shadow: var(--vanna-shadow-lg);
+        box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
 
       :host([theme="dark"]) .message.user .message-content code {
         background: rgba(255, 255, 255, 0.15);
-        border-color: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       :host([theme="dark"]) .message.user .message-timestamp {

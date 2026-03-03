@@ -27,7 +27,7 @@ export class VegaLiteChart extends LitElement {
   ];
 
   @property({ type: Object }) spec: Record<string, any> = {};
-  @property({ type: Array }) dataset: Array<Record<string, any>> = [];
+  @property({ type: Array }) chartData: Array<Record<string, any>> = [];
   @property({ type: String }) error = '';
 
   firstUpdated() {
@@ -35,7 +35,7 @@ export class VegaLiteChart extends LitElement {
   }
 
   updated(changed: Map<string | number | symbol, unknown>) {
-    if (changed.has('spec') || changed.has('dataset')) {
+    if (changed.has('spec') || changed.has('chartData')) {
       this.renderChart();
     }
   }
@@ -50,7 +50,7 @@ export class VegaLiteChart extends LitElement {
         ...this.spec,
         data: {
           ...(this.spec.data || {}),
-          values: this.dataset || [],
+          values: this.chartData || [],
         },
       };
       await embed(el, viewSpec, {

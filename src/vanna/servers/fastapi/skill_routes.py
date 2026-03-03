@@ -4,6 +4,7 @@ FastAPI routes for the Skill Fabric: registry, compilation, promotion, generatio
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ except ImportError:
         "Install with: pip install 'vanna[fastapi]'"
     )
 
+from vanna.core.user.request_context import RequestContext
 from vanna.skills.approval import ApprovalError, ApprovalWorkflow
 from vanna.skills.compiler import SkillCompiler
 from vanna.skills.generator import SkillGenerator
@@ -25,6 +27,8 @@ from vanna.skills.registry import (
     SkillRegistry,
     SkillRegistryError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -64,11 +68,40 @@ def register_skill_routes(
     compiler: SkillCompiler,
     approval_workflow: ApprovalWorkflow,
     generator: SkillGenerator,
+    *,
+    user_resolver: Any = None,
 ) -> None:
     """Register Skill Fabric API routes on a FastAPI app."""
+    if user_resolver is None:
+        logger.warning(
+            "skill_routes: user_resolver is not configured; user identity "
+            "will be read from unverified X-User-Id/X-Tenant-Id/X-User-Groups headers. "
+            "Provide a UserResolver or deploy behind a trusted auth proxy."
+        )
+
     router = APIRouter(prefix="/api/v1/skills", tags=["skills"])
 
-    def _get_user_info(request: Request) -> Dict[str, Any]:
+    async def _get_user_info(request: Request) -> Dict[str, Any]:
+        """Extract verified user identity from the request.
+
+        When user_resolver is configured, identity is authenticated through it.
+        Otherwise falls back to X-User-Id/X-Tenant-Id/X-User-Groups headers —
+        only safe when those are set by a trusted, authenticated reverse proxy.
+        """
+        if user_resolver is not None:
+            request_context = RequestContext(
+                cookies=dict(request.cookies),
+                headers=dict(request.headers),
+                remote_addr=request.client.host if request.client else None,
+                query_params=dict(request.query_params),
+                metadata={},
+            )
+            user = await user_resolver.resolve_user(request_context)
+            return {
+                "user_id": user.id,
+                "tenant_id": user.tenant_id or "default",
+                "groups": user.group_memberships,
+            }
         user_id = request.headers.get("X-User-Id", "anonymous")
         tenant_id = request.headers.get("X-Tenant-Id", "default")
         groups = request.headers.get("X-User-Groups", "").split(",")
@@ -77,7 +110,7 @@ def register_skill_routes(
 
     @router.get("")
     async def list_skills(request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         env_param = request.query_params.get("environment")
         env = SkillEnvironment(env_param) if env_param else None
         skills = await registry.list_skills(
@@ -107,7 +140,7 @@ def register_skill_routes(
     async def register_skill(
         body: RegisterSkillRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             spec = SkillSpec(**body.skill_spec)
             entry = await registry.register_skill(
@@ -136,7 +169,7 @@ def register_skill_routes(
     async def promote_skill(
         skill_id: str, body: PromoteSkillRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             target = SkillEnvironment(body.target_environment)
             entry = await approval_workflow.promote(
@@ -161,7 +194,7 @@ def register_skill_routes(
     async def rollback_skill(
         skill_id: str, body: PromoteSkillRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             target = SkillEnvironment(body.target_environment)
             entry = await registry.rollback_skill(
@@ -181,7 +214,7 @@ def register_skill_routes(
 
     @router.put("/{skill_id}/enable")
     async def enable_skill(skill_id: str, request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             entry = await registry.enable_skill(
                 skill_id, actor=info["user_id"]
@@ -192,7 +225,7 @@ def register_skill_routes(
 
     @router.put("/{skill_id}/disable")
     async def disable_skill(skill_id: str, request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             entry = await registry.disable_skill(
                 skill_id, actor=info["user_id"]
@@ -203,7 +236,7 @@ def register_skill_routes(
 
     @router.delete("/{skill_id}")
     async def delete_skill(skill_id: str, request: Request) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         try:
             deleted = await registry.delete_skill(
                 skill_id,
@@ -225,7 +258,7 @@ def register_skill_routes(
     async def generate_skill(
         body: GenerateSkillRequest, request: Request
     ) -> Dict[str, Any]:
-        info = _get_user_info(request)
+        info = await _get_user_info(request)
         output = await generator.generate(
             schema_catalog=body.schema_catalog,
             tenant_glossary=body.tenant_glossary,

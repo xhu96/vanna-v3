@@ -15,15 +15,16 @@ export class RichProgressBar extends LitElement {
 
       .progress-container {
         padding: var(--vanna-space-4);
-        border: 1px solid var(--vanna-outline-default);
-        border-radius: var(--vanna-border-radius-lg);
-        background: var(--vanna-background-default);
-        box-shadow: var(--vanna-shadow-sm);
-        transition: box-shadow var(--vanna-duration-200) ease;
+        border: 1px solid var(--vanna-outline-dimmer);
+        border-radius: var(--vanna-border-radius-xl);
+        background: var(--vanna-background-root);
+        box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+        transition: box-shadow var(--vanna-duration-300) ease, transform var(--vanna-duration-300) ease;
       }
 
       .progress-container:hover {
-        box-shadow: var(--vanna-shadow-md);
+        box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
       }
 
       .progress-header {
@@ -45,21 +46,23 @@ export class RichProgressBar extends LitElement {
       }
 
       .progress-track {
-        height: 12px;
-        background: var(--vanna-background-root);
-        border-radius: 6px;
+        height: 8px;
+        background: var(--vanna-background-higher);
+        border-radius: var(--vanna-border-radius-full);
         overflow: hidden;
-        border: 1px solid var(--vanna-outline-default);
+        border: 1px solid var(--vanna-outline-dimmest);
         position: relative;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
       }
 
       .progress-fill {
         height: 100%;
-        background: var(--vanna-accent-primary-default);
-        border-radius: 6px;
-        transition: width var(--vanna-duration-300) ease;
+        background: linear-gradient(90deg, var(--vanna-iris-light), var(--vanna-iris));
+        border-radius: var(--vanna-border-radius-full);
+        transition: width var(--vanna-duration-400) cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
         overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
       }
 
       .progress-fill.animated {
@@ -76,15 +79,15 @@ export class RichProgressBar extends LitElement {
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(255, 255, 255, 0.2),
+          rgba(255, 255, 255, 0.3),
           transparent
         );
         animation: progressShimmer 1.5s infinite;
       }
 
       @keyframes progressPulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.8; }
+        0%, 100% { opacity: 1; filter: brightness(1); }
+        50% { opacity: 0.85; filter: brightness(1.1); }
       }
 
       @keyframes progressShimmer {
@@ -93,19 +96,19 @@ export class RichProgressBar extends LitElement {
       }
 
       .progress-fill.status-success {
-        background: var(--vanna-accent-positive-default);
+        background: linear-gradient(90deg, #34D399, var(--vanna-emerald));
       }
 
       .progress-fill.status-warning {
-        background: var(--vanna-accent-warning-default);
+        background: linear-gradient(90deg, #FBBF24, var(--vanna-amber));
       }
 
       .progress-fill.status-error {
-        background: var(--vanna-accent-negative-default);
+        background: linear-gradient(90deg, #FB7185, var(--vanna-rose));
       }
 
       .progress-fill.status-info {
-        background: var(--vanna-accent-primary-default);
+        background: linear-gradient(90deg, var(--vanna-iris-light), var(--vanna-iris));
       }
 
       /* Indeterminate progress animation */

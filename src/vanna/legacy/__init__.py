@@ -10,7 +10,7 @@ import plotly.graph_objs
 
 from .exceptions import (
     OTPCodeError,
-    ValidationError,
+    VannaValidationError,
 )
 from .types import (
     ApiKey,
@@ -95,7 +95,7 @@ def get_api_key(email: str, otp_code: Union[str, None] = None) -> str:
         return vanna_api_key
 
     if email == "my-email@example.com":
-        raise ValidationError(
+        raise VannaValidationError(
             "Please replace 'my-email@example.com' with your email address."
         )
 

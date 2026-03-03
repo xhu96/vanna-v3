@@ -336,7 +336,14 @@ class LocalFileSystem(FileSystem):
         if not args:
             raise ValueError("Command must not be empty")
 
-        executable = Path(args[0]).name
+        # Reject any path-like command (e.g. "./evil" or "../../bin/sh") to
+        # prevent an attacker from placing a malicious binary with an allowed
+        # name in the working directory or on PATH.
+        if "/" in args[0] or "\\" in args[0]:
+            raise PermissionError(
+                f"Command must be a bare executable name, not a path: '{args[0]}'"
+            )
+        executable = args[0]
         if executable not in self.allowed_commands:
             raise PermissionError(
                 f"Command '{executable}' is not in the allowed_commands allowlist"

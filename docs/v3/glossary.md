@@ -49,6 +49,10 @@ This block is appended to the system prompt, ensuring the LLM:
 
 ## API Endpoints
 
+> [!NOTE]
+> These endpoints are **planned** and are not yet registered in the server. The current
+> server routes use `/api/vanna/v2/` and `/api/vanna/v3/` prefixes.
+
 | Method   | Path                    | Description               |
 | -------- | ----------------------- | ------------------------- |
 | `GET`    | `/api/v1/glossary`      | List entries for tenant   |

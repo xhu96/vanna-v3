@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 from langchain_postgres.vectorstores import PGVector
 from sqlalchemy import create_engine, text
 
-from .. import ValidationError
+from .. import VannaValidationError
 from ..base import VannaBase
 from ..types import TrainingPlan, TrainingPlanItem
 
@@ -126,7 +126,7 @@ class PG_VectorStore(VannaBase):
         createdat: str | None = None,
     ):
         if question and not sql:
-            raise ValidationError("Please provide a SQL query.")
+            raise VannaValidationError("Please provide a SQL query.")
 
         if documentation:
             logging.info(f"Adding documentation: {documentation}")

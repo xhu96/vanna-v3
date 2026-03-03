@@ -48,6 +48,14 @@ flowchart
 
 """
 
+import warnings
+warnings.warn(
+    "vanna.legacy.base is deprecated and will be removed in a future version. "
+    "Use vanna.core.agent instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
 import json
 import os
 import re
@@ -64,7 +72,7 @@ import plotly.graph_objects as go
 import requests
 import sqlparse
 
-from ..exceptions import DependencyError, ImproperlyConfigured, ValidationError
+from ..exceptions import DependencyError, ImproperlyConfigured, VannaValidationError
 from ..types import TrainingPlan, TrainingPlanItem
 from ..utils import validate_config_path
 
@@ -80,11 +88,6 @@ class VannaBase(ABC):
         self.dialect = self.config.get("dialect", "SQL")
         self.language = self.config.get("language", None)
         self.max_tokens = self.config.get("max_tokens", 14000)
-        # Security-by-default for v3: do not execute LLM-generated Python chart code
-        # unless explicitly enabled by the operator.
-        self.allow_unsafe_plotly_code_execution = self.config.get(
-            "allow_unsafe_plotly_code_execution", False
-        )
 
     def log(self, message: str, title: str = "Info"):
         print(f"{title}: {message}")
@@ -978,7 +981,7 @@ class VannaBase(ABC):
                 **kwargs,
             )
         except psycopg2.Error as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def connect_to_db():
             return psycopg2.connect(
@@ -1018,7 +1021,7 @@ class VannaBase(ABC):
             except psycopg2.Error as e:
                 if conn:
                     conn.rollback()
-                    raise ValidationError(e)
+                    raise VannaValidationError(e)
 
             except Exception as e:
                 conn.rollback()
@@ -1088,7 +1091,7 @@ class VannaBase(ABC):
                 **kwargs,
             )
         except pymysql.Error as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def run_sql_mysql(sql: str) -> Union[pd.DataFrame, None]:
             if conn:
@@ -1106,7 +1109,7 @@ class VannaBase(ABC):
 
                 except pymysql.Error as e:
                     conn.rollback()
-                    raise ValidationError(e)
+                    raise VannaValidationError(e)
 
                 except Exception as e:
                     conn.rollback()
@@ -1175,7 +1178,7 @@ class VannaBase(ABC):
             )
             print(conn)
         except Exception as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def run_sql_clickhouse(sql: str) -> Union[pd.DataFrame, None]:
             if conn:
@@ -1245,7 +1248,7 @@ class VannaBase(ABC):
         try:
             conn = oracledb.connect(user=user, password=password, dsn=dsn, **kwargs)
         except oracledb.Error as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def run_sql_oracle(sql: str) -> Union[pd.DataFrame, None]:
             if conn:
@@ -1268,7 +1271,7 @@ class VannaBase(ABC):
 
                 except oracledb.Error as e:
                     conn.rollback()
-                    raise ValidationError(e)
+                    raise VannaValidationError(e)
 
                 except Exception as e:
                     conn.rollback()
@@ -1546,7 +1549,7 @@ class VannaBase(ABC):
                 **kwargs,
             )
         except presto.Error as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def run_sql_presto(sql: str) -> Union[pd.DataFrame, None]:
             if conn:
@@ -1567,7 +1570,7 @@ class VannaBase(ABC):
 
                 except presto.Error as e:
                     print(e)
-                    raise ValidationError(e)
+                    raise VannaValidationError(e)
 
                 except Exception as e:
                     print(e)
@@ -1649,7 +1652,7 @@ class VannaBase(ABC):
                 auth=auth,
             )
         except hive.Error as e:
-            raise ValidationError(e)
+            raise VannaValidationError(e)
 
         def run_sql_hive(sql: str) -> Union[pd.DataFrame, None]:
             if conn:
@@ -1666,7 +1669,7 @@ class VannaBase(ABC):
 
                 except hive.Error as e:
                     print(e)
-                    raise ValidationError(e)
+                    raise VannaValidationError(e)
 
                 except Exception as e:
                     print(e)
@@ -1770,41 +1773,12 @@ class VannaBase(ABC):
                 self.add_question_sql(question=question, sql=sql)
             # Only generate plotly code if visualize is True
             if visualize:
-                if not self.allow_unsafe_plotly_code_execution:
-                    print(
-                        "Visualization skipped: LLM-generated Python chart execution "
-                        "is disabled by default. "
-                        "Set config['allow_unsafe_plotly_code_execution']=True to opt in."
-                    )
-                    return sql, df, None
-                try:
-                    plotly_code = self.generate_plotly_code(
-                        question=question,
-                        sql=sql,
-                        df_metadata=f"Running df.dtypes gives:\n {df.dtypes}",
-                    )
-                    fig = self.get_plotly_figure(plotly_code=plotly_code, df=df)
-                    if print_results:
-                        try:
-                            display = __import__(
-                                "IPython.display", fromlist=["display"]
-                            ).display
-                            Image = __import__(
-                                "IPython.display", fromlist=["Image"]
-                            ).Image
-                            img_bytes = fig.to_image(format="png", scale=2)
-                            display(Image(img_bytes))
-                        except Exception as e:
-                            fig.show()
-                except Exception as e:
-                    # Print stack trace
-                    traceback.print_stack()
-                    traceback.print_exc()
-                    print("Couldn't run plotly code: ", e)
-                    if print_results:
-                        return None
-                    else:
-                        return sql, df, None
+                raise NotImplementedError(
+                    "Direct code execution is disabled in Vanna 3 for security reasons. "
+                    "Use the v3 chart-spec approach instead. "
+                    "See: https://github.com/vanna-ai/vanna/wiki/Charts"
+                )
+
             else:
                 return sql, df, None
 
@@ -1846,7 +1820,7 @@ class VannaBase(ABC):
         """
 
         if question and not sql:
-            raise ValidationError("Please also provide a SQL query")
+            raise VannaValidationError("Please also provide a SQL query")
 
         if documentation:
             print("Adding documentation....")
@@ -2102,41 +2076,9 @@ class VannaBase(ABC):
         Returns:
             plotly.graph_objs.Figure: The Plotly figure.
         """
-        ldict = {"df": df, "px": px, "go": go}
-        try:
-            if not self.allow_unsafe_plotly_code_execution:
-                raise ValueError(
-                    "Unsafe Plotly code execution is disabled. "
-                    "Enable allow_unsafe_plotly_code_execution to use this path."
-                )
-            exec(plotly_code, globals(), ldict)
+        raise NotImplementedError(
+            "Direct code execution is disabled in Vanna 3 for security reasons. "
+            "Use the v3 chart-spec approach instead. "
+            "See: https://github.com/vanna-ai/vanna/wiki/Charts"
+        )
 
-            fig = ldict.get("fig", None)
-        except Exception as e:
-            # Inspect data types
-            numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
-            categorical_cols = df.select_dtypes(
-                include=["object", "category"]
-            ).columns.tolist()
-
-            # Decision-making for plot type
-            if len(numeric_cols) >= 2:
-                # Use the first two numeric columns for a scatter plot
-                fig = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1])
-            elif len(numeric_cols) == 1 and len(categorical_cols) >= 1:
-                # Use a bar plot if there's one numeric and one categorical column
-                fig = px.bar(df, x=categorical_cols[0], y=numeric_cols[0])
-            elif len(categorical_cols) >= 1 and df[categorical_cols[0]].nunique() < 10:
-                # Use a pie chart for categorical data with fewer unique values
-                fig = px.pie(df, names=categorical_cols[0])
-            else:
-                # Default to a simple line plot if above conditions are not met
-                fig = px.line(df)
-
-        if fig is None:
-            return None
-
-        if dark_mode:
-            fig.update_layout(template="plotly_dark")
-
-        return fig
