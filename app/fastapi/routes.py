@@ -18,6 +18,7 @@ from app.base.events_v3 import ChatEvent
 from app.base.templates import get_index_html
 from vanna.core.user.request_context import RequestContext
 from vanna.core.tool import ToolContext
+from vanna.infrastructure.sql_runner import RunSqlToolArgs
 from vanna.services.feedback import FeedbackRequest
 
 logger = logging.getLogger(__name__)
@@ -276,6 +277,44 @@ def register_chat_routes(
         if latest is None:
             return {"status": "empty", "snapshot": None}
         return {"status": "ok", "snapshot": latest.model_dump(mode="json")}
+
+    @app.post(f"{v3_prefix}/sql/run")
+    async def sql_run(http_request: Request) -> Dict[str, Any]:
+        """Execute a SQL query directly and return results as JSON."""
+        sql_runner = config.get("sql_runner")
+        if sql_runner is None:
+            schema_sync_service = config.get("schema_sync_service")
+            if schema_sync_service is not None:
+                sql_runner = getattr(schema_sync_service, "sql_runner", None)
+        if sql_runner is None:
+            raise HTTPException(
+                status_code=501, detail="SQL runner is not configured."
+            )
+
+        body = await http_request.json()
+        sql = (body.get("sql") or "").strip()
+        if not sql:
+            raise HTTPException(status_code=400, detail="'sql' field is required.")
+
+        request_context = RequestContext(
+            cookies=dict(http_request.cookies),
+            headers=dict(http_request.headers),
+            remote_addr=http_request.client.host if http_request.client else None,
+            query_params=dict(http_request.query_params),
+            metadata={},
+        )
+        dummy_request = ChatRequest(message="", request_context=request_context)
+        await _run_request_guard(dummy_request, request_context)
+        tool_context = await _build_tool_context(request_context)
+
+        try:
+            df = await sql_runner.run_sql(RunSqlToolArgs(sql=sql), tool_context)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        columns = df.columns.tolist()
+        rows = df.to_dict("records")
+        return {"columns": columns, "rows": rows, "row_count": len(rows)}
 
     @app.post(f"{v3_prefix}/feedback")
     async def feedback(

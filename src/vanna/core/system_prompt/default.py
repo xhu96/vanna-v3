@@ -150,6 +150,34 @@ class DefaultSystemPromptBuilder(SystemPromptBuilder):
                 ]
             )
 
+        # Add visualization workflow instructions when visualize_data is available
+        has_visualize = "visualize_data" in tool_names
+        if has_visualize:
+            prompt_parts.extend(
+                [
+                    "",
+                    "=" * 60,
+                    "VISUALIZATION GUIDELINES:",
+                    "=" * 60,
+                    "",
+                    "After running a SQL query that returns tabular data, ALWAYS call visualize_data to create a chart.",
+                    "",
+                    "- Use the user's original question as the chart title (e.g. 'Top 5 Artists by Number of Tracks').",
+                    "- Pass the exact filename returned by run_sql as the `filename` argument.",
+                    "- Default format is 'vega-lite'. Only use 'plotly-json' if explicitly requested.",
+                    "- Do NOT skip the visualization step — the user expects a chart alongside the data table.",
+                    "",
+                    "Chart type selection guide (set chart_type argument):",
+                    "  • 'horizontal_bar' — rankings, top-N by name, comparisons across categories (DEFAULT for named categories)",
+                    "  • 'line'           — trends over time, sequential data (dates, months, years on x-axis)",
+                    "  • 'bar'            — few numeric categories where vertical bars read naturally",
+                    "  • 'scatter'        — correlation between two numeric columns",
+                    "  • 'pie'            — part-of-whole breakdown with ≤8 slices (e.g. revenue share by region)",
+                    "  • 'histogram'      — distribution / frequency of a single numeric column",
+                    "  • omit chart_type  — let the tool auto-detect (safe default when unsure)",
+                ]
+            )
+
         if has_search or has_save or has_text_memory:
             # Remove empty strings from the list
             prompt_parts = [part for part in prompt_parts if part != ""]

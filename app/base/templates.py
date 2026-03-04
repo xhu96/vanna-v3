@@ -462,7 +462,7 @@ def get_index_html(
     </div><!-- /main-content -->
 </div><!-- /dashboard -->
 
-<script src="{static_path}/app.js?v=2.0.2"></script>
+<script src="{static_path}/app.js?v=2.0.3"></script>
 </body>
 </html>"""
 

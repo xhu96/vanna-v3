@@ -32,6 +32,20 @@ class VisualizeDataArgs(BaseModel):
         default="vega-lite",
         description="Declarative chart format: 'vega-lite' (default) or 'plotly-json'",
     )
+    chart_type: Optional[str] = Field(
+        default=None,
+        description=(
+            "Explicit chart type override. Supported values: "
+            "'bar' (vertical bars), "
+            "'horizontal_bar' (horizontal bars, best for named categories), "
+            "'line' (trend over time or sequence), "
+            "'scatter' (two numeric dimensions), "
+            "'pie' (part-of-whole shares, use for ≤8 slices), "
+            "'histogram' (distribution of one numeric column), "
+            "'heatmap' (correlation matrix, requires multiple numeric columns). "
+            "If omitted the tool auto-selects based on column types."
+        ),
+    )
 
 
 class VisualizeDataTool(Tool[VisualizeDataArgs]):
@@ -105,6 +119,7 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     columns=df.columns.tolist(),
                     column_types=column_types,
                     title=title,
+                    chart_type=args.chart_type,
                 )
                 chart_spec.metadata["source_file"] = args.filename
 
