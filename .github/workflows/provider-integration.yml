@@ -14,12 +14,29 @@ env:
   PYTHONUNBUFFERED: "1"
 
 jobs:
+  check:
+    name: Check secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_openai: ${{ steps.check.outputs.has_openai }}
+      has_openrouter: ${{ steps.check.outputs.has_openrouter }}
+      has_anthropic: ${{ steps.check.outputs.has_anthropic }}
+      has_gemini: ${{ steps.check.outputs.has_gemini }}
+      has_azure: ${{ steps.check.outputs.has_azure }}
+    steps:
+      - id: check
+        run: |
+          echo "has_openai=${{ secrets.OPENAI_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+          echo "has_openrouter=${{ secrets.OPENROUTER_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+          echo "has_anthropic=${{ secrets.ANTHROPIC_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+          echo "has_gemini=${{ secrets.GEMINI_API_KEY != '' || secrets.GOOGLE_API_KEY != '' }}" >> "$GITHUB_OUTPUT"
+          echo "has_azure=${{ secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_ENDPOINT != '' && secrets.AZURE_OPENAI_MODEL != '' }}" >> "$GITHUB_OUTPUT"
+
   openai:
     name: OpenAI
+    needs: check
+    if: needs.check.outputs.has_openai == 'true'
     runs-on: ubuntu-latest
-    env:
-      HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
-    if: ${{ env.HAS_OPENAI_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,10 +54,9 @@ jobs:
 
   openrouter:
     name: OpenRouter
+    needs: check
+    if: needs.check.outputs.has_openrouter == 'true'
     runs-on: ubuntu-latest
-    env:
-      HAS_OPENROUTER_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-    if: ${{ env.HAS_OPENROUTER_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -62,10 +78,9 @@ jobs:
 
   anthropic:
     name: Anthropic
+    needs: check
+    if: needs.check.outputs.has_anthropic == 'true'
     runs-on: ubuntu-latest
-    env:
-      HAS_ANTHROPIC_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-    if: ${{ env.HAS_ANTHROPIC_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -83,10 +98,9 @@ jobs:
 
   gemini:
     name: Gemini
+    needs: check
+    if: needs.check.outputs.has_gemini == 'true'
     runs-on: ubuntu-latest
-    env:
-      HAS_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY || secrets.GOOGLE_API_KEY }}
-    if: ${{ env.HAS_GEMINI_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -105,12 +119,9 @@ jobs:
 
   azureopenai:
     name: Azure OpenAI
+    needs: check
+    if: needs.check.outputs.has_azure == 'true'
     runs-on: ubuntu-latest
-    env:
-      HAS_AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-      HAS_AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-      HAS_AZURE_OPENAI_MODEL: ${{ secrets.AZURE_OPENAI_MODEL }}
-    if: ${{ env.HAS_AZURE_OPENAI_API_KEY != '' && env.HAS_AZURE_OPENAI_ENDPOINT != '' && env.HAS_AZURE_OPENAI_MODEL != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

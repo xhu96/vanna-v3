@@ -45,6 +45,8 @@ query_results_*.csv
 # ── Environment & secrets ─────────────────────────────────────────────────────
 .env
 .env.*
+# ── Forgot the example template lol
+!.env.example
 
 # ── IDE & OS ──────────────────────────────────────────────────────────────────
 .idea/

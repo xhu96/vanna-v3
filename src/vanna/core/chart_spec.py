@@ -140,6 +140,7 @@ def dataframe_to_vega_lite_spec(
     spec = {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "title": title,
+        "width": "container",
         "mark": mark,
         "encoding": encoding,
         "data": {"name": "dataset"},
