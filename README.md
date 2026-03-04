@@ -1,4 +1,4 @@
-# Vanna 3: Turn Questions into Data Insights
+# Vanna v3: Turn Questions into Data Insights
 
 **Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, ad-hoc skill generation, and feedback loops.
 
@@ -135,12 +135,19 @@ sequenceDiagram
     participant W as 🌐 <vanna-chat>
     participant S as 🐍 Your Server
     participant A as 🤖 Agent
+<<<<<<< Updated upstream
     participant LLM as 🧠 OpenRouter
     participant T as 🧰 Tools / Skills
+=======
+    participant P as 🧠 Planner
+    participant T as 🧰 Tools
+    participant L as 📋 Lineage
+>>>>>>> Stashed changes
 
     U->>W: "Show Q4 sales"
     W->>S: POST /api/vanna/v3/chat/events (with auth)
     S->>A: User(id=alice, groups=[read_sales])
+<<<<<<< Updated upstream
     A->>T: Detect missing skill → Ad-Hoc Generate
     A->>LLM: Formulate SQL via optimal model
     LLM-->>A: Generated read-only SQL
@@ -148,7 +155,17 @@ sequenceDiagram
     T->>T: Apply row-level security
     T-->>A: Filtered Data Results
     A->>W: Stream: Table → Chart → Summary
+=======
+    A->>P: Semantic-First Plan
+    P->>T: Execute (Metric/SQL)
+    T->>T: Apply RLS & Schema Drift Sync
+    T->>L: Capture Evidence
+    L->>A: Lineage Data
+    A->>W: Stream: Table → ChartSpec → Lineage
+>>>>>>> Stashed changes
     W->>U: Display beautiful UI
+    U->>W: Thumbs Down + Corrected SQL
+    W->>S: POST /api/vanna/v3/feedback (immediate patch)
 ```
 
 **Key Concepts:**
