@@ -10,9 +10,9 @@ from vanna.tools.agent_memory import (
 )
 from vanna.core.tool import ToolContext
 from vanna.core.user import User
-from vanna.core.agent.config import UiFeature
+from vanna.config import UiFeature
 from vanna.integrations.local.agent_memory import DemoAgentMemory
-from vanna.core.rich_component import ComponentType
+from vanna.components.rich_component import ComponentType
 
 
 @pytest.fixture

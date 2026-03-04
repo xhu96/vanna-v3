@@ -20,8 +20,8 @@ from .models import (
 )
 
 if TYPE_CHECKING:
-    from ..tool.models import ToolCall, ToolContext, ToolResult
-    from ..user.models import User
+    from vanna.models.tool import ToolCall, ToolContext, ToolResult
+    from vanna.models.user import User
 
 
 class AuditLogger(ABC):

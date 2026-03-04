@@ -7,7 +7,7 @@ This module contains the abstract base class for tools.
 from abc import ABC, abstractmethod
 from typing import Generic, List, Type, TypeVar
 
-from .models import ToolContext, ToolResult, ToolSchema
+from vanna.models.tool import ToolContext, ToolResult, ToolSchema
 
 # Type variable for tool argument types
 T = TypeVar("T")

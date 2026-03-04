@@ -7,10 +7,10 @@ All operations enforce RBAC, PII redaction, and audit logging.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from .models import GlossaryEntry, Provenance, TenantProfile, UserProfile
-from .redaction import RedactionResult, check_storage_policy, redact_pii
+from .redaction import check_storage_policy, redact_pii
 from .stores import GlossaryStore, ProfileStore
 
 

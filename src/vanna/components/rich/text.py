@@ -1,7 +1,7 @@
 """Rich text component."""
 
 from typing import Optional
-from ...core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class RichTextComponent(RichComponent):

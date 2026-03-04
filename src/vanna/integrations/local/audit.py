@@ -7,7 +7,6 @@ the standard Python logging module, useful for development and testing.
 
 import json
 import logging
-from typing import Optional
 
 from vanna.core.audit import AuditEvent, AuditLogger
 

@@ -3,7 +3,7 @@
 import uuid
 from typing import Optional
 from pydantic import Field
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class ArtifactComponent(RichComponent):

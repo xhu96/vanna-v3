@@ -6,7 +6,7 @@ from typing import Any, Type
 
 from pydantic import BaseModel, Field
 
-from vanna.capabilities.semantic import SemanticAdapter, SemanticQueryRequest
+from vanna.infrastructure.semantic import SemanticAdapter, SemanticQueryRequest
 from vanna.components import DataFrameComponent, SimpleTextComponent, UiComponent
 from vanna.core.tool import Tool, ToolContext, ToolResult
 

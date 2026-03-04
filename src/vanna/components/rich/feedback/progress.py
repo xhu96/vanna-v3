@@ -1,7 +1,7 @@
 """Progress components for displaying progress indicators."""
 
 from typing import Any, Dict, Optional
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class ProgressBarComponent(RichComponent):

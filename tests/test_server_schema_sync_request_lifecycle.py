@@ -5,9 +5,9 @@ from typing import Optional
 import pytest
 
 from vanna.agents.basic import SimpleAgentMemory
-from vanna.capabilities.schema_catalog import SchemaDiff, SchemaSnapshot, SchemaSyncResult
-from vanna.core.user.models import User
-from vanna.servers.base.models import ChatStreamChunk
+from vanna.infrastructure.schema_catalog import SchemaDiff, SchemaSnapshot, SchemaSyncResult
+from vanna.models.user import User
+from app.base.models import ChatStreamChunk
 
 
 class FakeUserResolver:
@@ -74,7 +74,7 @@ def test_fastapi_chat_poll_runs_scheduled_schema_sync_before_handling_request():
     fastapi = pytest.importorskip("fastapi")
     testclient = pytest.importorskip("fastapi.testclient")
 
-    from vanna.servers.fastapi.routes import register_chat_routes
+    from app.fastapi.routes import register_chat_routes
 
     app = fastapi.FastAPI()
     chat_handler = FakeChatHandler()
@@ -118,7 +118,7 @@ def test_fastapi_chat_poll_runs_scheduled_schema_sync_before_handling_request():
 def test_flask_chat_poll_runs_scheduled_schema_sync_before_handling_request():
     flask = pytest.importorskip("flask")
 
-    from vanna.servers.flask.routes import register_chat_routes
+    from app.flask.routes import register_chat_routes
 
     app = flask.Flask(__name__)
     chat_handler = FakeChatHandler()

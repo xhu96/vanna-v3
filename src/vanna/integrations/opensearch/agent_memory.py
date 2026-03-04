@@ -4,7 +4,6 @@ OpenSearch vector database implementation of AgentMemory.
 This implementation uses OpenSearch for distributed search and storage of tool usage patterns.
 """
 
-import json
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -18,7 +17,7 @@ try:
 except ImportError:
     OPENSEARCH_AVAILABLE = False
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

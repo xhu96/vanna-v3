@@ -14,8 +14,8 @@ from vanna.core.enhancer.base import LlmContextEnhancer
 from .stores import GlossaryStore, ProfileStore
 
 if TYPE_CHECKING:
-    from vanna.core.llm.models import LlmMessage
-    from vanna.core.user.models import User
+    from vanna.models.llm import LlmMessage
+    from vanna.models.user import User
 
 
 class PreferenceResolverEnhancer(LlmContextEnhancer):

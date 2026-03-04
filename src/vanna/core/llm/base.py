@@ -7,7 +7,7 @@ This module contains the abstract base class for LLM services.
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, List
 
-from .models import LlmRequest, LlmResponse, LlmStreamChunk
+from vanna.models.llm import LlmRequest, LlmResponse, LlmStreamChunk
 
 
 class LlmService(ABC):

@@ -10,7 +10,7 @@ import shlex
 from pathlib import Path
 from typing import List, Optional
 
-from vanna.capabilities.file_system import CommandResult, FileSearchMatch, FileSystem
+from vanna.infrastructure.file_system import CommandResult, FileSearchMatch, FileSystem
 from vanna.core.tool import ToolContext
 
 MAX_SEARCH_FILE_BYTES = 1_000_000

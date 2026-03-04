@@ -16,7 +16,6 @@ from vanna.core.tool import (
 )
 from vanna.core.user import User
 from vanna.core.registry import ToolRegistry
-from vanna.components import UiComponent, SimpleTextComponent
 from vanna.integrations.local.agent_memory import DemoAgentMemory
 
 T = TypeVar("T")
@@ -791,8 +790,8 @@ async def test_transform_args_called_during_agent_send_message():
     from vanna import Agent
     from vanna.core.user.resolver import UserResolver
     from vanna.core.user.request_context import RequestContext
-    from vanna.core.llm import LlmService, LlmRequest, LlmResponse, LlmMessage
-    from vanna.core.agent.config import AgentConfig
+    from vanna.core.llm import LlmService, LlmRequest, LlmResponse
+    from vanna.config import AgentConfig
 
     # Create a custom registry that tracks transform_args calls
     class InstrumentedAgentRegistry(ToolRegistry):

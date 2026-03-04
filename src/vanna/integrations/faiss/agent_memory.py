@@ -4,7 +4,6 @@ FAISS vector database implementation of AgentMemory.
 This implementation uses FAISS for local vector storage of tool usage patterns.
 """
 
-import json
 import uuid
 import pickle
 import os
@@ -21,7 +20,7 @@ try:
 except ImportError:
     FAISS_AVAILABLE = False
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

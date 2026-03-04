@@ -7,7 +7,7 @@ information to UserResolver implementations.
 
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RequestContext(BaseModel):
@@ -25,6 +25,8 @@ class RequestContext(BaseModel):
         )
         user = await resolver.resolve_user(context)
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     cookies: Dict[str, str] = Field(default_factory=dict, description="Request cookies")
 

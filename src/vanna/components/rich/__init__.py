@@ -1,7 +1,7 @@
 """Rich UI components for the Vanna Agents framework."""
 
 # Base classes and enums - import from core
-from ...core.rich_component import RichComponent, ComponentType, ComponentLifecycle
+from vanna.components.rich_component import RichComponent, ComponentType, ComponentLifecycle
 
 # Text component
 from .text import RichTextComponent

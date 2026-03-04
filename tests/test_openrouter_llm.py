@@ -6,10 +6,7 @@ These tests validate the OpenRouter integration without making network calls.
 import os
 from unittest.mock import patch
 
-import pytest
 
-
-@pytest.mark.openrouter
 class TestOpenRouterInitialization:
     @patch.dict(
         os.environ,

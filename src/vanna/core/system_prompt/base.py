@@ -8,8 +8,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from ..tool.models import ToolSchema
-    from ..user.models import User
+    from vanna.models.tool import ToolSchema
+    from vanna.models.user import User
 
 
 class SystemPromptBuilder(ABC):

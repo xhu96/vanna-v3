@@ -3,6 +3,10 @@ Skill Generator — creates proposed SkillSpec + eval draft from schema and inte
 
 PROPOSAL ONLY: generates draft skills that cannot be promoted beyond draft.
 Uses LLM for generation but validates output with the compiler.
+
+.. warning::
+    This module is **DRAFT-ONLY** capability scaffolding.
+    Not production-hardened. Output requires human review before promotion.
 """
 
 from __future__ import annotations

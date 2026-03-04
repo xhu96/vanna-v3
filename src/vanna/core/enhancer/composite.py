@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, List
 from .base import LlmContextEnhancer
 
 if TYPE_CHECKING:
-    from ..llm.models import LlmMessage
-    from ..user.models import User
+    from vanna.models.llm import LlmMessage
+    from vanna.models.user import User
 
 
 class CompositeEnhancer(LlmContextEnhancer):

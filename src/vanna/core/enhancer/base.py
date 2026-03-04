@@ -6,11 +6,11 @@ and user messages before LLM calls.
 """
 
 from abc import ABC
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..user.models import User
-    from ..llm.models import LlmMessage
+    from vanna.models.user import User
+    from vanna.models.llm import LlmMessage
 
 
 class LlmContextEnhancer(ABC):

@@ -5,7 +5,7 @@ This module provides the core abstractions for tools in the Vanna Agents framewo
 """
 
 from .base import T, Tool
-from .models import ToolCall, ToolContext, ToolRejection, ToolResult, ToolSchema
+from vanna.models.tool import ToolCall, ToolContext, ToolRejection, ToolResult, ToolSchema
 
 __all__ = [
     "Tool",

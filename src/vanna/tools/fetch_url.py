@@ -1,15 +1,18 @@
 """Fetch URL tool for retrieving data from web pages and REST APIs."""
 
+import ipaddress
 import json
 import logging
+import socket
 import uuid
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Literal, Optional, Type
 
 import httpx
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from vanna.capabilities.file_system import FileSystem
+from vanna.infrastructure.file_system import FileSystem
+from vanna.config import SecurityConfig
 from vanna.components import (
     CardComponent,
     ComponentType,
@@ -27,29 +30,132 @@ logger = logging.getLogger(__name__)
 # Hard ceiling to avoid downloading huge payloads.
 MAX_RESPONSE_BYTES = 5 * 1024 * 1024  # 5 MB
 
+# Maximum number of redirects we follow manually (re-checking each hop).
+_MAX_REDIRECTS = 5
+
+# Hostnames that resolve to cloud metadata endpoints.
+_BLOCKED_HOSTNAMES = frozenset(
+    {
+        "metadata.google.internal",
+        "metadata.internal",
+    }
+)
+
+
+# ---------------------------------------------------------------------------
+# SSRF protection helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_private_ip(addr: str) -> bool:
+    """Return True if *addr* resolves to a private, loopback, or link-local IP."""
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        return True  # Unparseable → block by default
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
+
+
+def _in_allowed_cidrs(
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address,
+    allowed_cidrs: Optional[List[str]],
+) -> bool:
+    """Return True if *ip* falls within any of the admin-whitelisted CIDRs."""
+    if not allowed_cidrs:
+        return False
+    for cidr in allowed_cidrs:
+        try:
+            network = ipaddress.ip_network(cidr, strict=False)
+            if ip in network:
+                return True
+        except ValueError:
+            continue  # Malformed CIDR — skip
+    return False
+
+
+def _validate_url_target(
+    url: str,
+    allowed_cidrs: Optional[List[str]] = None,
+) -> Optional[str]:
+    """Validate that a URL does not point to a blocked host.
+
+    Args:
+        url: The URL to validate.
+        allowed_cidrs: Optional list of CIDR strings that are whitelisted
+            even though they fall in private ranges.
+
+    Returns an error message if the target is blocked, ``None`` otherwise.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if hostname is None:
+        return "URL has no hostname."
+
+    # Direct hostname block (cloud metadata, etc.)
+    if hostname.lower() in _BLOCKED_HOSTNAMES:
+        return f"Blocked host: {hostname}"
+
+    # IP-literal check (e.g. http://127.0.0.1/ or http://[::1]/)
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if _is_private_ip(str(ip)) and not _in_allowed_cidrs(ip, allowed_cidrs):
+            return f"Requests to private/internal IP addresses are not allowed: {hostname}"
+    except ValueError:
+        pass  # hostname is a DNS name, resolve below
+
+    # DNS resolution check — resolve and inspect all returned addresses.
+    try:
+        results = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        for family, _type, _proto, _canonname, sockaddr in results:
+            addr = sockaddr[0]
+            if _is_private_ip(addr) and not _in_allowed_cidrs(
+                ipaddress.ip_address(addr), allowed_cidrs
+            ):
+                return (
+                    f"DNS name '{hostname}' resolves to a private/internal address "
+                    f"({addr}). Request blocked for security."
+                )
+    except socket.gaierror:
+        return f"Could not resolve hostname: {hostname}"
+
+    return None
+
 
 class FetchUrlToolArgs(BaseModel):
     """Arguments for the fetch_url tool."""
 
     url: str = Field(
         ...,
+        max_length=2048,
         description="The fully-qualified URL to fetch (must start with http:// or https://).",
     )
-    method: str = Field(
+    method: Literal["GET", "POST"] = Field(
         default="GET",
         description="HTTP method. Use GET for reading data, POST for sending data to an API.",
     )
     headers: Optional[Dict[str, str]] = Field(
         default=None,
-        description="Optional HTTP headers (e.g. {\"Authorization\": \"Bearer <token>\"}).",
+        description='Optional HTTP headers (e.g. {"Authorization": "Bearer <token>"}).',
     )
     body: Optional[str] = Field(
         default=None,
+        max_length=1_000_000,
         description="Optional request body for POST requests (JSON string or form data).",
     )
     timeout_seconds: float = Field(
         default=30.0,
-        description="Request timeout in seconds.",
+        ge=1.0,
+        le=60.0,
+        description="Request timeout in seconds (1–60).",
     )
 
 
@@ -59,10 +165,25 @@ class FetchUrlTool(Tool[FetchUrlToolArgs]):
     JSON responses containing tabular data (arrays of objects) are
     automatically converted to CSV and saved so that downstream tools
     like ``visualize_data`` can consume them directly.
+
+    Security:
+        - SSRF protection blocks requests to private networks, loopback,
+          link-local, and cloud metadata endpoints.
+        - Redirect targets are re-validated against the same blocklist.
+        - Response size is capped at 5 MB.
     """
 
-    def __init__(self, file_system: Optional[FileSystem] = None):
+    def __init__(
+        self,
+        file_system: Optional[FileSystem] = None,
+        security_config: Optional["SecurityConfig"] = None,
+    ):
         self.file_system = file_system or LocalFileSystem()
+        # Import here to avoid circular dependency at module level
+        if security_config is None:
+            
+            security_config = SecurityConfig()
+        self.security_config = security_config
 
     @property
     def name(self) -> str:
@@ -85,47 +206,93 @@ class FetchUrlTool(Tool[FetchUrlToolArgs]):
     async def execute(
         self, context: ToolContext, args: FetchUrlToolArgs
     ) -> ToolResult:
+        # --- Check if tool is disabled ---
+        if not self.security_config.fetch_url_enabled:
+            return self._error_result(
+                "The fetch_url tool is currently disabled by the administrator."
+            )
+
         # --- Validate URL scheme ---
         if not args.url.startswith(("http://", "https://")):
             msg = "URL must start with http:// or https://."
             return self._error_result(msg)
 
-        method = args.method.upper()
-        if method not in ("GET", "POST"):
-            msg = "Only GET and POST methods are supported."
-            return self._error_result(msg)
+        # --- SSRF check on the initial target ---
+        if self.security_config.ssrf_protection_enabled:
+            ssrf_error = _validate_url_target(
+                args.url,
+                allowed_cidrs=self.security_config.ssrf_allowed_private_ranges,
+            )
+            if ssrf_error:
+                return self._error_result(ssrf_error)
 
-        # --- Make the HTTP request ---
+        method = args.method  # Already constrained by Literal type
+
+        max_redirects = self.security_config.max_redirect_hops
+
+        # --- Make the HTTP request (manual redirect loop for SSRF safety) ---
         try:
-            async with httpx.AsyncClient(
-                follow_redirects=True,
-                timeout=args.timeout_seconds,
-                max_redirects=5,
-            ) as client:
-                request_kwargs: Dict[str, Any] = {
-                    "url": args.url,
-                    "headers": args.headers or {},
-                }
-                if method == "POST" and args.body is not None:
-                    content_type = (request_kwargs["headers"].get("Content-Type") or "").lower()
-                    if "json" in content_type or args.body.lstrip().startswith(("{", "[")):
-                        request_kwargs["content"] = args.body.encode()
-                        request_kwargs["headers"].setdefault("Content-Type", "application/json")
-                    else:
-                        request_kwargs["content"] = args.body.encode()
+            current_url = args.url
+            response: Optional[httpx.Response] = None
 
-                response = await getattr(client, method.lower())(**request_kwargs)
+            for _hop in range(max_redirects + 1):
+                async with httpx.AsyncClient(
+                    follow_redirects=False,
+                    timeout=args.timeout_seconds,
+                ) as client:
+                    request_kwargs: Dict[str, Any] = {
+                        "url": current_url,
+                        "headers": args.headers or {},
+                    }
+                    if method == "POST" and args.body is not None:
+                        content_type = (
+                            request_kwargs["headers"].get("Content-Type") or ""
+                        ).lower()
+                        if "json" in content_type or args.body.lstrip().startswith(
+                            ("{", "[")
+                        ):
+                            request_kwargs["content"] = args.body.encode()
+                            request_kwargs["headers"].setdefault(
+                                "Content-Type", "application/json"
+                            )
+                        else:
+                            request_kwargs["content"] = args.body.encode()
+
+                    response = await getattr(client, method.lower())(**request_kwargs)
+
+                # Handle redirects manually to re-validate each hop
+                if response.is_redirect:
+                    redirect_url = str(response.next_request.url) if response.next_request else None
+                    if redirect_url is None:
+                        return self._error_result("Redirect without Location header.")
+                    if self.security_config.ssrf_protection_enabled:
+                        redirect_error = _validate_url_target(
+                            redirect_url,
+                            allowed_cidrs=self.security_config.ssrf_allowed_private_ranges,
+                        )
+                        if redirect_error:
+                            return self._error_result(
+                                f"Redirect blocked (SSRF protection): {redirect_error}"
+                            )
+                    current_url = redirect_url
+                    # After first request, always use GET for redirects (PRG pattern)
+                    method = "GET"
+                    continue
+
+                break  # No redirect, we have the final response
+            else:
+                return self._error_result(
+                    f"Too many redirects following {args.url}."
+                )
 
         except httpx.TimeoutException:
             return self._error_result(
                 f"Request to {args.url} timed out after {args.timeout_seconds}s."
             )
-        except httpx.TooManyRedirects:
-            return self._error_result(
-                f"Too many redirects following {args.url}."
-            )
         except httpx.RequestError as exc:
             return self._error_result(f"Connection error: {exc}")
+
+        assert response is not None  # for type checker
 
         # --- Enforce size limit ---
         raw_bytes = response.content

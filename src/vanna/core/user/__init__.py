@@ -5,7 +5,7 @@ This module provides the core abstractions for user management in the Vanna Agen
 """
 
 from .base import UserService
-from .models import User
+from vanna.models.user import User
 from .resolver import UserResolver
 from .request_context import RequestContext
 

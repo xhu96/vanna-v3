@@ -5,7 +5,7 @@ This module provides the core abstractions for LLM services in the Vanna Agents 
 """
 
 from .base import LlmService
-from .models import LlmMessage, LlmRequest, LlmResponse, LlmStreamChunk
+from vanna.models.llm import LlmMessage, LlmRequest, LlmResponse, LlmStreamChunk
 
 __all__ = [
     "LlmService",

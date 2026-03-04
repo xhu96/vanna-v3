@@ -34,8 +34,8 @@ from .planner import SemanticFirstPlanner, PlannerDecision
 from .lineage import LineageCollector
 
 # UI Components
-from .components import UiComponent
-from .rich_component import RichComponent
+from vanna.components.interfaces import UiComponent
+from vanna.components.rich_component import RichComponent
 from ..components import (
     SimpleComponent,
     SimpleComponentType,
@@ -57,7 +57,7 @@ from ..components import (
 )
 
 # Exceptions
-from .errors import (
+from vanna.exceptions import (
     AgentError,
     ConversationNotFoundError,
     LlmServiceError,
@@ -71,7 +71,7 @@ from .errors import (
 from .registry import ToolRegistry
 
 # Evaluation framework
-from .evaluation import (
+from vanna.evaluation import (
     Evaluator,
     TestCase,
     ExpectedOutcome,
@@ -90,8 +90,7 @@ from .evaluation import (
 )
 
 # Rebuild models to resolve forward references after all imports
-from .tool.models import ToolContext, ToolResult
-from .components import UiComponent  # Import UiComponent to ensure it's available
+from vanna.models.tool import ToolContext, ToolResult
 
 ToolContext.model_rebuild()
 ToolResult.model_rebuild()

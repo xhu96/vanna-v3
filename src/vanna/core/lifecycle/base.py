@@ -9,9 +9,9 @@ from abc import ABC
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from ..user.models import User
+    from vanna.models.user import User
     from ..tool import Tool
-    from ..tool.models import ToolContext, ToolResult
+    from vanna.models.tool import ToolContext, ToolResult
 
 
 class LifecycleHook(ABC):

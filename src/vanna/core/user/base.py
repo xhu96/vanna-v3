@@ -7,7 +7,7 @@ This module contains the abstract base class for user services.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from .models import User
+from vanna.models.user import User
 
 
 class UserService(ABC):

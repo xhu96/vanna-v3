@@ -11,8 +11,8 @@ from vanna.components import (
     ComponentType,
     SimpleTextComponent,
 )
-from vanna.capabilities.sql_runner import SqlRunner, RunSqlToolArgs
-from vanna.capabilities.file_system import FileSystem
+from vanna.infrastructure.sql_runner import SqlRunner, RunSqlToolArgs
+from vanna.infrastructure.file_system import FileSystem
 from vanna.integrations.local import LocalFileSystem
 
 

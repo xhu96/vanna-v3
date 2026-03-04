@@ -1,7 +1,7 @@
 """Badge component for displaying status or labels."""
 
 from typing import Optional
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class BadgeComponent(RichComponent):

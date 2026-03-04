@@ -11,9 +11,7 @@ and delays between requests to handle 429 errors gracefully.
 """
 
 import asyncio
-import os
 import pytest
-import time
 from vanna.core.user import User
 from vanna.core.user.resolver import UserResolver
 from vanna.core.user.request_context import RequestContext

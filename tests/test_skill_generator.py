@@ -1,6 +1,5 @@
 """Tests for the Skill Generator."""
 
-import pytest
 import asyncio
 from vanna.skills.generator import SkillGenerator, GeneratorOutput
 from vanna.skills.models import SkillEnvironment

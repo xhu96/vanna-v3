@@ -1,10 +1,9 @@
 """Log viewer component."""
 
-import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class LogEntry(BaseModel):

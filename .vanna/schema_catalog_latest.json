@@ -1,7 +1,7 @@
 {
   "snapshot": {
-    "snapshot_id": "snap_20260303202535",
-    "captured_at": "2026-03-03T20:25:35.066072Z",
+    "snapshot_id": "snap_20260304120808",
+    "captured_at": "2026-03-04T12:08:08.791587Z",
     "dialect": "sqlite",
     "schema_hash": "fc65f1f233c57d62ace203c890772e3d4698a0b5e951d43c5655e516e778f5d7",
     "columns": [

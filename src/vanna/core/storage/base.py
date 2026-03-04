@@ -7,8 +7,8 @@ This module contains the abstract base class for conversation storage.
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from .models import Conversation
-from ..user.models import User
+from vanna.models.storage import Conversation
+from vanna.models.user import User
 
 
 class ConversationStore(ABC):

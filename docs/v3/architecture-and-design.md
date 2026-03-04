@@ -133,10 +133,10 @@ flowchart TD
 ## 9) v3 Feature Mapping to Existing v2 Modules (Minimal Invasive Strategy)
 
 - Streaming contract:
-  - Existing: `src/vanna/servers/base/models.py`, `src/vanna/servers/*/routes.py`
+  - Existing: `app/base/models.py`, `app/*/routes.py`
   - v3 add: typed event models + v3 routes; keep v2 handlers.
 - Visualization:
-  - Existing: `src/vanna/tools/visualize_data.py`, `frontends/webcomponent/src/components/rich-component-system.ts`
+  - Existing: `src/vanna/tools/visualize_data.py`, `static/vanna-components.js`
   - v3 add: ChartSpec schema validation + declarative renderer path.
 - Schema drift:
   - Existing: SQL runners in `src/vanna/integrations/*/sql_runner.py`

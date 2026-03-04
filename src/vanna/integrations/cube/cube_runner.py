@@ -8,8 +8,8 @@ try:
 except ImportError:
     httpx = None
 
-from vanna.capabilities.sql_runner.base import SqlRunner
-from vanna.capabilities.sql_runner.models import RunSqlToolArgs
+from vanna.infrastructure.sql_runner.base import SqlRunner
+from vanna.infrastructure.sql_runner.models import RunSqlToolArgs
 
 if TYPE_CHECKING:
     from vanna.core.tool import ToolContext

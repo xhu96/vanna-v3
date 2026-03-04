@@ -11,9 +11,7 @@ They are lightweight sanity checks for the implementation structure.
 """
 
 import pytest
-from abc import abstractmethod
 from inspect import signature, iscoroutinefunction
-import pandas as pd
 import importlib.util
 
 
@@ -30,27 +28,27 @@ class TestSqlRunnerInterface:
 
     def test_sql_runner_import(self):
         """Test that SqlRunner can be imported."""
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert SqlRunner is not None
 
     def test_sql_runner_is_abstract(self):
         """Test that SqlRunner is an abstract base class."""
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
         from abc import ABC
 
         assert issubclass(SqlRunner, ABC)
 
     def test_sql_runner_has_run_sql_method(self):
         """Test that SqlRunner defines the run_sql abstract method."""
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert hasattr(SqlRunner, "run_sql")
         assert getattr(SqlRunner.run_sql, "__isabstractmethod__", False)
 
     def test_run_sql_method_signature(self):
         """Test that run_sql has the correct method signature."""
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         sig = signature(SqlRunner.run_sql)
         params = list(sig.parameters.keys())
@@ -63,7 +61,7 @@ class TestSqlRunnerInterface:
 
     def test_run_sql_is_async(self):
         """Test that run_sql is defined as an async method."""
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         # Abstract methods are wrapped, so we check if it's meant to be async
         # by looking at the method definition
@@ -75,13 +73,13 @@ class TestRunSqlToolArgsModel:
 
     def test_run_sql_tool_args_import(self):
         """Test that RunSqlToolArgs can be imported."""
-        from vanna.capabilities.sql_runner import RunSqlToolArgs
+        from vanna.infrastructure.sql_runner import RunSqlToolArgs
 
         assert RunSqlToolArgs is not None
 
     def test_run_sql_tool_args_has_sql_field(self):
         """Test that RunSqlToolArgs has a 'sql' field."""
-        from vanna.capabilities.sql_runner import RunSqlToolArgs
+        from vanna.infrastructure.sql_runner import RunSqlToolArgs
 
         # Create an instance
         args = RunSqlToolArgs(sql="SELECT 1")
@@ -90,7 +88,7 @@ class TestRunSqlToolArgsModel:
 
     def test_run_sql_tool_args_is_pydantic_model(self):
         """Test that RunSqlToolArgs is a Pydantic model."""
-        from vanna.capabilities.sql_runner import RunSqlToolArgs
+        from vanna.infrastructure.sql_runner import RunSqlToolArgs
         from pydantic import BaseModel
 
         assert issubclass(RunSqlToolArgs, BaseModel)
@@ -112,7 +110,7 @@ class TestPostgresRunner:
     def test_postgres_runner_implements_sql_runner(self):
         """Test that PostgresRunner implements SqlRunner interface."""
         from vanna.integrations.postgres import PostgresRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(PostgresRunner, SqlRunner)
 
@@ -183,7 +181,7 @@ class TestSqliteRunner:
     def test_sqlite_runner_implements_sql_runner(self):
         """Test that SqliteRunner implements SqlRunner interface."""
         from vanna.integrations.sqlite import SqliteRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(SqliteRunner, SqlRunner)
 
@@ -206,47 +204,13 @@ class TestSqliteRunner:
     def test_sqlite_uses_builtin_sqlite3(self):
         """Test that SqliteRunner uses Python's built-in sqlite3 module."""
         import sqlite3
-        from vanna.integrations.sqlite import SqliteRunner
 
         # sqlite3 should be importable (it's part of Python standard library)
         assert sqlite3 is not None
 
 
-class TestLegacySqlRunner:
-    """Sanity tests for LegacySqlRunner adapter."""
-
-    def test_legacy_sql_runner_import(self):
-        """Test that LegacySqlRunner can be imported."""
-        from vanna.legacy.adapter import LegacySqlRunner
-
-        assert LegacySqlRunner is not None
-
-    def test_legacy_sql_runner_implements_sql_runner(self):
-        """Test that LegacySqlRunner implements SqlRunner interface."""
-        from vanna.legacy.adapter import LegacySqlRunner
-        from vanna.capabilities.sql_runner import SqlRunner
-
-        assert issubclass(LegacySqlRunner, SqlRunner)
-
-    def test_legacy_sql_runner_has_run_sql_method(self):
-        """Test that LegacySqlRunner implements run_sql method."""
-        from vanna.legacy.adapter import LegacySqlRunner
-
-        assert hasattr(LegacySqlRunner, "run_sql")
-        # Should not be abstract anymore
-        assert not getattr(LegacySqlRunner.run_sql, "__isabstractmethod__", False)
-
-    def test_legacy_sql_runner_instantiation(self):
-        """Test that LegacySqlRunner can be instantiated with a VannaBase instance."""
-        from vanna.legacy.adapter import LegacySqlRunner
-        from unittest.mock import Mock
-
-        # Create a mock VannaBase instance
-        mock_vn = Mock()
-
-        runner = LegacySqlRunner(vn=mock_vn)
-        assert runner is not None
-        assert runner.vn is mock_vn
+# Legacy adapter tests have been moved to archive/legacy_tests/
+# (vanna.legacy was moved to archive/vanna_legacy after the restructure)
 
 
 class TestDatabaseIntegrationModules:
@@ -283,58 +247,6 @@ class TestDatabaseIntegrationModules:
         assert SqliteRunner is not None
 
 
-class TestLegacyVannaBaseConnections:
-    """Test that legacy VannaBase connection methods exist."""
-
-    def test_vanna_base_import(self):
-        """Test that VannaBase can be imported."""
-        from vanna.legacy.base.base import VannaBase
-
-        assert VannaBase is not None
-
-    def test_vanna_base_has_connection_methods(self):
-        """Test that VannaBase has various database connection methods."""
-        from vanna.legacy.base.base import VannaBase
-
-        connection_methods = [
-            "connect_to_snowflake",
-            "connect_to_sqlite",
-            "connect_to_postgres",
-            "connect_to_mysql",
-            "connect_to_clickhouse",
-            "connect_to_oracle",
-            "connect_to_bigquery",
-            "connect_to_duckdb",
-            "connect_to_mssql",
-            "connect_to_presto",
-            "connect_to_hive",
-        ]
-
-        for method_name in connection_methods:
-            assert hasattr(VannaBase, method_name), f"VannaBase missing {method_name}"
-
-    def test_vanna_base_has_run_sql_method(self):
-        """Test that VannaBase has a run_sql method."""
-        from vanna.legacy.base.base import VannaBase
-
-        assert hasattr(VannaBase, "run_sql")
-
-
-class TestLegacyVannaAdapter:
-    """Test the LegacyVannaAdapter."""
-
-    def test_legacy_vanna_adapter_import(self):
-        """Test that LegacyVannaAdapter can be imported."""
-        from vanna.legacy.adapter import LegacyVannaAdapter
-
-        assert LegacyVannaAdapter is not None
-
-    def test_legacy_vanna_adapter_is_tool_registry(self):
-        """Test that LegacyVannaAdapter extends ToolRegistry."""
-        from vanna.legacy.adapter import LegacyVannaAdapter
-        from vanna.core.registry import ToolRegistry
-
-        assert issubclass(LegacyVannaAdapter, ToolRegistry)
 
 
 @pytest.mark.skipif(
@@ -353,7 +265,7 @@ class TestSnowflakeRunner:
     def test_snowflake_runner_implements_sql_runner(self):
         """Test that SnowflakeRunner implements SqlRunner interface."""
         from vanna.integrations.snowflake import SnowflakeRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(SnowflakeRunner, SqlRunner)
 
@@ -500,7 +412,7 @@ class TestMySQLRunner:
     def test_mysql_runner_implements_sql_runner(self):
         """Test that MySQLRunner implements SqlRunner interface."""
         from vanna.integrations.mysql import MySQLRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(MySQLRunner, SqlRunner)
 
@@ -538,7 +450,7 @@ class TestClickHouseRunner:
     def test_clickhouse_runner_implements_sql_runner(self):
         """Test that ClickHouseRunner implements SqlRunner interface."""
         from vanna.integrations.clickhouse import ClickHouseRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(ClickHouseRunner, SqlRunner)
 
@@ -576,7 +488,7 @@ class TestOracleRunner:
     def test_oracle_runner_implements_sql_runner(self):
         """Test that OracleRunner implements SqlRunner interface."""
         from vanna.integrations.oracle import OracleRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(OracleRunner, SqlRunner)
 
@@ -614,7 +526,7 @@ class TestBigQueryRunner:
     def test_bigquery_runner_implements_sql_runner(self):
         """Test that BigQueryRunner implements SqlRunner interface."""
         from vanna.integrations.bigquery import BigQueryRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(BigQueryRunner, SqlRunner)
 
@@ -650,7 +562,7 @@ class TestDuckDBRunner:
     def test_duckdb_runner_implements_sql_runner(self):
         """Test that DuckDBRunner implements SqlRunner interface."""
         from vanna.integrations.duckdb import DuckDBRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(DuckDBRunner, SqlRunner)
 
@@ -694,7 +606,7 @@ class TestMSSQLRunner:
     def test_mssql_runner_implements_sql_runner(self):
         """Test that MSSQLRunner implements SqlRunner interface."""
         from vanna.integrations.mssql import MSSQLRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(MSSQLRunner, SqlRunner)
 
@@ -731,7 +643,7 @@ class TestPrestoRunner:
     def test_presto_runner_implements_sql_runner(self):
         """Test that PrestoRunner implements SqlRunner interface."""
         from vanna.integrations.presto import PrestoRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(PrestoRunner, SqlRunner)
 
@@ -767,7 +679,7 @@ class TestHiveRunner:
     def test_hive_runner_implements_sql_runner(self):
         """Test that HiveRunner implements SqlRunner interface."""
         from vanna.integrations.hive import HiveRunner
-        from vanna.capabilities.sql_runner import SqlRunner
+        from vanna.infrastructure.sql_runner import SqlRunner
 
         assert issubclass(HiveRunner, SqlRunner)
 

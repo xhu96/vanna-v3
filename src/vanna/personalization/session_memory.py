@@ -5,7 +5,7 @@ Session memory — ephemeral, auto-expiring per-session memory.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List
 
 from .models import SessionMemoryEntry
 from .redaction import redact_pii

@@ -9,7 +9,6 @@ types for the registry, audit log, and compilation results.
 from __future__ import annotations
 
 import hashlib
-import json
 import uuid
 from datetime import datetime, timezone
 from enum import Enum

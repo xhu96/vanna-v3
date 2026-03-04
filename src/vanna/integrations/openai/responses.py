@@ -17,7 +17,6 @@ class OpenAIResponsesService(LlmService):
     ) -> None:
         try:
             from openai import AsyncOpenAI
-            from openai.types.responses import Response
         except Exception as e:  # pragma: no cover
             raise ImportError(
                 "openai package is required. Install with: pip install 'vanna[openai]'"

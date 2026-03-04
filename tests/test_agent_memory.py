@@ -9,10 +9,8 @@ import pytest
 import asyncio
 import tempfile
 import shutil
-import os
 from vanna.core.user import User
 from vanna.core.tool import ToolContext
-from vanna.integrations.local.agent_memory import DemoAgentMemory
 
 
 @pytest.fixture
@@ -35,6 +33,14 @@ def create_test_context(test_user, agent_memory):
         agent_memory=agent_memory,
         metadata={},
     )
+
+
+@pytest.fixture
+def demo_memory():
+    """Create zero-dependency DemoAgentMemory instance."""
+    from vanna.integrations.local.agent_memory import DemoAgentMemory
+
+    yield DemoAgentMemory()
 
 
 @pytest.fixture
@@ -89,7 +95,7 @@ def faiss_memory():
 
 # Parametrized tests for local implementations
 @pytest.mark.parametrize(
-    "memory_fixture", ["chromadb_memory", "qdrant_memory", "faiss_memory"]
+    "memory_fixture", ["demo_memory", "chromadb_memory", "qdrant_memory", "faiss_memory"]
 )
 class TestLocalAgentMemory:
     """Tests for local AgentMemory implementations (ChromaDB, Qdrant, FAISS)."""

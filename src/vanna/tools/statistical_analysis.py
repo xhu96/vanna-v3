@@ -1,6 +1,6 @@
 """Statistical Analysis tools for Vanna"""
 
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, List, Type, cast
 import json
 import pandas as pd
 from scipy import stats
@@ -12,7 +12,7 @@ from vanna.components import (
     ComponentType,
     SimpleTextComponent,
 )
-from vanna.capabilities.sql_runner import SqlRunner
+from vanna.infrastructure.sql_runner import SqlRunner
 from pydantic import BaseModel, Field
 
 class TTestToolArgs(BaseModel):
@@ -37,7 +37,7 @@ class TTestTool(Tool[TTestToolArgs]):
     async def execute(self, context: ToolContext, args: TTestToolArgs) -> ToolResult:
         try:
             # We must use context for user resolver if needed, but SqlRunner handles its own args
-            from vanna.capabilities.sql_runner import RunSqlToolArgs
+            from vanna.infrastructure.sql_runner import RunSqlToolArgs
             sql_args = RunSqlToolArgs(sql=args.sql)
             df = await self.sql_runner.run_sql(sql_args, context)
 
@@ -127,7 +127,7 @@ class CorrelationTool(Tool[CorrelationToolArgs]):
 
     async def execute(self, context: ToolContext, args: CorrelationToolArgs) -> ToolResult:
         try:
-            from vanna.capabilities.sql_runner import RunSqlToolArgs
+            from vanna.infrastructure.sql_runner import RunSqlToolArgs
             sql_args = RunSqlToolArgs(sql=args.sql)
             df = await self.sql_runner.run_sql(sql_args, context)
 

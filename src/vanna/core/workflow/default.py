@@ -12,7 +12,7 @@ from .base import WorkflowHandler, WorkflowResult
 
 if TYPE_CHECKING:
     from ..agent.agent import Agent
-    from ..user.models import User
+    from vanna.models.user import User
     from ..storage import Conversation
 
 # Import components at module level to avoid circular imports
@@ -20,9 +20,6 @@ from vanna.components import (
     UiComponent,
     RichTextComponent,
     StatusCardComponent,
-    ButtonComponent,
-    ButtonGroupComponent,
-    SimpleTextComponent,
     CardComponent,
 )
 

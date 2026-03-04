@@ -5,12 +5,11 @@ This implementation uses Vanna's premium cloud service for storing and searching
 tool usage patterns with advanced similarity search and analytics.
 """
 
-import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import httpx
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

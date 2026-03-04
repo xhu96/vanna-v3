@@ -10,12 +10,11 @@ from __future__ import annotations
 
 import asyncio
 import difflib
-import time
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

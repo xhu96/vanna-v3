@@ -1,11 +1,11 @@
 import pytest
 import pandas as pd
-from unittest.mock import AsyncMock, patch
-from vanna.capabilities.sql_runner import SqlRunner
+from unittest.mock import AsyncMock
+from vanna.infrastructure.sql_runner import SqlRunner
 from vanna.core.tool import ToolContext
 from vanna.tools.statistical_analysis import TTestTool, CorrelationTool, TTestToolArgs, CorrelationToolArgs
 from vanna.tools.export_data import ExportToCSVTool, ExportToCSVToolArgs
-from vanna.capabilities.file_system import FileSystem
+from vanna.infrastructure.file_system import FileSystem
 
 class MockSqlRunner(SqlRunner):
     def __init__(self, data=None):

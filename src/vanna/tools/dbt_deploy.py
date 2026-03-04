@@ -26,7 +26,7 @@ from vanna.components import (
     SimpleTextComponent,
     UiComponent,
 )
-from vanna.core.errors import ToolExecutionError
+from vanna.exceptions import ToolExecutionError
 from vanna.core.tool import Tool, ToolContext, ToolResult
 
 try:

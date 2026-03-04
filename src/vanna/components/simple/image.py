@@ -2,7 +2,7 @@
 
 from typing import Optional
 from pydantic import Field
-from ...core.simple_component import SimpleComponent, SimpleComponentType
+from vanna.components.simple_component import SimpleComponent, SimpleComponentType
 
 
 class SimpleImageComponent(SimpleComponent):

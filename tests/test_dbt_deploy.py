@@ -1,14 +1,12 @@
 """Tests for the dbt deploy tool."""
 
-import asyncio
-import textwrap
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from vanna.core.errors import ToolExecutionError
-from vanna.core.tool import ToolContext, ToolResult
+from vanna.exceptions import ToolExecutionError
+from vanna.core.tool import ToolContext
 from vanna.tools.dbt_deploy import (
     DbtDeployArgs,
     DbtDeployTool,

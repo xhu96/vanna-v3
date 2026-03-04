@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 
 from vanna import Agent
-from vanna.core.evaluation import (
+from vanna.evaluation import (
     EvaluationRunner,
     EvaluationDataset,
     AgentVariant,

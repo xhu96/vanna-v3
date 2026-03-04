@@ -11,8 +11,8 @@ from datetime import datetime
 from .base import SystemPromptBuilder
 
 if TYPE_CHECKING:
-    from ..tool.models import ToolSchema
-    from ..user.models import User
+    from vanna.models.tool import ToolSchema
+    from vanna.models.user import User
 
 
 class DefaultSystemPromptBuilder(SystemPromptBuilder):

@@ -22,7 +22,7 @@ from typing import (
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from ..user.models import User
+    from vanna.models.user import User
     from ..storage import Conversation
     from ...components import UiComponent
     from ..agent.agent import Agent

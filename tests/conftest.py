@@ -4,8 +4,6 @@ Pytest configuration and shared fixtures for Vanna v2 test suite.
 
 import os
 import pytest
-import sqlite3
-from pathlib import Path
 import importlib.util
 
 # Configure pytest-asyncio

@@ -25,7 +25,7 @@ try:
 except ImportError:
     MILVUS_AVAILABLE = False
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

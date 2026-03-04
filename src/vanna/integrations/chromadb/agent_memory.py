@@ -5,7 +5,6 @@ This implementation uses ChromaDB for local vector storage of tool usage pattern
 """
 
 import json
-import hashlib
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import asyncio
@@ -29,7 +28,7 @@ try:
 except ImportError:
     CHROMADB_AVAILABLE = False
 
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,

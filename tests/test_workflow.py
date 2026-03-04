@@ -4,16 +4,13 @@ Tests for the default workflow handler, including memory display and deletion.
 
 import pytest
 import uuid
-from datetime import datetime
 from vanna.core.workflow.default import DefaultWorkflowHandler
 from vanna.core.user import User
 from vanna.core.user.resolver import UserResolver
 from vanna.core.user.request_context import RequestContext
-from vanna.core.storage import Conversation
 from vanna.core.tool import ToolContext
-from vanna.capabilities.agent_memory import ToolMemory, TextMemory
 from vanna.integrations.local.agent_memory import DemoAgentMemory
-from vanna.core.rich_component import ComponentType
+from vanna.components.rich_component import ComponentType
 
 
 class SimpleUserResolver(UserResolver):
@@ -586,7 +583,7 @@ class TestWorkflowComponentStructure:
         card_found = False
         for component in result.components:
             if hasattr(component.rich_component, "type"):
-                from vanna.core.rich_component import ComponentType
+                from vanna.components.rich_component import ComponentType
 
                 if component.rich_component.type == ComponentType.CARD:
                     card_found = True

@@ -11,7 +11,7 @@ They are lightweight sanity checks for the implementation structure.
 """
 
 import pytest
-from inspect import signature, iscoroutinefunction
+from inspect import iscoroutinefunction
 from abc import ABC
 
 
@@ -20,19 +20,19 @@ class TestAgentMemoryInterface:
 
     def test_agent_memory_import(self):
         """Test that AgentMemory can be imported."""
-        from vanna.capabilities.agent_memory import AgentMemory
+        from vanna.infrastructure.agent_memory import AgentMemory
 
         assert AgentMemory is not None
 
     def test_agent_memory_is_abstract(self):
         """Test that AgentMemory is an abstract base class."""
-        from vanna.capabilities.agent_memory import AgentMemory
+        from vanna.infrastructure.agent_memory import AgentMemory
 
         assert issubclass(AgentMemory, ABC)
 
     def test_agent_memory_has_required_methods(self):
         """Test that AgentMemory defines all required abstract methods."""
-        from vanna.capabilities.agent_memory import AgentMemory
+        from vanna.infrastructure.agent_memory import AgentMemory
 
         required_methods = [
             "save_tool_usage",
@@ -55,7 +55,7 @@ class TestAgentMemoryInterface:
 
     def test_all_methods_are_async(self):
         """Test that all AgentMemory methods are async."""
-        from vanna.capabilities.agent_memory import AgentMemory
+        from vanna.infrastructure.agent_memory import AgentMemory
 
         methods = [
             "save_tool_usage",
@@ -79,20 +79,20 @@ class TestToolMemoryModel:
 
     def test_tool_memory_import(self):
         """Test that ToolMemory can be imported."""
-        from vanna.capabilities.agent_memory import ToolMemory
+        from vanna.infrastructure.agent_memory import ToolMemory
 
         assert ToolMemory is not None
 
     def test_tool_memory_is_pydantic_model(self):
         """Test that ToolMemory is a Pydantic model."""
-        from vanna.capabilities.agent_memory import ToolMemory
+        from vanna.infrastructure.agent_memory import ToolMemory
         from pydantic import BaseModel
 
         assert issubclass(ToolMemory, BaseModel)
 
     def test_tool_memory_has_required_fields(self):
         """Test that ToolMemory has all required fields."""
-        from vanna.capabilities.agent_memory import ToolMemory
+        from vanna.infrastructure.agent_memory import ToolMemory
 
         required_fields = ["question", "tool_name", "args"]
         optional_fields = ["memory_id", "timestamp", "success", "metadata"]
@@ -107,7 +107,7 @@ class TestToolMemoryModel:
 
     def test_tool_memory_instantiation(self):
         """Test that ToolMemory can be instantiated."""
-        from vanna.capabilities.agent_memory import ToolMemory
+        from vanna.infrastructure.agent_memory import ToolMemory
 
         memory = ToolMemory(
             memory_id="test-123",
@@ -128,13 +128,13 @@ class TestToolMemorySearchResultModel:
 
     def test_memory_search_result_import(self):
         """Test that ToolMemorySearchResult can be imported."""
-        from vanna.capabilities.agent_memory import ToolMemorySearchResult
+        from vanna.infrastructure.agent_memory import ToolMemorySearchResult
 
         assert ToolMemorySearchResult is not None
 
     def test_memory_search_result_instantiation(self):
         """Test that ToolMemorySearchResult can be instantiated."""
-        from vanna.capabilities.agent_memory import ToolMemorySearchResult, ToolMemory
+        from vanna.infrastructure.agent_memory import ToolMemorySearchResult, ToolMemory
 
         memory = ToolMemory(question="test", tool_name="test_tool", args={})
 
@@ -150,20 +150,20 @@ class TestTextMemoryModel:
 
     def test_text_memory_import(self):
         """Test that TextMemory can be imported."""
-        from vanna.capabilities.agent_memory import TextMemory
+        from vanna.infrastructure.agent_memory import TextMemory
 
         assert TextMemory is not None
 
     def test_text_memory_is_pydantic_model(self):
         """Test that TextMemory is a Pydantic model."""
-        from vanna.capabilities.agent_memory import TextMemory
+        from vanna.infrastructure.agent_memory import TextMemory
         from pydantic import BaseModel
 
         assert issubclass(TextMemory, BaseModel)
 
     def test_text_memory_has_required_fields(self):
         """Test that TextMemory has all required fields."""
-        from vanna.capabilities.agent_memory import TextMemory
+        from vanna.infrastructure.agent_memory import TextMemory
 
         required_fields = ["content"]
         optional_fields = ["memory_id", "timestamp"]
@@ -178,7 +178,7 @@ class TestTextMemoryModel:
 
     def test_text_memory_instantiation(self):
         """Test that TextMemory can be instantiated."""
-        from vanna.capabilities.agent_memory import TextMemory
+        from vanna.infrastructure.agent_memory import TextMemory
 
         memory = TextMemory(
             memory_id="text-123", content="Remember to handle edge cases"
@@ -193,13 +193,13 @@ class TestTextMemorySearchResultModel:
 
     def test_text_memory_search_result_import(self):
         """Test that TextMemorySearchResult can be imported."""
-        from vanna.capabilities.agent_memory import TextMemorySearchResult
+        from vanna.infrastructure.agent_memory import TextMemorySearchResult
 
         assert TextMemorySearchResult is not None
 
     def test_text_memory_search_result_instantiation(self):
         """Test that TextMemorySearchResult can be instantiated."""
-        from vanna.capabilities.agent_memory import TextMemorySearchResult, TextMemory
+        from vanna.infrastructure.agent_memory import TextMemorySearchResult, TextMemory
 
         memory = TextMemory(content="Example memory")
 
@@ -226,7 +226,7 @@ class TestChromaDBAgentMemory:
         """Test that ChromaAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.chromadb import ChromaAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(ChromaAgentMemory, AgentMemory)
         except ImportError:
@@ -292,7 +292,7 @@ class TestQdrantAgentMemory:
         """Test that QdrantAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.qdrant import QdrantAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(QdrantAgentMemory, AgentMemory)
         except ImportError:
@@ -349,7 +349,7 @@ class TestPineconeAgentMemory:
         """Test that PineconeAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.pinecone import PineconeAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(PineconeAgentMemory, AgentMemory)
         except ImportError:
@@ -394,7 +394,7 @@ class TestMilvusAgentMemory:
         """Test that MilvusAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.milvus import MilvusAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(MilvusAgentMemory, AgentMemory)
         except ImportError:
@@ -439,7 +439,7 @@ class TestWeaviateAgentMemory:
         """Test that WeaviateAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.weaviate import WeaviateAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(WeaviateAgentMemory, AgentMemory)
         except ImportError:
@@ -484,7 +484,7 @@ class TestFAISSAgentMemory:
         """Test that FAISSAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.faiss import FAISSAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(FAISSAgentMemory, AgentMemory)
         except ImportError:
@@ -543,7 +543,7 @@ class TestOpenSearchAgentMemory:
         """Test that OpenSearchAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.opensearch import OpenSearchAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(OpenSearchAgentMemory, AgentMemory)
         except ImportError:
@@ -588,7 +588,7 @@ class TestAzureAISearchAgentMemory:
         """Test that AzureAISearchAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.azuresearch import AzureAISearchAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(AzureAISearchAgentMemory, AgentMemory)
         except ImportError:
@@ -633,7 +633,7 @@ class TestMarqoAgentMemory:
         """Test that MarqoAgentMemory implements AgentMemory."""
         try:
             from vanna.integrations.marqo import MarqoAgentMemory
-            from vanna.capabilities.agent_memory import AgentMemory
+            from vanna.infrastructure.agent_memory import AgentMemory
 
             assert issubclass(MarqoAgentMemory, AgentMemory)
         except ImportError:
@@ -674,7 +674,7 @@ class TestDemoAgentMemory:
     def test_demo_implements_agent_memory(self):
         """Test that DemoAgentMemory implements AgentMemory."""
         from vanna.integrations.local.agent_memory import DemoAgentMemory
-        from vanna.capabilities.agent_memory import AgentMemory
+        from vanna.infrastructure.agent_memory import AgentMemory
 
         assert issubclass(DemoAgentMemory, AgentMemory)
 

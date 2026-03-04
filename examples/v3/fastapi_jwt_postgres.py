@@ -5,8 +5,8 @@ from vanna.core.registry import ToolRegistry
 from vanna.integrations.local.agent_memory import DemoAgentMemory
 from vanna.integrations.postgres import PostgresRunner
 from vanna.integrations.mock import MockLlmService
-from vanna.servers.fastapi import VannaFastAPIServer
-from vanna.servers.base import (
+from app.fastapi.app import VannaFastAPIServer
+from app.base import (
     make_fastapi_bearer_auth_middleware,
     make_fixed_window_rate_limiter,
 )

@@ -62,8 +62,8 @@ def analyze_impact(changed_files: Set[str]) -> List[str]:
     src_changed = any(f.startswith('src/') for f in changed_files)
     core_changed = any(f.startswith('src/vanna/core/') for f in changed_files)
     models_changed = any('models.py' in f for f in changed_files)
-    api_changed = any(f.startswith('src/vanna/servers/') for f in changed_files)
-    ui_changed = any(f.startswith('frontends/webcomponent/') for f in changed_files)
+    api_changed = any(f.startswith('app/') for f in changed_files)
+    ui_changed = any(f.startswith('static/') for f in changed_files)
     deps_changed = 'pyproject.toml' in changed_files
     
     # Categories of collateral
@@ -89,7 +89,7 @@ def analyze_impact(changed_files: Set[str]) -> List[str]:
         warnings.append("⚠️  pyproject.toml changed. Did you forget to sync requirements.txt?")
         
     if api_changed and not docs_changed:
-        warnings.append("⚠️  API routes changed (src/vanna/servers/). Please update docs/v3/ API tables.")
+        warnings.append("⚠️  API routes changed (app/). Please update docs/v3/ API tables.")
         
     if core_changed and not diagrams_changed:
         warnings.append("ℹ️  Core architecture changed. Check if img/data_eng_architecture.svg needs updating.")
@@ -98,7 +98,7 @@ def analyze_impact(changed_files: Set[str]) -> List[str]:
         warnings.append("ℹ️  Data models/schemas changed. Ensure schema definitions in docs or notebooks reflect this.")
         
     if ui_changed and not docs_changed:
-        warnings.append("ℹ️  Web component UI changed. Consider updating README.md usage examples.")
+        warnings.append("ℹ️  Static UI assets changed. Consider updating README.md usage examples.")
         
     return warnings
 

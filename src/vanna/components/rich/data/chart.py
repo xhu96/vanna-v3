@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional, Union
 from pydantic import Field
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class ChartComponent(RichComponent):

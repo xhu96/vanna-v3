@@ -6,9 +6,10 @@ agent execution for monitoring and debugging.
 """
 
 from abc import ABC
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, AsyncGenerator
+from contextlib import asynccontextmanager
 
-from .models import Span, Metric
+from .models import Span
 
 
 class ObservabilityProvider(ABC):
@@ -86,3 +87,27 @@ class ObservabilityProvider(ABC):
             span: The span to end
         """
         span.end()
+
+    @asynccontextmanager
+    async def async_span(
+        self, name: str, **attributes: Any
+    ) -> AsyncGenerator[Span, None]:
+        """A context manager to automatically create, yield, and end a span,
+        while also recording its duration as a metric.
+
+        Args:
+            name: Span name/operation
+            **attributes: Initial span attributes
+
+        Yields:
+            The created Span object
+        """
+        span = await self.create_span(name, attributes=attributes)
+        try:
+            yield span
+        finally:
+            await self.end_span(span)
+            if span.duration_ms():
+                await self.record_metric(
+                    f"{name}.duration", span.duration_ms() or 0.0, "ms"
+                )

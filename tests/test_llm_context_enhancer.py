@@ -12,9 +12,9 @@ from vanna.core.enhancer.default import DefaultLlmContextEnhancer
 from vanna.core.user import User
 from vanna.core.user.resolver import UserResolver
 from vanna.core.user.request_context import RequestContext
-from vanna.core.llm.models import LlmMessage
+from vanna.models.llm import LlmMessage
 from vanna.core.llm.base import LlmService
-from vanna.capabilities.agent_memory import (
+from vanna.infrastructure.agent_memory import (
     AgentMemory,
     TextMemory,
     TextMemorySearchResult,
@@ -89,7 +89,7 @@ class MockLlmService(LlmService):
 
     async def send_request(self, request):
         """Record the call and return a mock response."""
-        from vanna.core.llm.models import LlmResponse, LlmResponseMessage
+        from vanna.models.llm import LlmResponse, LlmResponseMessage
 
         # Store the full request object
         self.requests.append(request)
@@ -102,7 +102,7 @@ class MockLlmService(LlmService):
 
     async def stream_request(self, request):
         """Mock streaming - just yield a single chunk."""
-        from vanna.core.llm.models import LlmStreamChunk
+        from vanna.models.llm import LlmStreamChunk
 
         # Store the full request object
         self.requests.append(request)

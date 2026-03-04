@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from vanna.core.enricher import ToolContextEnricher
 from vanna.core.tool import ToolContext
 
-from vanna.capabilities.schema_catalog import SchemaCatalog
+from vanna.infrastructure.schema_catalog import SchemaCatalog
 
 from .compiler import SkillCompiler
 from .generator import SkillGenerator

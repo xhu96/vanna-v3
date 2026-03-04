@@ -1,6 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
-import json
+from typing import Any, Dict, List
 
 try:
     import httpx
@@ -8,8 +7,7 @@ except ImportError:
     httpx = None
 
 from vanna.core.enhancer.base import LlmContextEnhancer
-from vanna.core.user.models import User
-from vanna.core.llm.models import LlmMessage
+from vanna.models.user import User
 
 logger = logging.getLogger(__name__)
 

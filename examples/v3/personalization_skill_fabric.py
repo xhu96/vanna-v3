@@ -21,7 +21,7 @@ from vanna.personalization.models import GlossaryEntry, TenantProfile, UserProfi
 from vanna.personalization.preference_resolver import PreferenceResolverEnhancer
 from vanna.personalization.services import ConsentManager, GlossaryService, ProfileService
 from vanna.personalization.stores import InMemoryGlossaryStore, InMemoryProfileStore
-from vanna.servers.fastapi import VannaFastAPIServer
+from app.fastapi.app import VannaFastAPIServer
 from vanna.skills.compiler import SkillCompiler
 from vanna.skills.models import SkillEnvironment, SkillSpec
 from vanna.skills.registry import SkillRegistry

@@ -5,7 +5,7 @@ This module provides the core abstractions for conversation storage in the Vanna
 """
 
 from .base import ConversationStore
-from .models import Conversation, Message
+from vanna.models.storage import Conversation, Message
 
 __all__ = [
     "ConversationStore",

@@ -7,14 +7,13 @@ The tools access AgentMemory via ToolContext, which is populated by the Agent.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
 from vanna.core.tool import Tool, ToolContext, ToolResult
-from vanna.core.agent.config import UiFeature
-from vanna.capabilities.agent_memory import AgentMemory
+from vanna.config import UiFeature
 from vanna.components import (
     UiComponent,
     StatusBarUpdateComponent,

@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any, Optional
 from .task_list import Task
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class StatusBarUpdateComponent(RichComponent):

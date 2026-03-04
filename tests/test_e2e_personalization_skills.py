@@ -11,7 +11,6 @@ Tests the full workflow:
 """
 
 import asyncio
-import pytest
 
 from vanna.personalization.models import (
     GlossaryEntry,

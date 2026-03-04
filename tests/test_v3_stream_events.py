@@ -1,7 +1,7 @@
 """Tests for v3 typed streaming events."""
 
-from vanna.servers.base.events_v3 import ChatEvent
-from vanna.servers.base.models import ChatStreamChunk
+from app.base.events_v3 import ChatEvent
+from app.base.models import ChatStreamChunk
 
 
 def test_chat_event_maps_chart_chunk_to_chart_spec():

@@ -9,8 +9,8 @@ from vanna.components import (
     ComponentType,
     SimpleTextComponent,
 )
-from vanna.capabilities.sql_runner import SqlRunner
-from vanna.capabilities.file_system import FileSystem
+from vanna.infrastructure.sql_runner import SqlRunner
+from vanna.infrastructure.file_system import FileSystem
 from vanna.integrations.local import LocalFileSystem
 
 class ExportToCSVToolArgs(BaseModel):
@@ -32,7 +32,7 @@ class ExportToCSVTool(Tool[ExportToCSVToolArgs]):
 
     async def execute(self, context: ToolContext, args: ExportToCSVToolArgs) -> ToolResult:
         try:
-            from vanna.capabilities.sql_runner import RunSqlToolArgs
+            from vanna.infrastructure.sql_runner import RunSqlToolArgs
             sql_args = RunSqlToolArgs(sql=args.sql)
             df = await self.sql_runner.run_sql(sql_args, context)
 

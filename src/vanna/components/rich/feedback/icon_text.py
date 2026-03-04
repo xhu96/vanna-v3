@@ -1,6 +1,6 @@
 """Icon with text component."""
 
-from ....core.rich_component import RichComponent, ComponentType
+from vanna.components.rich_component import RichComponent, ComponentType
 
 
 class IconTextComponent(RichComponent):

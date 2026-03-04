@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
+from vanna.infrastructure.sql_runner import RunSqlToolArgs, SqlRunner
 from vanna.core.tool import ToolContext
 from vanna.core.user import User
 from vanna.integrations.local.agent_memory import DemoAgentMemory

@@ -1,7 +1,7 @@
 """Button component for interactive actions."""
 
 from typing import Any, Dict, List, Literal, Optional
-from ....core.rich_component import ComponentType, RichComponent
+from vanna.components.rich_component import ComponentType, RichComponent
 
 
 class ButtonComponent(RichComponent):

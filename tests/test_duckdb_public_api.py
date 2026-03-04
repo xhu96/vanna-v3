@@ -15,7 +15,6 @@ import tempfile
 import sqlite3
 import httpx
 import pandas as pd
-from pathlib import Path
 
 
 def create_test_database():

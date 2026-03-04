@@ -1,3 +1,11 @@
+"""Great Expectations quality-gate lifecycle hook.
+
+.. warning::
+    **Experimental integration.** Requires production tuning of table
+    extraction logic and API configuration before deployment. The current
+    implementation uses simplistic keyword-based table detection.
+"""
+
 import logging
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -10,7 +18,7 @@ from vanna.core.lifecycle.base import LifecycleHook
 
 if TYPE_CHECKING:
     from vanna.core.tool import Tool
-    from vanna.core.tool.models import ToolContext
+    from vanna.models.tool import ToolContext
 
 logger = logging.getLogger(__name__)
 

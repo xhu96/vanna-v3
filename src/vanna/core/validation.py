@@ -5,7 +5,7 @@ This module provides utilities that can be used during development
 and testing to catch forward reference issues early.
 """
 
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple
 from pydantic import BaseModel
 import importlib
 import inspect

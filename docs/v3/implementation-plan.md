@@ -19,11 +19,11 @@ Deliverables:
 
 Planned file-level changes:
 
-- `src/vanna/servers/base/models.py` (v3 event models + compatibility mapping)
-- `src/vanna/servers/fastapi/routes.py` (v3 event endpoint)
-- `src/vanna/servers/flask/routes.py` (v3 event endpoint)
-- `src/vanna/servers/fastapi/app.py` (safe defaults + middleware hooks)
-- `src/vanna/servers/flask/app.py` (safe defaults + middleware hooks)
+- `app/base/models.py` (v3 event models + compatibility mapping)
+- `app/fastapi/routes.py` (v3 event endpoint)
+- `app/flask/routes.py` (v3 event endpoint)
+- `app/fastapi/app.py` (safe defaults + middleware hooks)
+- `app/flask/app.py` (safe defaults + middleware hooks)
 - `src/vanna/tools/run_sql.py` (read-only query validator)
 - `src/vanna/legacy/base/base.py` (secure chart default + explicit opt-in)
 - `tests/test_tool_permissions.py`, `tests/test_database_sanity.py` (+ security tests)
@@ -41,8 +41,7 @@ Planned file-level changes:
 - `src/vanna/components/rich/data/chart.py` (chart spec payload fields)
 - `src/vanna/tools/visualize_data.py` (emit validated ChartSpec)
 - `src/vanna/core/validation.py` (ChartSpec validators)
-- `frontends/webcomponent/src/components/rich-component-system.ts` (ChartSpec rendering path)
-- `frontends/webcomponent/src/components/plotly-chart.ts` (plotly-json compatibility path)
+- `static/vanna-components.js` (ChartSpec rendering path)
 - `tests/test_chart_spec_validation.py` (new)
 - `tests/test_visualization_tool.py` (new)
 
@@ -61,7 +60,7 @@ Planned file-level changes:
 - `src/vanna/capabilities/schema_catalog/models.py` (snapshot/diff models)
 - `src/vanna/integrations/schema_catalog/sql_catalog.py` (portable SQL-based snapshotter)
 - `src/vanna/services/schema_sync.py` (sync service + scheduler)
-- `src/vanna/servers/fastapi/routes.py` / `src/vanna/servers/flask/routes.py` (sync endpoints)
+- `app/fastapi/routes.py` / `app/flask/routes.py` (sync endpoints)
 - `tests/test_schema_diff.py` (new)
 - `tests/test_schema_sync_service.py` (new)
 
@@ -113,7 +112,7 @@ Planned file-level changes:
 - `src/vanna/services/feedback/models.py` (new)
 - `src/vanna/services/feedback/store.py` (new)
 - `src/vanna/services/feedback/patcher.py` (new)
-- `src/vanna/servers/fastapi/routes.py` / `src/vanna/servers/flask/routes.py` (feedback endpoint)
+- `app/fastapi/routes.py` / `app/flask/routes.py` (feedback endpoint)
 - `src/evals/pipelines/offline_training_gate.py` (new)
 - `tests/test_feedback_memory_patching.py` (new)
 

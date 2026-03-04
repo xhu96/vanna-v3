@@ -3,7 +3,7 @@
 from vanna.skills.compiler import SkillCompiler
 from vanna.skills.models import (
     SkillSpec, SkillProvenance, SkillPolicy, SqlLimits,
-    IntentTrigger, EvalSuite, EvalExpectation,
+    IntentTrigger,
 )
 
 

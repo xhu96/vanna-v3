@@ -7,7 +7,7 @@ to authenticated User objects.
 
 from abc import ABC, abstractmethod
 
-from .models import User
+from vanna.models.user import User
 from .request_context import RequestContext
 
 

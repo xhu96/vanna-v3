@@ -6,6 +6,7 @@ unnecessary embedding function initialization/model downloads.
 """
 
 import pytest
+from vanna.integrations.chromadb.agent_memory import ChromaAgentMemory
 import tempfile
 import shutil
 import asyncio

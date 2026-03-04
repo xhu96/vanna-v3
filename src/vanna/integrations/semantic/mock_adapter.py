@@ -1,10 +1,16 @@
-"""Mock semantic adapter used as a golden reference implementation."""
+"""Mock semantic adapter used as a golden reference implementation.
+
+.. note::
+    Reference implementation for **testing and development only**.
+    Not intended for production use. Real deployments should implement
+    ``SemanticAdapter`` with a genuine semantic layer backend.
+"""
 
 from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from vanna.capabilities.semantic import (
+from vanna.infrastructure.semantic import (
     SemanticAdapter,
     SemanticPlanHint,
     SemanticQueryRequest,

@@ -12,7 +12,7 @@ from .user import User
 
 if TYPE_CHECKING:
     from .audit import AuditLogger
-    from .agent.config import AuditConfig
+    from vanna.config import AuditConfig
 
 T = TypeVar("T")
 
@@ -56,7 +56,7 @@ class ToolRegistry:
         if audit_config is not None:
             self.audit_config = audit_config
         else:
-            from .agent.config import AuditConfig
+            from vanna.config import AuditConfig
 
             self.audit_config = AuditConfig()
 

@@ -3,7 +3,7 @@
 from vanna.skills.router import SkillRouter, SelectedSkill
 from vanna.skills.models import (
     SkillSpec, SkillProvenance, SkillRegistryEntry, IntentTrigger,
-    CompiledSkill, KnowledgeMapping, SkillPolicy,
+    KnowledgeMapping,
 )
 from vanna.skills.compiler import SkillCompiler
 

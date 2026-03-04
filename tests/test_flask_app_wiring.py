@@ -1,5 +1,5 @@
 import pytest
-from vanna.servers.flask.app import VannaFlaskServer
+from app.flask.app import VannaFlaskServer
 from vanna.core import Agent
 from vanna.integrations.mock import MockLlmService
 from vanna.core.registry import ToolRegistry
@@ -7,8 +7,8 @@ from vanna.core.user import UserResolver
 from vanna.core.user.request_context import RequestContext
 from vanna.core.user import User
 from vanna.integrations.local import MemoryConversationStore
-from vanna.capabilities.agent_memory import AgentMemory
-from vanna.capabilities.agent_memory.models import TextMemory, TextMemorySearchResult
+from vanna.infrastructure.agent_memory import AgentMemory
+from vanna.infrastructure.agent_memory.models import TextMemory
 
 class MockAgentMemory(AgentMemory):
     def __init__(self):
@@ -70,6 +70,6 @@ def test_lineage_endpoint(base_agent):
     server = VannaFlaskServer(base_agent)
     app = server.create_app()
     client = app.test_client()
-    response = client.get("/api/v1/lineage/latest")
+    response = client.get("/api/v1/lineage/latest?conversation_id=test-conv")
     assert response.status_code == 200
     assert "lineage" in response.json

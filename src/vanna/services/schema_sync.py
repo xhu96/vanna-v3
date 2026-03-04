@@ -11,14 +11,14 @@ from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
-from vanna.capabilities.schema_catalog import (
+from vanna.infrastructure.schema_catalog import (
     SchemaCatalog,
     SchemaColumn,
     SchemaDiff,
     SchemaSnapshot,
     SchemaSyncResult,
 )
-from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
+from vanna.infrastructure.sql_runner import RunSqlToolArgs, SqlRunner
 from vanna.core.tool import ToolContext
 
 
@@ -125,20 +125,32 @@ class PortableSchemaCatalogService(SchemaCatalog):
             context,
         )
 
+        # Handle DataFrames with integer column indices (no named columns)
+        if "name" in tables_df.columns:
+            table_names = tables_df["name"].tolist()
+        elif len(tables_df.columns) > 0:
+            table_names = tables_df.iloc[:, 0].tolist()
+        else:
+            return []
+
         columns: List[SchemaColumn] = []
-        for table_name in tables_df["name"].tolist():
+        for table_name in table_names:
             pragma_df = await self.sql_runner.run_sql(
                 RunSqlToolArgs(sql=f"PRAGMA table_info('{table_name}')"),
                 context,
             )
             for _, row in pragma_df.iterrows():
+                # Handle both named and integer-indexed columns
+                col_name = row.get("name", row.iloc[1]) if hasattr(row, "get") else row.iloc[1]
+                col_type = row.get("type", row.iloc[2]) if hasattr(row, "get") else row.iloc[2]
+                col_notnull = row.get("notnull", row.iloc[3]) if hasattr(row, "get") else row.iloc[3]
                 columns.append(
                     SchemaColumn(
                         schema_name="main",
                         table_name=table_name,
-                        column_name=str(row["name"]),
-                        data_type=str(row["type"]),
-                        is_nullable=bool(int(row.get("notnull", 0)) == 0),
+                        column_name=str(col_name),
+                        data_type=str(col_type),
+                        is_nullable=bool(int(col_notnull) == 0),
                     )
                 )
 

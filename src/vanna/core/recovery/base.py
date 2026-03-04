@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from .models import RecoveryAction, RecoveryActionType
 
 if TYPE_CHECKING:
-    from ..tool.models import ToolContext
+    from vanna.models.tool import ToolContext
     from ..llm import LlmRequest
 
 

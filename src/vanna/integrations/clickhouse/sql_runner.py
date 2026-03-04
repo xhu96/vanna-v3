@@ -1,9 +1,8 @@
 """ClickHouse implementation of SqlRunner interface."""
 
-from typing import Optional
 import pandas as pd
 
-from vanna.capabilities.sql_runner import SqlRunner, RunSqlToolArgs
+from vanna.infrastructure.sql_runner import SqlRunner, RunSqlToolArgs
 from vanna.core.tool import ToolContext
 
 

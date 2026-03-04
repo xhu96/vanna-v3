@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 from vanna.personalization.models import (
-    UserProfile, TenantProfile, GlossaryEntry, Provenance,
+    UserProfile, TenantProfile, GlossaryEntry,
 )
 from vanna.personalization.stores import (
     InMemoryProfileStore, InMemoryGlossaryStore,

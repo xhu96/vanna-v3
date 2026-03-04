@@ -19,13 +19,9 @@ chroma.sqlite3
 .coverage.*
 milvus.db
 .milvus.db.lock
+archive
 
-# Frontend builds and dependencies
-frontends/**/node_modules/
-frontends/**/static/
-frontends/**/.storybook-static/
-frontends/**/package-lock.json
-frontends/**/.mypy_cache/
+
 
 # Runtime artifacts
 .pytest_cache/
@@ -42,12 +38,18 @@ data_eng_architecture.svg.png
 # Patch Archives and Unpacked Dirs
 *.zip
 37a8eec1ce19687d/
+bb82030dbc2bcaba/
 vanna-v3-patch/
 vanna-v3-main_Xhu_edits/
 
+# Rollback backups (keep folder, ignore contents)
+.backup/*
+!.backup/.gitkeep
+
+
 # Internal engineering/development artifacts — do not publish
 FIX_PLAN.md
-frontends/webcomponent/fix.py
+
 Errors noted
 .venv/
 venv/
@@ -57,3 +59,9 @@ node_modules/
 
 # Root-level static build output
 /static/
+db/Chinook.sqlite
+full_log.txt
+server.log
+
+archive/
+

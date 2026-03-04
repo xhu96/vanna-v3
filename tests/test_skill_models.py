@@ -1,11 +1,7 @@
 """Tests for Skill Fabric Pydantic models."""
 
-import pytest
 from vanna.skills.models import (
-    SkillSpec, CompiledSkill, SkillRegistryEntry, SkillAuditEntry,
-    SkillEnvironment, SkillProvenance, IntentTrigger, KnowledgeMapping,
-    SkillPolicy, SqlLimits, RenderingDefaults, EvalSuite, EvalExpectation,
-    CompilationResult,
+    SkillSpec, CompiledSkill, SkillRegistryEntry, SkillEnvironment, SkillProvenance, IntentTrigger, KnowledgeMapping,
 )
 
 

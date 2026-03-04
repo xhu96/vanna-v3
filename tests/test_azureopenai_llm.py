@@ -5,7 +5,7 @@ These tests validate the Azure OpenAI integration without making actual API call
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 from vanna.integrations.azureopenai import AzureOpenAILlmService
 from vanna.integrations.azureopenai.llm import _is_reasoning_model
 
@@ -278,18 +278,12 @@ class TestImportError:
 
     def test_import_error_message(self):
         """Test that helpful error message is shown when openai is not installed."""
-        with patch.dict("sys.modules", {"openai": None}):
-            # Force module reload to trigger import error
-            import sys
+        import vanna.integrations.azureopenai.llm as llm_module
 
-            if "vanna.integrations.azureopenai.llm" in sys.modules:
-                del sys.modules["vanna.integrations.azureopenai.llm"]
-
+        with patch.object(llm_module, "AzureOpenAI", None):
             with pytest.raises(
                 ImportError, match="pip install 'vanna\\[azureopenai\\]'"
             ):
-                from vanna.integrations.azureopenai import AzureOpenAILlmService
-
                 AzureOpenAILlmService(
                     model="gpt-4o",
                     api_key="test",

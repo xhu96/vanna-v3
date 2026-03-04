@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, AsyncGenerator, Dict, List, Optional, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from vanna.core.llm import (
     LlmService,

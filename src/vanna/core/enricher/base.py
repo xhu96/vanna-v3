@@ -9,7 +9,7 @@ from abc import ABC
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..tool.models import ToolContext
+    from vanna.models.tool import ToolContext
 
 
 class ToolContextEnricher(ABC):

@@ -9,8 +9,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from vanna.capabilities.agent_memory import AgentMemory
-from vanna.capabilities.agent_memory.models import (
+from vanna.infrastructure.agent_memory import AgentMemory
+from vanna.infrastructure.agent_memory.models import (
     TextMemory,
     TextMemorySearchResult,
     ToolMemory,
@@ -67,7 +67,7 @@ class SimpleUserResolver(UserResolver):
             id="default",
             username="default",
             email="default@example.com",
-            group_memberships=[],
+            group_memberships=["admin", "user"],
         )
 
     async def resolve_user(self, request_context: RequestContext) -> User:

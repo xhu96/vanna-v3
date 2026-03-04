@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.scripts]
-vanna = "vanna.servers.cli.server_runner:main"
+vanna = "app.cli.server_runner:main"
 
 [project.urls]
 "Homepage" = "https://github.com/vanna-ai/vanna"
@@ -90,7 +90,7 @@ path = "src/vanna"
 
 [tool.flit.sdist]
 exclude = [
-    "frontends/",
+
     "tests/",
     "notebooks/",
     "skill_packs/",
@@ -178,9 +178,9 @@ ignore = [
     "N999",  # invalid module name
 
     # Unused/redefined (often intentional)
-    "F401",  # imported but unused
+     # imported but unused
     "F541",  # f-string missing placeholders
-    "F811",  # redefinition of unused name
+     # redefinition of unused name
     "F841",  # unused variable
 
     # Bugbear rules (opinionated or intentional)

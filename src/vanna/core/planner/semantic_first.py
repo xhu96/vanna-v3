@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from vanna.capabilities.semantic import SemanticAdapter, SemanticPlanHint
+from vanna.infrastructure.semantic import SemanticAdapter, SemanticPlanHint
 from vanna.core.tool import ToolSchema, ToolContext
 
 

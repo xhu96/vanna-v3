@@ -90,7 +90,7 @@ First major fork release — a production-grade overhaul of upstream Vanna v2, f
 - **LLM Middlewares** — Caching and prompt engineering middleware chain around LLM calls.
 - **Lineage & Evidence collector** — Every answer carries schema snapshot ID, retrieved memories, tool call durations, executed SQL, and tiered confidence (`High / Medium / Low`).
 - **v3 Flask + FastAPI routes** — Namespaced under configurable `api_v3_prefix` (default `/api/vanna/v3`).
-- **`<vanna-chat>` web component** (`frontends/webcomponent/`) — Drop-in SSE-native chat component with table, chart, and summary rendering. Supports dark/light themes and is framework-agnostic.
+- **`<vanna-chat>` web component** (`static/`) — Drop-in SSE-native chat component with table, chart, and summary rendering. Supports dark/light themes and is framework-agnostic.
 - **LLM Integrations** — Anthropic, OpenAI, OpenRouter, Google Gemini, Azure OpenAI, Ollama — all with Tox integration test environments.
 - **Database runners** — PostgreSQL, MySQL, SQLite, DuckDB, Snowflake, BigQuery, ClickHouse, Oracle, SQL Server (via pyproject extras).
 - **`LegacyVannaAdapter`** — Smooth bridge from upstream v2 interface to v3 internals; all `ask()` / `generate_sql()` methods preserved.

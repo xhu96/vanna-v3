@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from .compiler import SkillCompiler
 from .models import CompilationResult, SkillEnvironment, SkillRegistryEntry
-from .registry import SkillRegistry, SkillAuthorizationError, SkillRegistryError
+from .registry import SkillRegistry
 
 
 class ApprovalError(Exception):
@@ -78,7 +78,6 @@ class ApprovalWorkflow:
 
         # Store compiled artifact
         entry.compiled_skill = compilation.compiled_skill
-        from .stores import SkillRegistryStore  # avoid circular
         # We update via registry which handles audit
 
         # Gate 2: Eval suite must pass (for tested → approved and beyond)

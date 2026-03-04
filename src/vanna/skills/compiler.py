@@ -8,7 +8,7 @@ and produces a CompiledSkill runtime artifact.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from .models import (
     CompiledSkill,

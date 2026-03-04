@@ -6,6 +6,6 @@ This module provides backward compatibility by re-exporting it here.
 """
 
 # Re-export UiComponent from core for backward compatibility
-from ..core.components import UiComponent
+from vanna.components.interfaces import UiComponent
 
 __all__ = ["UiComponent"]

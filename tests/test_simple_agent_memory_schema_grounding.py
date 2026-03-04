@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from vanna.agents.basic import SimpleAgentMemory
-from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
+from vanna.infrastructure.sql_runner import RunSqlToolArgs, SqlRunner
 from vanna.core.enhancer.default import DefaultLlmContextEnhancer
 from vanna.core.tool import ToolContext
 from vanna.core.user import User
