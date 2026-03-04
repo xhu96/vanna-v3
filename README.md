@@ -135,19 +135,12 @@ sequenceDiagram
     participant W as 🌐 <vanna-chat>
     participant S as 🐍 Your Server
     participant A as 🤖 Agent
-<<<<<<< Updated upstream
     participant LLM as 🧠 OpenRouter
     participant T as 🧰 Tools / Skills
-=======
-    participant P as 🧠 Planner
-    participant T as 🧰 Tools
-    participant L as 📋 Lineage
->>>>>>> Stashed changes
 
     U->>W: "Show Q4 sales"
     W->>S: POST /api/vanna/v3/chat/events (with auth)
     S->>A: User(id=alice, groups=[read_sales])
-<<<<<<< Updated upstream
     A->>T: Detect missing skill → Ad-Hoc Generate
     A->>LLM: Formulate SQL via optimal model
     LLM-->>A: Generated read-only SQL
@@ -155,14 +148,6 @@ sequenceDiagram
     T->>T: Apply row-level security
     T-->>A: Filtered Data Results
     A->>W: Stream: Table → Chart → Summary
-=======
-    A->>P: Semantic-First Plan
-    P->>T: Execute (Metric/SQL)
-    T->>T: Apply RLS & Schema Drift Sync
-    T->>L: Capture Evidence
-    L->>A: Lineage Data
-    A->>W: Stream: Table → ChartSpec → Lineage
->>>>>>> Stashed changes
     W->>U: Display beautiful UI
     U->>W: Thumbs Down + Corrected SQL
     W->>S: POST /api/vanna/v3/feedback (immediate patch)
@@ -184,13 +169,14 @@ Here's a complete example integrating Vanna with your existing FastAPI app and a
 ```python
 from fastapi import FastAPI
 from vanna import Agent
-from vanna.servers.fastapi.routes import register_chat_routes
-from vanna.servers.base import ChatHandler
+from app.fastapi.routes import register_chat_routes
+from app.base import ChatHandler
 from vanna.core.user import UserResolver, User, RequestContext
 from vanna.integrations.anthropic import AnthropicLlmService
 from vanna.tools import RunSqlTool
 from vanna.integrations.sqlite import SqliteRunner
 from vanna.core.registry import ToolRegistry
+from vanna.agents.basic import SimpleAgentMemory
 
 # Your existing FastAPI app
 app = FastAPI()
@@ -216,7 +202,8 @@ tools.register(RunSqlTool(sql_runner=SqliteRunner("./data.db")))
 agent = Agent(
     llm_service=llm,
     tool_registry=tools,
-    user_resolver=MyUserResolver()
+    user_resolver=MyUserResolver(),
+    agent_memory=SimpleAgentMemory(),
 )
 
 # 3. Add Vanna routes to your app
@@ -282,13 +269,78 @@ tools.register(EmailTool())
 
 ---
 
+## Built-in Tools
+
+All tools are available from `vanna.tools` and extend the `Tool` base class with user-aware permissions.
+
+### Data & SQL
+
+| Tool | Import | Description |
+|------|--------|-------------|
+| `RunSqlTool` | `from vanna.tools import RunSqlTool` | Execute read-only SQL queries with row-level security |
+| `SemanticQueryTool` | `from vanna.tools import SemanticQueryTool` | Route queries through a semantic layer before SQL generation |
+| `ExportToCSVTool` | `from vanna.tools import ExportToCSVTool` | Export query results to CSV files |
+| `VisualizeDataTool` | `from vanna.tools import VisualizeDataTool` | Generate Vega-Lite or Plotly charts from CSV data |
+
+### Statistical Analysis
+
+| Tool | Import | Description |
+|------|--------|-------------|
+| `TTestTool` | `from vanna.tools import TTestTool` | Perform t-test statistical analysis |
+| `CorrelationTool` | `from vanna.tools import CorrelationTool` | Compute correlation between columns |
+
+### File System
+
+| Tool | Import | Description |
+|------|--------|-------------|
+| `ListFilesTool` | `from vanna.tools import ListFilesTool` | List files in a directory |
+| `ReadFileTool` | `from vanna.tools import ReadFileTool` | Read file contents |
+| `SearchFilesTool` | `from vanna.tools import SearchFilesTool` | Search for files by pattern |
+| `WriteFileTool` | `from vanna.tools import WriteFileTool` | Write content to files |
+
+Use `create_file_system_tools()` to register all file system tools at once.
+
+### Python Execution
+
+| Tool | Import | Description |
+|------|--------|-------------|
+| `RunPythonFileTool` | `from vanna.tools import RunPythonFileTool` | Execute Python scripts |
+| `PipInstallTool` | `from vanna.tools import PipInstallTool` | Install Python packages |
+
+Use `create_python_tools()` to register all Python tools at once.
+
+### Other
+
+| Tool | Import | Description |
+|------|--------|-------------|
+| `FetchUrlTool` | `from vanna.tools import FetchUrlTool` | Fetch content from URLs |
+| `DbtDeployTool` | `from vanna.tools import DbtDeployTool` | Deploy dbt models |
+
+---
+
 ## Advanced Features
 
 Vanna 3 includes powerful enterprise features for production use:
 
+### Agent Extensibility
+
 **Lifecycle Hooks** — Add quota checking, custom logging, content filtering at key points in the request lifecycle
 
 **LLM Middlewares** — Implement caching, prompt engineering, or cost tracking around LLM calls
+
+**Context Enrichers** — Add RAG, memory, or documentation to enhance tool execution context
+
+**LLM Context Enhancers** — Inject additional context (personalization, glossary, memory) into LLM prompts
+
+**Workflow Handlers** — Custom conversation flows that can short-circuit the LLM pipeline (e.g., greeting workflows, FAQ routing)
+
+**Error Recovery** — `ErrorRecoveryStrategy` for custom retry/fallback logic on tool or LLM errors
+
+**Conversation Filters** — Preprocess or filter conversation messages before they reach the LLM
+
+**Agent Configuration** — Control streaming, temperature, max iterations, and more via `AgentConfig`
+
+### Data & Security
 
 **Schema Drift Sync** — Automatically detect and patch schema changes via cron-compatible scheduler
 
@@ -300,19 +352,55 @@ Vanna 3 includes powerful enterprise features for production use:
 
 **Dynamic Data Masking** — Redact PII locally using Microsoft Presidio before the LLM sees records
 
+**Security Middleware Templates** — Pre-built factories for common auth patterns:
+
+```python
+from app.base.security_templates import (
+    make_fastapi_bearer_auth_middleware,
+    make_flask_bearer_auth_middleware,
+    make_fixed_window_rate_limiter,
+)
+```
+
+### Observability & Compliance
+
 **Lineage & Confidence** — Every answer includes provenance, evidence panel, and tiered confidence scores
+
+**Audit Logging** — Full audit event system tracking tool access checks, invocations, results, and AI responses
 
 **Feedback-Driven Memory** — User corrections immediately improve subsequent behavior via weighted memory patches
 
-**Eval Harness & CI Gates** — Regression detection with configurable score delta thresholds
-
 **Conversation Storage** — Persist and retrieve conversation history per user
 
-**Observability** — Built-in tracing and metrics integration
+**Observability** — Built-in tracing and metrics integration via `ObservabilityProvider`
 
-**Context Enrichers** — Add RAG, memory, or documentation to enhance agent responses
+### Evaluation Framework
 
-**Agent Configuration** — Control streaming, temperature, max iterations, and more
+**Eval Harness & CI Gates** — Comprehensive evaluation framework for regression detection:
+
+```python
+from vanna import (
+    EvaluationRunner, EvaluationDataset, TestCase, AgentVariant,
+    TrajectoryEvaluator, OutputEvaluator, LLMAsJudgeEvaluator, EfficiencyEvaluator,
+)
+```
+
+Supports trajectory evaluation, output quality scoring, LLM-as-judge, efficiency metrics, comparison reports, and configurable score delta thresholds.
+
+### API Routes
+
+Vanna provides modular route registration functions for FastAPI (and Flask equivalents):
+
+| Function | Prefix | Description |
+|----------|--------|-------------|
+| `register_chat_routes` | `/api/vanna/v2/`, `/api/vanna/v3/` | Chat SSE/poll/WebSocket, schema sync, SQL execution, feedback |
+| `register_admin_routes` | `/api/v1/admin` | Audit logs, tool management, connections, observability, privacy |
+| `register_lineage_routes` | `/api/v1/lineage` | Query lineage data and markdown export |
+| `register_security_routes` | `/api/v1/admin` | Security configuration |
+| `register_personalization_routes` | `/api/v1` | User/tenant profiles, glossary, consent management |
+| `register_skill_routes` | `/api/v1/skills` | Skill CRUD, compile, promote, rollback, generate |
+
+All route modules are in `app/fastapi/` (FastAPI) and `app/flask/` (Flask).
 
 ### 🧩 Skill Fabric
 
@@ -345,7 +433,7 @@ from vanna.personalization.preference_resolver import PreferenceResolverEnhancer
 
 # Enhancer merges tenant defaults + user overrides + approved glossary terms
 enhancer = PreferenceResolverEnhancer(profile_store, glossary_store)
-agent = Agent(..., context_enhancers=[enhancer])
+agent = Agent(..., llm_context_enhancer=enhancer)
 ```
 
 Features: PII redaction (5 types), explicit consent, data export/delete, session memory with TTL.

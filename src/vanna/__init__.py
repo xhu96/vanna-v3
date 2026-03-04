@@ -153,13 +153,13 @@ __all__ = [
     # Basic implementations
     "MemoryConversationStore",
     "MockLlmService",
-    # Server components
-    "VannaFlaskServer",
-    "VannaFastAPIServer",
-    "ChatHandler",
-    "ChatRequest",
-    "ChatStreamChunk",
-    "ExampleAgentLoader",
+    # Server components (available via app.base / app.fastapi)
+    # "VannaFlaskServer",
+    # "VannaFastAPIServer",
+    # "ChatHandler",
+    # "ChatRequest",
+    # "ChatStreamChunk",
+    # "ExampleAgentLoader",
     # Exceptions
     "AgentError",
     "ToolExecutionError",
