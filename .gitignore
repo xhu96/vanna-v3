@@ -61,6 +61,7 @@ docs/*.html
 # ── Local development files ───────────────────────────────────────────────────
 app.py
 demo_app.py
+intro.md
 data_eng_architecture.svg.png
 
 # ── Patch archives & unpacked dirs ────────────────────────────────────────────
