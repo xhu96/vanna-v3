@@ -491,7 +491,6 @@ See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
 ## Documentation
 
 - 📐 [v3 Architecture & Design](docs/v3/architecture-and-design.md)
-- 📡 [v3 API Events Reference](docs/v3/api-events-v3.md)
 - 🔀 [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
 - 📘 [Golden-Path Examples](examples/v3/)
 - 📖 [Upstream Vanna Docs](https://vanna.ai/docs)
@@ -501,7 +500,6 @@ See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
 - 🔄 [Skill Lifecycle & Governance](docs/v3/skill-lifecycle.md)
 - ⚙️ [Skill Generation Guide](docs/v3/skill-generation.md)
 - ✍️ [Manual Skill Authoring](docs/v3/skill-authoring.md)
-- 🔒 [Threat Model](docs/v3/threat-model.md)
 
 ---
 

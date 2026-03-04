@@ -14,7 +14,9 @@ skill_packs/
 
 ## Step 1: Define the SkillSpec
 
-Create `skill.yaml`:
+Create `skill.yaml`. For the full schema reference, see [SkillSpec Reference](skillspec-reference.md).
+
+Minimal example:
 
 ```yaml
 name: my_domain_analytics
@@ -31,36 +33,23 @@ intents:
     - "(?i)\\b(metric1|metric2|keyword)\\b"
   embedding_hints:
     - "total metric1 by time_period"
-    - "top N entities by metric2"
   tool_routing_hints:
     - "run_sql"
 
 knowledge:
   synonyms:
-    metric1:
-      - alternative name 1
-      - alternative name 2
+    metric1: [alternative name 1, alternative name 2]
   metric_definitions:
     metric1: "SUM(column) WHERE condition"
-  semantic_mappings:
-    business_concept: "table.column"
 
 policies:
   required_filters:
     - "tenant_id = :tenant_id"
-  column_redaction_rules:
-    - "sensitive_column"
   sql_limits:
     read_only: true
     max_rows: 1000
     require_limit: true
     forbid_ddl_dml: true
-
-rendering:
-  currency: USD
-  locale: en-US
-  date_format: "YYYY-MM-DD"
-  preferred_output_layout: table
 
 eval_suite:
   pass_rate_threshold: 0.8

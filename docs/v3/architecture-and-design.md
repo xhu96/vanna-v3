@@ -87,23 +87,65 @@ flowchart TD
 
 ## 5) Threat Model and Mitigations
 
-### Threats
+### Core Threats & Mitigations
 
-- LLM-generated code execution for visualization.
-- SQL data mutation/exfiltration.
-- Over-permissive CORS and unauthenticated access.
-- Cross-tenant data leakage via tool misuse.
-- Prompt injection causing unsafe tool calls.
+| Threat | Mitigation |
+|--------|------------|
+| LLM-generated code execution for visualization | No default chart path executes Python code; `ChartSpec` validates payloads |
+| SQL data mutation/exfiltration | Run SQL defaults to read-only statement classes; DDL/DML banned |
+| Over-permissive CORS and unauthenticated access | Safe CORS defaults (explicit `allow_origins`, non-wildcard); auth middleware templates |
+| Cross-tenant data leakage via tool misuse | Tool access groups + query-layer validation hooks; `required_filters` enforces tenant predicates |
+| Prompt injection causing unsafe tool calls | Rate-limit hook points at API layer; event payload validation |
 
-### Mitigations
+### Personalization & Skill Fabric Threats
 
-- No default chart path executes Python code.
-- Run SQL defaults to read-only statement classes.
-- Tool access groups + query-layer validation hooks.
-- Safe CORS defaults (`allow_origins` explicit, non-wildcard by default).
-- Auth middleware templates for JWT/OAuth gateway handoff.
-- Rate-limit hook points at API layer.
-- Event payload validation and strict ChartSpec schema validation.
+#### 5.1 Prompt Injection into Skill Generator
+
+| | |
+|---|---|
+| **Threat** | Attacker crafts a malicious `description` input that causes the LLM to generate a skill spec with elevated privileges, bypassed policies, or hidden intents |
+| **Impact** | A dangerous skill draft could be created |
+| **Mitigations** | Generator output is always set to `draft` environment — it cannot auto-publish. All generated specs are validated by the deterministic **SkillCompiler** (no LLM in compiler path). Compiler rejects write SQL, missing tenant predicates, unknown tools. Promotion requires passing eval suite + RBAC-gated approval. Audit log records all generation requests |
+
+#### 5.2 Data Exfiltration via Skills
+
+| | |
+|---|---|
+| **Threat** | A skill spec is designed to extract data from unauthorized tables or exfiltrate via tool routing hints |
+| **Impact** | Unauthorized data access |
+| **Mitigations** | Skills can only ADD policy constraints, never remove them. `required_filters` enforces tenant isolation predicates. `tool_allowlist/denylist` scopes accessible tools. SQL limits enforce `read_only`, `max_rows`, `LIMIT` requirement, and DDL/DML ban. Skills cannot elevate access beyond user's effective `group_memberships`. Row/column redaction rules provide fine-grained access control |
+
+#### 5.3 Unauthorized Skill Promotion
+
+| | |
+|---|---|
+| **Threat** | Non-admin user promotes a skill from draft directly to production |
+| **Impact** | Untested or malicious skill enters production pipeline |
+| **Mitigations** | Ordered state machine enforces sequential promotion: `draft → tested → approved → default`. Promotion beyond draft requires membership in `allow_skill_publish_roles` (default: `admin`). Promotion to `approved` or `default` requires eval suite passing thresholds. All state transitions are audit-logged with actor, timestamp, and source/target environment |
+
+#### 5.4 Privacy Risks of User Preference Storage
+
+| | |
+|---|---|
+| **Threat** | Sensitive personal information (PII) is stored in user profiles or glossary entries |
+| **Impact** | Data breach exposure, GDPR/CCPA compliance risk |
+| **Mitigations** | **PII redaction** runs on all text before durable storage. **Explicit opt-in** required: `personalization_enabled` must be True on both tenant and user profiles. **Storage policy checker** rejects raw query results in profiles. User can **export** and **delete** all stored data (GDPR compliance). Session memory is **ephemeral** with configurable TTL. Profile fields are **explicit** (no free-form blobs) |
+
+#### 5.5 Skill Bypass of Existing Guardrails
+
+| | |
+|---|---|
+| **Threat** | A skill changes tool permissions or removes existing security guardrails |
+| **Impact** | Existing security model is undermined |
+| **Mitigations** | Skills contribute context through the existing `transform_args` pipeline — they cannot modify the pipeline itself. `ToolRegistry._validate_tool_permissions` continues to enforce user `group_memberships`. Skills can only restrict (denylist tools, add required filters) — never expand access. Compiled skills are deterministic artifacts — no runtime code execution in the skill path |
+
+#### 5.6 Session Memory Leakage
+
+| | |
+|---|---|
+| **Threat** | Session memory entries persist beyond intended lifetime |
+| **Impact** | Stale or sensitive context available to future interactions |
+| **Mitigations** | All session memories have explicit `expires_at` timestamp. `SessionMemoryStore.cleanup_expired()` removes expired entries. Configurable retention period via `session_memory_retention_days`. PII redaction applied before storage |
 
 ## 6) Migration and Compatibility Plan (v2 -> v3)
 
