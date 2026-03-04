@@ -406,4 +406,4 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ---
 
-**This Fork specifically maintained by [xhu96](https://github.com/xhu96)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)
+**Fork maintained by [xhu96](https://github.com/xhu96) [Aakash Sindhu](https://github.com/akash-sindu)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)

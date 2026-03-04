@@ -1,67 +1,86 @@
-build
-**.egg-info
-venn
-.DS_Store
-tests/__pycache__
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
-.idea
-.coverage
-docs/*.html
-.ipynb_checkpoints/
+*.py[cod]
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+MANIFEST
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+venn/
 .tox/
-notebooks/chroma.sqlite3
-dist
-.env
-*.sqlite
-htmlcov
-chroma.sqlite3
-*.bin
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
 .coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ── Notebooks ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Databases & vector stores ─────────────────────────────────────────────────
+*.sqlite
+*.db
+chroma.sqlite3
 milvus.db
 .milvus.db.lock
-archive
+db/Chinook.sqlite
 
-
-
-# Runtime artifacts
-.pytest_cache/
-query_results_*.csv
+# ── Logs & runtime artifacts ──────────────────────────────────────────────────
+*.log
 full_log.txt
 server.log
-*.log
+query_results_*.csv
 
-# Local development files
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+
+# ── IDE & OS ──────────────────────────────────────────────────────────────────
+.idea/
+.DS_Store
+*.bin
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+/static/
+docs/*.html
+
+# ── Local development files ───────────────────────────────────────────────────
 app.py
 demo_app.py
 data_eng_architecture.svg.png
 
-# Patch Archives and Unpacked Dirs
+# ── Patch archives & unpacked dirs ────────────────────────────────────────────
 *.zip
+archive/
 37a8eec1ce19687d/
 bb82030dbc2bcaba/
 vanna-v3-patch/
 vanna-v3-main_Xhu_edits/
 
-# Rollback backups (keep folder, ignore contents)
+# ── Rollback backups (keep folder, ignore contents) ───────────────────────────
 .backup/*
 !.backup/.gitkeep
 
+# ── Local tool & runtime data ─────────────────────────────────────────────────
+.claude/
+.AIpatch/
+.vanna/
+vanna_data/
 
-# Internal engineering/development artifacts — do not publish
+# ── Internal engineering artifacts — do not publish ───────────────────────────
 FIX_PLAN.md
-
 Errors noted
-.venv/
-venv/
-node_modules/
-.pytest_cache/
-.mypy_cache/
-
-# Root-level static build output
-/static/
-db/Chinook.sqlite
-full_log.txt
-server.log
-
-archive/
-
