@@ -1,0 +1,29 @@
+dataset:
+  name: "SQL Generation - Offline Smoke"
+  description: "Deterministic offline smoke eval driven by ScriptedLlmService"
+  test_cases:
+    - id: "smoke_001"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "Show me total sales by region"
+      expected_outcome:
+        final_answer_contains: ["SELECT", "region"]
+        final_answer_not_contains: ["DROP", "DELETE"]
+    - id: "smoke_002"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "What is revenue by month?"
+      expected_outcome:
+        final_answer_contains: ["SELECT", "month"]
+    - id: "smoke_003"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "Count of orders per day"
+      expected_outcome:
+        final_answer_contains: ["SELECT", "COUNT"]
