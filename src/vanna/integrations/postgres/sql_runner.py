@@ -18,6 +18,7 @@ class PostgresRunner(SqlRunner):
         database: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
+        read_only: bool = True,
         **kwargs,
     ):
         """Initialize with PostgreSQL connection parameters.
@@ -32,8 +33,10 @@ class PostgresRunner(SqlRunner):
             database: Database name
             user: Database user
             password: Database password
+            read_only: Enforce read-only at the transaction level (default).
             **kwargs: Additional psycopg2 connection parameters (sslmode, connect_timeout, etc.)
         """
+        self.read_only = read_only
         try:
             import psycopg2
             import psycopg2.extras
@@ -84,6 +87,11 @@ class PostgresRunner(SqlRunner):
         cursor = conn.cursor(cursor_factory=self.psycopg2.extras.RealDictCursor)
 
         try:
+            if self.read_only:
+                # Enforce read-only at the transaction level so direct-runner paths
+                # (e.g. schema_sync) cannot mutate data even if they bypass RunSqlTool.
+                cursor.execute("SET TRANSACTION READ ONLY")
+
             # Execute the query
             cursor.execute(args.sql)
 
