@@ -48,11 +48,14 @@ class SqliteRunner(SqlRunner):
             # Execute the query
             cursor.execute(args.sql)
 
-            # Determine if this is a SELECT query or modification query
-            query_type = args.sql.strip().upper().split()[0]
-
-            if query_type == "SELECT":
-                # Fetch results for SELECT queries
+            # Decide how to handle results based on whether the statement
+            # produced a result set, not on the first keyword. `cursor.description`
+            # is set for any statement that returns rows -- SELECT, WITH ... SELECT,
+            # PRAGMA, EXPLAIN, etc. -- and is None for pure writes (INSERT/UPDATE/
+            # DELETE). Keying off the first keyword instead would silently discard
+            # the output of read-only statements like WITH/PRAGMA/EXPLAIN.
+            if cursor.description is not None:
+                # Fetch results for any statement that returned a result set.
                 rows = cursor.fetchall()
                 if not rows:
                     # Return empty DataFrame
@@ -62,7 +65,8 @@ class SqliteRunner(SqlRunner):
                 results_data = [dict(row) for row in rows]
                 return pd.DataFrame(results_data)
             else:
-                # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
+                # For statements that did not return a result set (INSERT,
+                # UPDATE, DELETE, etc.) report the affected-row count.
                 conn.commit()
                 rows_affected = cursor.rowcount
                 # Return a DataFrame indicating rows affected
