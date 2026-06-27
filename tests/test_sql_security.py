@@ -25,6 +25,15 @@ def tool_context():
     )
 
 
+def _make_tool_context():
+    return ToolContext(
+        user=User(id="u1", group_memberships=["user"]),
+        conversation_id="c1",
+        request_id="r1",
+        agent_memory=DemoAgentMemory(),
+    )
+
+
 @pytest.mark.asyncio
 async def test_run_sql_blocks_write_statement_by_default(tool_context):
     tool = RunSqlTool(sql_runner=DummySqlRunner())
@@ -117,3 +126,24 @@ def test_allows_plain_explain_select():
     # Plain EXPLAIN of a read-only query stays allowed.
     err = _tool()._validate_read_only_sql("EXPLAIN SELECT * FROM users")
     assert err is None
+
+
+@pytest.mark.asyncio
+async def test_cte_select_returns_rows_not_rows_affected():
+    import pandas as pd
+
+    class _OneRowRunner:
+        async def run_sql(self, args, context):
+            return pd.DataFrame([{"x": 1}])
+
+    tool = RunSqlTool(sql_runner=_OneRowRunner(), read_only=True)
+
+    class _Ctx:
+        pass
+
+    # minimal context stub with a file_system; reuse the tool's default
+    result = await tool.execute(_make_tool_context(), RunSqlToolArgs(sql="WITH t AS (SELECT 1 AS x) SELECT x FROM t"))
+    assert result.success is True
+    assert "row(s) affected" not in result.result_for_llm
+    assert result.metadata["query_type"] == "WITH"
+    assert result.metadata.get("row_count") == 1

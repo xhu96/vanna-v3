@@ -116,81 +116,21 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             # Use the injected SqlRunner to execute the query
             df = await self.sql_runner.run_sql(args, context)
 
-            # Determine query type
             query_type = args.sql.strip().upper().split()[0]
 
-            if query_type == "SELECT":
-                # Handle SELECT queries with results
-                if df.empty:
-                    result = "Query executed successfully. No rows returned."
-                    ui_component = UiComponent(
-                        rich_component=DataFrameComponent(
-                            rows=[],
-                            columns=[],
-                            title="Query Results",
-                            description="No rows returned",
-                        ),
-                        simple_component=SimpleTextComponent(text=result),
-                    )
-                    metadata = {
-                        "row_count": 0,
-                        "columns": [],
-                        "query_type": query_type,
-                        "results": [],
-                    }
-                else:
-                    # Convert DataFrame to records
-                    results_data = df.to_dict("records")
-                    columns = df.columns.tolist()
-                    row_count = len(df)
+            # Read-only statements (SELECT/WITH/SHOW/DESCRIBE/EXPLAIN/PRAGMA) all return
+            # result sets. Treat any returned DataFrame as results; only when running in
+            # write mode (read_only=False) and the runner reports an affected-row count
+            # do we render the write acknowledgement.
+            is_write_result = (
+                not self.read_only
+                and not df.empty
+                and list(df.columns) == ["rows_affected"]
+            )
 
-                    # Write DataFrame to CSV file for downstream tools
-                    file_id = str(uuid.uuid4())[:8]
-                    filename = f"query_results_{file_id}.csv"
-                    csv_content = df.to_csv(index=False)
-                    await self.file_system.write_file(
-                        filename, csv_content, context, overwrite=True
-                    )
-
-                    # Create result text for LLM with truncated results
-                    results_preview = csv_content
-                    if len(results_preview) > 1000:
-                        results_preview = (
-                            results_preview[:1000]
-                            + "\n(Results truncated to 1000 characters. FOR LARGE RESULTS YOU DO NOT NEED TO SUMMARIZE THESE RESULTS OR PROVIDE OBSERVATIONS. THE NEXT STEP SHOULD BE A VISUALIZE_DATA CALL)"
-                        )
-
-                    result = f"{results_preview}\n\nResults saved to file: {filename}\n\n**IMPORTANT: FOR VISUALIZE_DATA USE FILENAME: {filename}**"
-
-                    # Create DataFrame component for UI
-                    dataframe_component = DataFrameComponent.from_records(
-                        records=cast(List[Dict[str, Any]], results_data),
-                        title="Query Results",
-                        description=f"SQL query returned {row_count} rows with {len(columns)} columns",
-                    )
-
-                    ui_component = UiComponent(
-                        rich_component=dataframe_component,
-                        simple_component=SimpleTextComponent(text=result),
-                    )
-
-                    metadata = {
-                        "row_count": row_count,
-                        "columns": columns,
-                        "query_type": query_type,
-                        "results": results_data,
-                        "output_file": filename,
-                        "executed_sql": args.sql,
-                        "validation_checks": ["read_only_policy_passed"],
-                    }
-            else:
-                # For non-SELECT queries (INSERT, UPDATE, DELETE, etc.)
-                # The SqlRunner should return a DataFrame with affected row count
-                rows_affected = len(df) if not df.empty else 0
-                result = (
-                    f"Query executed successfully. {rows_affected} row(s) affected."
-                )
-
+            if is_write_result:
+                rows_affected = int(df["rows_affected"].iloc[0])
+                result = f"Query executed successfully. {rows_affected} row(s) affected."
                 metadata = {
                     "rows_affected": rows_affected,
                     "query_type": query_type,
@@ -203,6 +143,56 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=result),
                 )
+            elif df.empty:
+                result = "Query executed successfully. No rows returned."
+                ui_component = UiComponent(
+                    rich_component=DataFrameComponent(
+                        rows=[], columns=[], title="Query Results", description="No rows returned"
+                    ),
+                    simple_component=SimpleTextComponent(text=result),
+                )
+                metadata = {
+                    "row_count": 0,
+                    "columns": [],
+                    "query_type": query_type,
+                    "results": [],
+                }
+            else:
+                results_data = df.to_dict("records")
+                columns = df.columns.tolist()
+                row_count = len(df)
+
+                file_id = str(uuid.uuid4())[:8]
+                filename = f"query_results_{file_id}.csv"
+                csv_content = df.to_csv(index=False)
+                await self.file_system.write_file(filename, csv_content, context, overwrite=True)
+
+                results_preview = csv_content
+                if len(results_preview) > 1000:
+                    results_preview = (
+                        results_preview[:1000]
+                        + "\n(Results truncated to 1000 characters. FOR LARGE RESULTS YOU DO NOT NEED TO SUMMARIZE THESE RESULTS OR PROVIDE OBSERVATIONS. THE NEXT STEP SHOULD BE A VISUALIZE_DATA CALL)"
+                    )
+                result = f"{results_preview}\n\nResults saved to file: {filename}\n\n**IMPORTANT: FOR VISUALIZE_DATA USE FILENAME: {filename}**"
+
+                dataframe_component = DataFrameComponent.from_records(
+                    records=cast(List[Dict[str, Any]], results_data),
+                    title="Query Results",
+                    description=f"SQL query returned {row_count} rows with {len(columns)} columns",
+                )
+                ui_component = UiComponent(
+                    rich_component=dataframe_component,
+                    simple_component=SimpleTextComponent(text=result),
+                )
+                metadata = {
+                    "row_count": row_count,
+                    "columns": columns,
+                    "query_type": query_type,
+                    "results": results_data,
+                    "output_file": filename,
+                    "executed_sql": args.sql,
+                    "validation_checks": ["read_only_policy_passed"],
+                }
 
             return ToolResult(
                 success=True,
