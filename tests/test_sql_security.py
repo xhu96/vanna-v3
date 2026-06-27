@@ -85,3 +85,35 @@ def test_allows_read_only_cte():
 def test_blocks_update_statement():
     err = _tool()._validate_read_only_sql("UPDATE users SET name = 'x'")
     assert err is not None
+
+
+def test_blocks_select_into_new_table():
+    # SELECT ... INTO is a DDL/write in Postgres/MSSQL; it parses as an
+    # exp.Select with an exp.Into child and must be blocked.
+    err = _tool()._validate_read_only_sql("SELECT * INTO new_table FROM users")
+    assert err is not None
+
+
+def test_blocks_explain_analyze_delete():
+    # EXPLAIN ANALYZE actually executes the wrapped statement in Postgres, and
+    # the DELETE is hidden inside an opaque exp.Command literal.
+    err = _tool()._validate_read_only_sql("EXPLAIN ANALYZE DELETE FROM users")
+    assert err is not None
+
+
+def test_blocks_explain_analyze_select():
+    # EXPLAIN ANALYZE executes the query even for a plain SELECT payload.
+    err = _tool()._validate_read_only_sql("EXPLAIN ANALYZE SELECT * FROM users")
+    assert err is not None
+
+
+def test_blocks_explain_delete():
+    # A write hidden inside an EXPLAIN command literal must be rejected.
+    err = _tool()._validate_read_only_sql("EXPLAIN DELETE FROM users")
+    assert err is not None
+
+
+def test_allows_plain_explain_select():
+    # Plain EXPLAIN of a read-only query stays allowed.
+    err = _tool()._validate_read_only_sql("EXPLAIN SELECT * FROM users")
+    assert err is None

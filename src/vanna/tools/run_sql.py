@@ -20,6 +20,9 @@ from vanna.integrations.local import LocalFileSystem
 
 # Any of these appearing anywhere in the parsed tree means the statement
 # mutates data/schema — including inside CTEs — and must be blocked.
+# `exp.Into` covers `SELECT ... INTO new_table` (a DDL/write in Postgres/MSSQL)
+# which otherwise parses as an exp.Select with an exp.Into child and would slip
+# past a write-expression scan.
 _WRITE_EXPRESSIONS = (
     exp.Insert,
     exp.Update,
@@ -29,6 +32,7 @@ _WRITE_EXPRESSIONS = (
     exp.Create,
     exp.Alter,
     exp.TruncateTable,
+    exp.Into,
 )
 
 
@@ -249,6 +253,16 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
         if statement.find(*_WRITE_EXPRESSIONS) is not None:
             return "Blocked by read-only SQL policy: a data-modifying statement was detected."
 
+        # sqlglot falls back to an opaque exp.Command node for syntax it cannot
+        # model (e.g. `EXPLAIN ANALYZE ...`), stashing the remainder as a string
+        # literal. A write buried in that literal escapes the AST scan above, and
+        # EXPLAIN ANALYZE actually executes the statement in Postgres. Re-parse
+        # the trailing payload and fail closed on anything that is not a plain
+        # read.
+        command_block = self._validate_command_payload(statement)
+        if command_block is not None:
+            return command_block
+
         first_keyword = sql.strip().split(None, 1)[0].upper()
         if first_keyword not in self.allowed_statement_types:
             allowed_list = ", ".join(sorted(self.allowed_statement_types))
@@ -256,4 +270,56 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 f"Blocked by read-only SQL policy. "
                 f"Allowed statement types: {allowed_list}."
             )
+        return None
+
+    def _validate_command_payload(self, statement: exp.Expression) -> Optional[str]:
+        """Inspect opaque exp.Command nodes for hidden writes.
+
+        sqlglot models statements it cannot fully parse as an exp.Command whose
+        keyword is in `this` and whose remainder is stuffed into a string literal
+        (e.g. `EXPLAIN ANALYZE DELETE FROM users` -> Command(this='EXPLAIN',
+        expression='ANALYZE DELETE FROM users')). A data-modifying statement
+        hidden in that literal is invisible to the AST write scan, so re-parse
+        the payload and fail closed on anything that is not a plain read.
+        Returns an error string when the command must be blocked, else None.
+        """
+        if not isinstance(statement, exp.Command):
+            return None
+
+        keyword = (statement.this or "").strip().upper()
+        expression = statement.args.get("expression")
+        payload = expression.this if isinstance(expression, exp.Literal) else ""
+        payload = (payload or "").strip()
+
+        # EXPLAIN ANALYZE actually executes the statement in Postgres, so it is a
+        # write vector regardless of the wrapped query. Block it outright.
+        if keyword == "EXPLAIN" and payload.upper().startswith("ANALYZE"):
+            return (
+                "Blocked by read-only SQL policy: EXPLAIN ANALYZE executes the "
+                "statement and is not read-only."
+            )
+
+        # For EXPLAIN/DESCRIBE-style commands, re-parse the wrapped statement and
+        # reject it if it mutates data/schema. Fail closed if the payload cannot
+        # be parsed.
+        if keyword in {"EXPLAIN", "DESCRIBE", "DESC"} and payload:
+            try:
+                inner = [s for s in sqlglot.parse(payload) if s is not None]
+            except Exception:
+                return (
+                    "Blocked by read-only SQL policy: the wrapped statement could "
+                    "not be parsed."
+                )
+            for inner_stmt in inner:
+                if isinstance(inner_stmt, exp.Command):
+                    nested = self._validate_command_payload(inner_stmt)
+                    if nested is not None:
+                        return nested
+                if inner_stmt.find(*_WRITE_EXPRESSIONS) is not None or isinstance(
+                    inner_stmt, _WRITE_EXPRESSIONS
+                ):
+                    return (
+                        "Blocked by read-only SQL policy: a data-modifying "
+                        "statement was detected."
+                    )
         return None
