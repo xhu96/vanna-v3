@@ -23,9 +23,17 @@ def run_async(coro: Coroutine[Any, Any, _T]) -> _T:
 
 
 def iter_async(agen: AsyncGenerator[_T, None]) -> Iterator[_T]:
-    """Iterate an async generator synchronously via the shared loop."""
-    while True:
-        try:
-            yield asyncio.run_coroutine_threadsafe(agen.__anext__(), _loop).result()
-        except StopAsyncIteration:
-            return
+    """Iterate an async generator synchronously via the shared loop.
+
+    Closes the underlying async generator on exit — including when the consumer
+    stops early (e.g. an SSE client disconnects and Flask closes this
+    generator) — so it doesn't leak suspended on the shared loop.
+    """
+    try:
+        while True:
+            try:
+                yield asyncio.run_coroutine_threadsafe(agen.__anext__(), _loop).result()
+            except StopAsyncIteration:
+                return
+    finally:
+        asyncio.run_coroutine_threadsafe(agen.aclose(), _loop).result()

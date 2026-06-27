@@ -18,3 +18,19 @@ def test_iter_async_collects_generator():
             yield i
 
     assert list(iter_async(agen())) == [0, 1, 2]
+
+
+def test_iter_async_closes_generator_on_early_exit():
+    closed = []
+
+    async def agen():
+        try:
+            for i in range(10):
+                yield i
+        finally:
+            closed.append(True)
+
+    it = iter_async(agen())
+    assert next(it) == 0
+    it.close()  # consumer stops early (e.g. SSE client disconnect)
+    assert closed == [True]

@@ -12,6 +12,11 @@ def apply_row_filter(sql: str, column: str, value: str) -> str:
     untrusted ``value`` (e.g. a tenant id) cannot break out of the literal.
     The predicate is applied at the AST level, so it composes correctly with
     GROUP BY, HAVING, sub-queries, and existing WHERE clauses.
+
+    Designed for single-table SELECTs (the column is unqualified). On a
+    multi-table JOIN the unqualified column binds to whichever table defines it,
+    and an ambiguous column will error at the database. Set operations (UNION,
+    etc.) are rejected outright to avoid filtering only one arm.
     """
     if not column.isidentifier():
         raise ValueError(f"Unsafe filter column: {column!r}")
