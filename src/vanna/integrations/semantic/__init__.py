@@ -7,6 +7,8 @@ tests/demos only.
 """
 
 from .file_adapter import FileSemanticAdapter
-from .mock_adapter import MockSemanticAdapter  # retained for back-compat; demo/test only
+from .mock_adapter import (
+    MockSemanticAdapter,
+)  # retained for back-compat; demo/test only
 
 __all__ = ["FileSemanticAdapter", "MockSemanticAdapter"]

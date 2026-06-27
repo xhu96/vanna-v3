@@ -6,7 +6,7 @@ from vanna.core.planner import SemanticFirstPlanner
 from vanna.core.tool import ToolContext, ToolSchema
 from vanna.core.user import User
 from vanna.integrations.local.agent_memory import DemoAgentMemory
-from tests.support.semantic_fixtures import MockSemanticAdapter
+from support.semantic_fixtures import MockSemanticAdapter
 from vanna.tools.semantic_query import SemanticQueryTool, SemanticQueryToolArgs
 
 

@@ -29,7 +29,10 @@ def db(tmp_path):
     path = tmp_path / "s.db"
     conn = sqlite3.connect(path)
     conn.execute("CREATE TABLE sales (month TEXT, amount INTEGER)")
-    conn.executemany("INSERT INTO sales VALUES (?, ?)", [("2025-01", 100), ("2025-01", 50), ("2025-02", 80)])
+    conn.executemany(
+        "INSERT INTO sales VALUES (?, ?)",
+        [("2025-01", 100), ("2025-01", 50), ("2025-02", 80)],
+    )
     conn.commit()
     conn.close()
     return str(path)

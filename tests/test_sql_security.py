@@ -60,6 +60,7 @@ async def test_run_sql_allows_select_in_read_only_mode(tool_context):
 class _NullRunner:
     async def run_sql(self, args, context):
         import pandas as pd
+
         return pd.DataFrame()
 
 
@@ -85,9 +86,7 @@ def test_blocks_unparseable_sql_fail_closed():
 
 
 def test_allows_read_only_cte():
-    err = _tool()._validate_read_only_sql(
-        "WITH t AS (SELECT 1 AS x) SELECT x FROM t"
-    )
+    err = _tool()._validate_read_only_sql("WITH t AS (SELECT 1 AS x) SELECT x FROM t")
     assert err is None
 
 
@@ -142,7 +141,10 @@ async def test_cte_select_returns_rows_not_rows_affected():
         pass
 
     # minimal context stub with a file_system; reuse the tool's default
-    result = await tool.execute(_make_tool_context(), RunSqlToolArgs(sql="WITH t AS (SELECT 1 AS x) SELECT x FROM t"))
+    result = await tool.execute(
+        _make_tool_context(),
+        RunSqlToolArgs(sql="WITH t AS (SELECT 1 AS x) SELECT x FROM t"),
+    )
     assert result.success is True
     assert "row(s) affected" not in result.result_for_llm
     assert result.metadata["query_type"] == "WITH"

@@ -36,9 +36,7 @@ class SqliteRunner(SqlRunner):
         # Connect to the database
         if self.read_only:
             # Open the database read-only at the driver level (defense in depth).
-            conn = sqlite3.connect(
-                f"file:{self.database_path}?mode=ro", uri=True
-            )
+            conn = sqlite3.connect(f"file:{self.database_path}?mode=ro", uri=True)
         else:
             conn = sqlite3.connect(self.database_path)
         conn.row_factory = sqlite3.Row  # Enable column access by name

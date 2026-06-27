@@ -129,7 +129,9 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
 
             if is_write_result:
                 rows_affected = int(df["rows_affected"].iloc[0])
-                result = f"Query executed successfully. {rows_affected} row(s) affected."
+                result = (
+                    f"Query executed successfully. {rows_affected} row(s) affected."
+                )
                 metadata = {
                     "rows_affected": rows_affected,
                     "query_type": query_type,
@@ -146,7 +148,10 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 result = "Query executed successfully. No rows returned."
                 ui_component = UiComponent(
                     rich_component=DataFrameComponent(
-                        rows=[], columns=[], title="Query Results", description="No rows returned"
+                        rows=[],
+                        columns=[],
+                        title="Query Results",
+                        description="No rows returned",
                     ),
                     simple_component=SimpleTextComponent(text=result),
                 )
@@ -164,7 +169,9 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 file_id = str(uuid.uuid4())[:8]
                 filename = f"query_results_{file_id}.csv"
                 csv_content = df.to_csv(index=False)
-                await self.file_system.write_file(filename, csv_content, context, overwrite=True)
+                await self.file_system.write_file(
+                    filename, csv_content, context, overwrite=True
+                )
 
                 results_preview = csv_content
                 if len(results_preview) > 1000:

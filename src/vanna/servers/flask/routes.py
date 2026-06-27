@@ -45,9 +45,7 @@ def register_chat_routes(
             run_async(result)
 
     def _build_tool_context(request_context: RequestContext) -> ToolContext:
-        user = run_async(
-            chat_handler.agent.user_resolver.resolve_user(request_context)
-        )
+        user = run_async(chat_handler.agent.user_resolver.resolve_user(request_context))
         return ToolContext(
             user=user,
             conversation_id=f"conv_{uuid.uuid4().hex[:8]}",

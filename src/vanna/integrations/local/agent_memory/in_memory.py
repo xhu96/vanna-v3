@@ -162,7 +162,9 @@ class DemoAgentMemory(AgentMemory):
             out: List[ToolMemorySearchResult] = []
             for idx, (m, similarity, _effective) in enumerate(results[:limit], start=1):
                 out.append(
-                    ToolMemorySearchResult(memory=m, similarity_score=similarity, rank=idx)
+                    ToolMemorySearchResult(
+                        memory=m, similarity_score=similarity, rank=idx
+                    )
                 )
             return out
 

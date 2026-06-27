@@ -46,4 +46,9 @@ def test_confidence_exposes_signals():
     evidence = LineageEvidence()  # empty → "Low"
     detail = ConfidenceScorer.explain(evidence)
     assert detail["tier"] == "Low"
-    assert set(detail["signals"]) >= {"has_sql", "has_semantic", "has_validation", "has_errors"}
+    assert set(detail["signals"]) >= {
+        "has_sql",
+        "has_semantic",
+        "has_validation",
+        "has_errors",
+    }
