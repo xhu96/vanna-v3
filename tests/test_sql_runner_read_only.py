@@ -26,7 +26,7 @@ async def test_read_only_runner_allows_select(seeded_db):
 @pytest.mark.asyncio
 async def test_read_only_runner_blocks_direct_write(seeded_db):
     runner = SqliteRunner(database_path=seeded_db, read_only=True)
-    with pytest.raises(Exception):
+    with pytest.raises(sqlite3.OperationalError):
         await runner.run_sql(
             RunSqlToolArgs(sql="INSERT INTO t VALUES (2, 'b')"), context=None
         )
