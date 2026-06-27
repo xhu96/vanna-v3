@@ -25,7 +25,6 @@ dependencies = [
     "PyYAML",
     "plotly",
     "tabulate",
-    "sqlparse",
     "sqlglot>=25.0.0",
     "sqlalchemy",
     "requests",
