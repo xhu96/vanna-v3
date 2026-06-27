@@ -1,3 +1,4 @@
+import pytest
 import sqlglot
 from vanna.security.rls import apply_row_filter
 
@@ -40,3 +41,21 @@ def test_applies_with_group_by():
     parsed = sqlglot.parse_one(out)
     assert parsed.find(sqlglot.exp.Where) is not None
     assert parsed.find(sqlglot.exp.Group) is not None
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT id FROM orders UNION SELECT id FROM other",
+        "SELECT id FROM orders UNION ALL SELECT id FROM other",
+        "SELECT id FROM orders INTERSECT SELECT id FROM other",
+        "SELECT id FROM orders EXCEPT SELECT id FROM other",
+        "SELECT * FROM (SELECT id FROM orders UNION SELECT id FROM other) t",
+    ],
+)
+def test_set_operations_fail_closed(sql):
+    # ``where`` would attach the predicate to only one arm of a set operation,
+    # leaving the other arm unfiltered and leaking cross-tenant rows. Reject
+    # rather than emit a partially-filtered query.
+    with pytest.raises(ValueError):
+        apply_row_filter(sql, "tenant_id", "tenant-a")

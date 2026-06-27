@@ -17,6 +17,14 @@ def apply_row_filter(sql: str, column: str, value: str) -> str:
         raise ValueError(f"Unsafe filter column: {column!r}")
 
     tree = parse_one(sql)
+    # Fail closed on anything that isn't a single plain SELECT. ``where`` only
+    # attaches the predicate to one arm of a set operation (e.g. UNION), which
+    # would leave the other arm unfiltered and leak cross-tenant rows.
+    if not isinstance(tree, exp.Select) or tree.find(exp.SetOperation) is not None:
+        raise ValueError(
+            "apply_row_filter only supports a single SELECT statement; "
+            f"refusing to filter: {sql!r}"
+        )
     predicate = condition(exp.column(column).eq(exp.Literal.string(value)))
     # ``where`` AND-combines with any existing WHERE on a Select.
     tree = tree.where(predicate)
