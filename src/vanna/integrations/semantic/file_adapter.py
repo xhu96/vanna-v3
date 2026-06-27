@@ -8,7 +8,7 @@ name/synonym; ``execute`` runs the metric's SQL through an injected
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import yaml
 
@@ -85,7 +85,9 @@ class FileSemanticAdapter(SemanticAdapter):
             )
 
         df = await self.sql_runner.run_sql(RunSqlToolArgs(sql=metric.sql), context)
-        rows: List[Dict[str, Any]] = df.to_dict("records") if not df.empty else []
+        rows: List[Dict[str, Any]] = (
+            cast(List[Dict[str, Any]], df.to_dict("records")) if not df.empty else []
+        )
         if request.limit:
             rows = rows[: request.limit]
         return SemanticQueryResult(

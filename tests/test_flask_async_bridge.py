@@ -1,5 +1,8 @@
 import pytest
-from vanna.servers.flask._async import run_async, iter_async
+
+pytest.importorskip("flask")
+
+from vanna.servers.flask._async import run_async, iter_async  # noqa: E402
 
 
 def test_run_async_executes_coroutine():
