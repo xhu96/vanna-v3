@@ -12,7 +12,7 @@
 
 ## Backward Compatibility
 - v2 routes stay available (`/api/vanna/v2/*` by default).
-- `LegacyVannaAdapter` remains supported.
+- The legacy adapter was removed in 3.0; this fork targets the v2.0+ agent architecture directly.
 - v2 clients can migrate incrementally by switching only endpoint URLs first.
 
 ## Breaking-Safety Change
