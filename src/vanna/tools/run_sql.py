@@ -230,7 +230,9 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             return "SQL query cannot be empty."
 
         try:
-            statements = [s for s in sqlglot.parse(sql) if s is not None]
+            statements = [
+                s for s in sqlglot.parse(sql) if isinstance(s, exp.Expression)
+            ]
         except Exception:
             return "SQL could not be parsed and is blocked by the read-only policy."
 
