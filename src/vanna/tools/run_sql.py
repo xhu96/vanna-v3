@@ -2,7 +2,6 @@
 
 from typing import Any, Dict, List, Optional, Type, cast, Set
 import uuid
-import sqlparse
 import sqlglot
 from sqlglot import expressions as exp
 from vanna.core.tool import Tool, ToolContext, ToolResult
