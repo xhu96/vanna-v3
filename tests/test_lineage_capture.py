@@ -37,3 +37,13 @@ def test_lineage_collector_tracks_retrieved_memories():
     evidence = collector.finalize()
     assert len(evidence.retrieved_memories) == 1
     assert evidence.retrieved_memories[0].memory_id == "m1"
+
+
+def test_confidence_exposes_signals():
+    from vanna.core.lineage.confidence import ConfidenceScorer
+    from vanna.core.lineage.models import LineageEvidence
+
+    evidence = LineageEvidence()  # empty → "Low"
+    detail = ConfidenceScorer.explain(evidence)
+    assert detail["tier"] == "Low"
+    assert set(detail["signals"]) >= {"has_sql", "has_semantic", "has_validation", "has_errors"}

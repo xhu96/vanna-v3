@@ -9,18 +9,25 @@ class ConfidenceScorer:
     """Assign confidence tier using explicit runtime signals."""
 
     @staticmethod
-    def score(evidence: LineageEvidence) -> str:
+    def explain(evidence: LineageEvidence) -> dict:
         successful_tools = [t for t in evidence.tool_calls if t.success]
-        has_semantic = any(
-            t.tool_name == "semantic_query" and t.success for t in successful_tools
-        )
-        has_sql = len(evidence.sql_executions) > 0
-        has_memory_support = len(evidence.retrieved_memories) > 0
-        has_validation = len(evidence.validation_checks) > 0
-        has_errors = any(not t.success for t in evidence.tool_calls)
+        signals = {
+            "has_semantic": any(
+                t.tool_name == "semantic_query" and t.success for t in successful_tools
+            ),
+            "has_sql": len(evidence.sql_executions) > 0,
+            "has_memory_support": len(evidence.retrieved_memories) > 0,
+            "has_validation": len(evidence.validation_checks) > 0,
+            "has_errors": any(not t.success for t in evidence.tool_calls),
+        }
+        if signals["has_semantic"] and signals["has_validation"] and not signals["has_errors"]:
+            tier = "High"
+        elif (signals["has_sql"] or signals["has_memory_support"]) and not signals["has_errors"]:
+            tier = "Medium"
+        else:
+            tier = "Low"
+        return {"tier": tier, "signals": signals}
 
-        if has_semantic and has_validation and not has_errors:
-            return "High"
-        if (has_sql or has_memory_support) and not has_errors:
-            return "Medium"
-        return "Low"
+    @staticmethod
+    def score(evidence: LineageEvidence) -> str:
+        return ConfidenceScorer.explain(evidence)["tier"]
