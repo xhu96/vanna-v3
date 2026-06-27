@@ -3,6 +3,8 @@
 from typing import Any, Dict, List, Optional, Type, cast, Set
 import uuid
 import sqlparse
+import sqlglot
+from sqlglot import expressions as exp
 from vanna.core.tool import Tool, ToolContext, ToolResult
 from vanna.components import (
     UiComponent,
@@ -14,6 +16,20 @@ from vanna.components import (
 from vanna.capabilities.sql_runner import SqlRunner, RunSqlToolArgs
 from vanna.capabilities.file_system import FileSystem
 from vanna.integrations.local import LocalFileSystem
+
+
+# Any of these appearing anywhere in the parsed tree means the statement
+# mutates data/schema — including inside CTEs — and must be blocked.
+_WRITE_EXPRESSIONS = (
+    exp.Insert,
+    exp.Update,
+    exp.Delete,
+    exp.Merge,
+    exp.Drop,
+    exp.Create,
+    exp.Alter,
+    exp.TruncateTable,
+)
 
 
 class RunSqlTool(Tool[RunSqlToolArgs]):
@@ -209,24 +225,35 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             )
 
     def _validate_read_only_sql(self, sql: str) -> Optional[str]:
-        """Validate SQL against read-only policy."""
-        statements = [s.strip() for s in sqlparse.split(sql) if s.strip()]
-        if not statements:
+        """Validate SQL against the read-only policy using AST parsing.
+
+        Defense in depth: parse the statement, reject multiple statements,
+        reject anything that mutates data/schema anywhere in the tree
+        (covers data-modifying CTEs), and require the top-level keyword to be
+        in the read-only allowlist. Fails closed on parse errors.
+        """
+        if not sql or not sql.strip():
             return "SQL query cannot be empty."
 
+        try:
+            statements = [s for s in sqlglot.parse(sql) if s is not None]
+        except Exception:
+            return "SQL could not be parsed and is blocked by the read-only policy."
+
+        if not statements:
+            return "SQL query cannot be empty."
         if len(statements) > 1:
             return "Multiple SQL statements are blocked by default."
 
-        first_statement = statements[0].lstrip()
-        if not first_statement:
-            return "SQL query cannot be empty."
+        statement = statements[0]
+        if statement.find(*_WRITE_EXPRESSIONS) is not None:
+            return "Blocked by read-only SQL policy: a data-modifying statement was detected."
 
-        first_keyword = first_statement.split(None, 1)[0].upper()
+        first_keyword = sql.strip().split(None, 1)[0].upper()
         if first_keyword not in self.allowed_statement_types:
             allowed_list = ", ".join(sorted(self.allowed_statement_types))
             return (
                 f"Blocked by read-only SQL policy. "
                 f"Allowed statement types: {allowed_list}."
             )
-
         return None

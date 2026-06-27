@@ -46,3 +46,42 @@ async def test_run_sql_allows_select_in_read_only_mode(tool_context):
     tool = RunSqlTool(sql_runner=DummySqlRunner())
     result = await tool.execute(tool_context, RunSqlToolArgs(sql="SELECT 1"))
     assert result.success is True
+
+
+class _NullRunner:
+    async def run_sql(self, args, context):
+        import pandas as pd
+        return pd.DataFrame()
+
+
+def _tool():
+    return RunSqlTool(sql_runner=_NullRunner(), read_only=True)
+
+
+def test_blocks_data_modifying_cte():
+    err = _tool()._validate_read_only_sql(
+        "WITH t AS (DELETE FROM users RETURNING *) SELECT * FROM t"
+    )
+    assert err is not None
+
+
+def test_blocks_stacked_statement_with_drop():
+    err = _tool()._validate_read_only_sql("SELECT 1; DROP TABLE users")
+    assert err is not None
+
+
+def test_blocks_unparseable_sql_fail_closed():
+    err = _tool()._validate_read_only_sql("this is not sql )(")
+    assert err is not None
+
+
+def test_allows_read_only_cte():
+    err = _tool()._validate_read_only_sql(
+        "WITH t AS (SELECT 1 AS x) SELECT x FROM t"
+    )
+    assert err is None
+
+
+def test_blocks_update_statement():
+    err = _tool()._validate_read_only_sql("UPDATE users SET name = 'x'")
+    assert err is not None
