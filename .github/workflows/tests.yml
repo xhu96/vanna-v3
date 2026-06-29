@@ -66,18 +66,16 @@ jobs:
           pip install -e '.[postgres,test]'
       - name: Run v3 unit/security tests
         run: |
-          pytest tests/test_sql_security.py tests/test_chart_spec_validation.py tests/test_schema_diff.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py tests/test_legacy_chart_security.py -q
+          pytest tests/test_sql_security.py tests/test_chart_spec_validation.py tests/test_schema_diff.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py -q
       - name: Run Postgres integration
         env:
           VANNA_POSTGRES_TEST_DSN: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
           pytest tests/integration/test_postgres_v3_pipeline.py -q
-      - name: Eval regression gate sample
+      - name: Offline eval regression gate
         run: |
-          cat > baseline.json <<'EOF'
-          {"pass_rate": 0.80, "average_score": 0.75}
-          EOF
-          cat > candidate.json <<'EOF'
-          {"pass_rate": 0.82, "average_score": 0.77}
-          EOF
-          python src/evals/pipelines/offline_training_gate.py --baseline baseline.json --candidate candidate.json --min-score-delta 0.0
+          python src/evals/pipelines/run_offline_eval.py --out candidate.json
+          python src/evals/pipelines/offline_training_gate.py \
+            --baseline src/evals/baselines/sql_generation.json \
+            --candidate candidate.json \
+            --min-score-delta 0.0

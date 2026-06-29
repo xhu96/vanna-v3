@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -19,6 +20,9 @@ from vanna.capabilities.schema_catalog import (
 )
 from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
 from vanna.core.tool import ToolContext
+
+
+_SQLITE_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class PortableSchemaCatalogService(SchemaCatalog):
@@ -125,8 +129,10 @@ class PortableSchemaCatalogService(SchemaCatalog):
 
         columns: List[SchemaColumn] = []
         for table_name in tables_df["name"].tolist():
+            if not _SQLITE_IDENT.match(table_name):
+                raise ValueError(f"Refusing unsafe table identifier: {table_name!r}")
             pragma_df = await self.sql_runner.run_sql(
-                RunSqlToolArgs(sql=f"PRAGMA table_info('{table_name}')"),
+                RunSqlToolArgs(sql=f'PRAGMA table_info("{table_name}")'),
                 context,
             )
             for _, row in pragma_df.iterrows():

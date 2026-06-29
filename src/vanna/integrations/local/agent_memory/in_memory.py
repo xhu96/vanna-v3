@@ -145,21 +145,26 @@ class DemoAgentMemory(AgentMemory):
                 and (tool_name_filter is None or m.tool_name == tool_name_filter)
             ]
 
-            # Score each candidate by question similarity
-            results: List[tuple[ToolMemory, float]] = []
+            # Score each candidate by question similarity, then weight by feedback.
+            results: List[tuple[ToolMemory, float, float]] = []
             for m in candidates:
-                score = self._similarity(q, m.question)
-                results.append((m, min(score, 1.0)))
+                similarity = min(self._similarity(q, m.question), 1.0)
+                weight = 1.0
+                if m.metadata and isinstance(m.metadata.get("weight"), (int, float)):
+                    weight = float(m.metadata["weight"])
+                effective = similarity * weight
+                results.append((m, similarity, effective))
 
-            # Filter by threshold and sort by score
-            results = [(m, s) for (m, s) in results if s >= similarity_threshold]
-            results.sort(key=lambda x: x[1], reverse=True)
+            # Filter on raw similarity, rank by effective (similarity * weight).
+            results = [r for r in results if r[1] >= similarity_threshold]
+            results.sort(key=lambda x: x[2], reverse=True)
 
-            # Build ranked response
             out: List[ToolMemorySearchResult] = []
-            for idx, (m, s) in enumerate(results[:limit], start=1):
+            for idx, (m, similarity, _effective) in enumerate(results[:limit], start=1):
                 out.append(
-                    ToolMemorySearchResult(memory=m, similarity_score=s, rank=idx)
+                    ToolMemorySearchResult(
+                        memory=m, similarity_score=similarity, rank=idx
+                    )
                 )
             return out
 

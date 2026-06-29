@@ -2,7 +2,7 @@
 
 ## 1) Objectives
 - Deliver a production-grade v3.0 that is secure-by-default, enterprise-operable, and more reliable than v2.x.
-- Preserve a migration path for v2.x users (legacy APIs and adapter path remain supported with explicit deprecations).
+- Preserve a migration path for v2.x users (v2 routes remain available; the pre-2.0 legacy adapter path has been removed in this fork).
 
 ## 2) Component Architecture
 ```mermaid
@@ -85,8 +85,8 @@ flowchart TD
 - Prompt injection causing unsafe tool calls.
 
 ### Mitigations
-- No default chart path executes Python code.
-- Run SQL defaults to read-only statement classes.
+- No chart path executes Python code; visualization is declarative `ChartSpec` only.
+- Run SQL is AST-validated for read-only intent and enforced at the connection layer.
 - Tool access groups + query-layer validation hooks.
 - Safe CORS defaults (`allow_origins` explicit, non-wildcard by default).
 - Auth middleware templates for JWT/OAuth gateway handoff.
@@ -94,13 +94,12 @@ flowchart TD
 - Event payload validation and strict ChartSpec schema validation.
 
 ## 6) Migration and Compatibility Plan (v2 -> v3)
-- Keep v2 routes and `LegacyVannaAdapter` available.
+- Keep v2 routes available; the pre-2.0 legacy adapter path has been removed in this fork.
 - Introduce v3 routes and typed events without forcing default UI adoption.
-- Legacy visualization behavior becomes opt-in (admin-only “power mode”) with explicit risk warnings.
+- Visualization is declarative `ChartSpec` only — there is no code-executing chart path.
 - Provide migration doc with code snippets:
   - v2 client -> v3 events.
-  - legacy chart generation -> ChartSpec.
-  - legacy `ask()` visualization behavior -> secure defaults + opt-in override.
+  - chart output -> declarative `ChartSpec`.
 
 ## 7) Performance Budgets
 - P95 first streamed event: < 1.2s for local tools.

@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "vanna"
-version = "2.0.2"
+version = "3.0.0"
 authors = [
   { name="Zain Hoda", email="zain@vanna.ai" },
 ]
@@ -25,7 +25,7 @@ dependencies = [
     "PyYAML",
     "plotly",
     "tabulate",
-    "sqlparse",
+    "sqlglot>=25.0.0",
     "sqlalchemy",
     "requests",
     "jsonschema",
@@ -39,8 +39,8 @@ vanna = "vanna.servers.cli.server_runner:main"
 "Bug Tracker" = "https://github.com/vanna-ai/vanna/issues"
 
 [project.optional-dependencies]
-flask = ["flask>=2.0.0", "flask-cors>=4.0.0"]
-fastapi = ["fastapi>=0.68.0", "uvicorn>=0.15.0"]
+flask = ["flask>=2.0.0", "flask-cors>=4.0.0", "asgiref>=3.7"]
+fastapi = ["fastapi>=0.68.0", "uvicorn>=0.15.0", "asgiref>=3.7"]
 servers = ["vanna[flask,fastapi]"]
 
 postgres = ["psycopg2-binary", "db-dtypes"]
@@ -107,7 +107,6 @@ markers = [
     "azureopenai: marks tests requiring Azure OpenAI API key",
     "gemini: marks tests requiring Gemini API key",
     "ollama: marks tests requiring local Ollama instance",
-    "legacy: marks tests for legacy adapter",
     "slow: marks tests as slow running",
     "postgres: marks tests requiring PostgreSQL",
     "mysql: marks tests requiring MySQL",

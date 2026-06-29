@@ -3,7 +3,7 @@
 **Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, and feedback loops.
 
 > [!IMPORTANT]
-> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. This fork builds v3.0 on top of the upstream v2.0.2 release, adding production-grade security, observability, and reliability features. The upstream project is maintained by the Vanna team at [vanna-ai/vanna](https://github.com/vanna-ai/vanna).
+> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. It was forked from [vanna-ai/vanna](https://github.com/vanna-ai/vanna) v2.0.2 and targets the v2.0+ agent architecture directly. The pre-2.0 legacy adapter path has been **removed** in this fork; v3.0 adds security hardening, observability, and reliability on top of the agent runtime. The upstream project is maintained by the Vanna team.
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -17,25 +17,23 @@ https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
 
 ## What's New in 3.0
 
-🛡️ **Secure-by-Default** — No LLM-generated Python `exec()` for charts; read-only SQL policy; auth middleware templates
+🛡️ **Read-Only SQL, Enforced Two Ways** — Every query is AST-validated for read-only intent (via `sqlglot`) *and* run through connection-level read-only guards (`src/vanna/tools/run_sql.py`), so a mutating statement is rejected before it can reach the database. No LLM-generated Python `exec()` anywhere in the chart path.
 
-📊 **Declarative Visualization** — Validated `ChartSpec` protocol (Vega-Lite / Plotly JSON) rendered client-side
+📊 **Declarative Visualization** — Charts are emitted as a validated `ChartSpec` (Vega-Lite / Plotly JSON, `src/vanna/core/chart_spec.py`) and rendered client-side — no server-side code execution.
 
-🔄 **Schema Drift Sync** — Portable INFORMATION_SCHEMA snapshots with hash-based diffing and auto memory patching
+🔐 **Safe Row-Level Security** — `apply_row_filter` (`src/vanna/security/rls.py`) injects per-user predicates into the SQL AST rather than string-concatenating, so RLS filters can't be broken by crafted values.
 
-🧠 **Semantic-First Routing** — Queries route through semantic layer tools before falling back to SQL generation
+🧠 **Real Semantic Routing** — A working `FileSemanticAdapter` (`src/vanna/integrations/semantic/file_adapter.py`) resolves metrics/dimensions from a config file; queries route through the semantic layer before falling back to SQL generation.
 
-📋 **Explainability & Lineage** — Every answer ships with schema version, retrieved memories, tool calls, SQL, and confidence tier
+✅ **Real Eval Gate** — A deterministic offline evaluation harness (`src/vanna/core/evaluation/`) computes pass-rate/score from actual runs and gates regressions — not hardcoded CI numbers.
 
-👍 **Feedback Loop** — Thumbs-down + corrected SQL immediately patches memory with weighted corrections
+📋 **Explainability & Lineage** — Every answer ships with schema version, retrieved memories, tool calls, SQL, and a confidence tier (labeled as heuristic).
 
-🔐 **User-Aware at Every Layer** — Identity, permissions, and row-level security flow through the entire system
+👍 **Feedback Loop** — Thumbs-down + corrected SQL patches memory with weighted corrections that re-rank subsequent retrieval.
 
-⚡ **Typed Streaming Events** — Versioned SSE/poll event contract (`v3`) with namespaced API routes
+⚡ **Typed Streaming Events** — Versioned SSE/poll event contract (`v3`) with namespaced API routes.
 
-> **Upgrading from 0.x → 2.0?** See the [Migration Guide](MIGRATION_GUIDE.md)
->
-> **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
+> **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md). The pre-2.0 legacy adapter path was removed in this fork.
 
 ---
 
@@ -89,9 +87,9 @@ All streamed in real-time to your web component.
 
 ### ✅ Enterprise-Ready Security
 
+**Read-only by default** — SQL is AST-validated for read-only intent and run through connection-level read-only guards
+**Safe row-level security** — `apply_row_filter` injects per-user predicates into the SQL AST (no string concatenation)
 **User-aware at every layer** — Identity flows through system prompts, tool execution, and SQL filtering
-**Row-level security** — Queries automatically filtered per user permissions
-**Audit logs** — Every query tracked per user for compliance
 **Rate limiting** — Per-user quotas via lifecycle hooks
 
 ### ✅ Beautiful Web UI Included
@@ -308,25 +306,24 @@ Vanna 3.0 includes powerful enterprise features for production use:
 
 ## Migration Notes
 
-**Upgrading from Vanna 0.x?**
-
-Vanna 2.0+ is a complete rewrite focused on user-aware agents and production deployments. See the [0.x → 2.0 Migration Guide](MIGRATION_GUIDE.md).
+This fork was forked from [vanna-ai/vanna](https://github.com/vanna-ai/vanna) v2.0.2. The pre-2.0 legacy adapter path (`LegacyVannaAdapter`) has been **removed** — this fork targets the v2.0+ agent architecture directly.
 
 **Upgrading from Vanna 2.x to 3.0?**
 
-Vanna 3.0 is an incremental evolution — v2 routes and `LegacyVannaAdapter` remain fully available. Key additions:
+v2 routes remain available. Key additions in 3.0:
 
-- **Secure-by-default**: No Python `exec()` for charts, read-only SQL policy
-- **Declarative charts**: `ChartSpec` replaces code execution
-- **Schema drift sync**: Portable snapshots + auto memory patching
-- **Semantic routing**: Queries go through semantic tools first
-- **Lineage & feedback**: Evidence panels and corrective memory patches
+- **Read-only SQL, enforced**: AST validation + connection-level read-only guards
+- **Declarative charts**: validated `ChartSpec` replaces any code execution
+- **Safe RLS**: `apply_row_filter` injects per-user predicates into the SQL AST
+- **Semantic routing**: a real `FileSemanticAdapter` resolves metrics/dimensions before SQL generation
+- **Real eval gate**: deterministic offline evaluation gates regressions
+- **Lineage & feedback**: evidence panels and weighted corrective memory patches
 
 **Migration path:**
 
-1. **Keep v2 routes** — Everything continues to work unchanged
-2. **Switch to v3 endpoints** — Migrate to `/api/vanna/v3/` routes for typed streaming events
-3. **Enable new features** — Schema sync, feedback, semantic routing
+1. **Keep v2 routes** — existing v2 endpoints continue to work
+2. **Switch to v3 endpoints** — migrate to `/api/vanna/v3/` routes for typed streaming events
+3. **Enable new features** — schema sync, feedback, semantic routing
 
 See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
 

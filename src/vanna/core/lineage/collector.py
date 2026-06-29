@@ -81,9 +81,13 @@ class LineageCollector:
         lines.append(
             f"- Schema: `{evidence.schema_snapshot_id or 'n/a'}` / `{evidence.schema_hash or 'n/a'}`"
         )
+        detail = ConfidenceScorer.explain(evidence)
+        active_signals = [
+            name for name, present in detail["signals"].items() if present
+        ]
         lines.append(
-            f"- Confidence: **{evidence.confidence}** "
-            "(derived from semantic usage, retrieval support, tool success, and checks)"
+            f"- Confidence (heuristic): **{detail['tier']}** "
+            f"(signals: {', '.join(active_signals) if active_signals else 'none'})"
         )
         lines.append(f"- Tool calls: {len(evidence.tool_calls)}")
         for tool in evidence.tool_calls:

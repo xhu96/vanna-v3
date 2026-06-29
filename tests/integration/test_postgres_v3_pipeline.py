@@ -22,7 +22,10 @@ async def test_postgres_runner_and_schema_sync(tmp_path):
     if not dsn:
         pytest.skip("VANNA_POSTGRES_TEST_DSN not set")
 
-    runner = PostgresRunner(connection_string=dsn)
+    # Write-capable runner: this test seeds and tears down its own table.
+    # RunSqlTool(read_only=True) below still enforces the read-only policy for the
+    # query under test; connection-layer read-only is covered in test_sql_runner_read_only.py.
+    runner = PostgresRunner(connection_string=dsn, read_only=False)
     context = ToolContext(
         user=User(id="pg-user", group_memberships=["user"]),
         conversation_id="pg-conv",

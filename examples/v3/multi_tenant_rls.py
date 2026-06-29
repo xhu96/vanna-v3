@@ -12,6 +12,7 @@ from vanna.core.user.request_context import RequestContext
 from vanna.integrations.local.agent_memory import DemoAgentMemory
 from vanna.integrations.mock import MockLlmService
 from vanna.integrations.sqlite import SqliteRunner
+from vanna.security.rls import apply_row_filter
 from vanna.tools import RunSqlTool
 
 
@@ -30,12 +31,8 @@ class TenantAwareRegistry(ToolRegistry):
         if tenant_id is None:
             return ToolRejection(reason="Missing tenant context.")
 
-        sql = args.sql.strip().rstrip(";")
-        if " where " in sql.lower():
-            sql = f"{sql} AND tenant_id = '{tenant_id}'"
-        else:
-            sql = f"{sql} WHERE tenant_id = '{tenant_id}'"
-        return RunSqlToolArgs(sql=sql)
+        safe_sql = apply_row_filter(args.sql, "tenant_id", str(tenant_id))
+        return RunSqlToolArgs(sql=safe_sql)
 
 
 class TenantResolver(UserResolver):

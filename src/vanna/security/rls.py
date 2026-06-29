@@ -1,0 +1,36 @@
+"""Safe, AST-based row-level-security predicate injection."""
+
+from __future__ import annotations
+
+from sqlglot import condition, exp, parse_one
+
+
+def apply_row_filter(sql: str, column: str, value: str) -> str:
+    """Return ``sql`` with ``column = value`` AND-ed into its WHERE clause.
+
+    The value is bound as a properly-escaped string literal via sqlglot, so
+    untrusted ``value`` (e.g. a tenant id) cannot break out of the literal.
+    The predicate is applied at the AST level, so it composes correctly with
+    GROUP BY, HAVING, sub-queries, and existing WHERE clauses.
+
+    Designed for single-table SELECTs (the column is unqualified). On a
+    multi-table JOIN the unqualified column binds to whichever table defines it,
+    and an ambiguous column will error at the database. Set operations (UNION,
+    etc.) are rejected outright to avoid filtering only one arm.
+    """
+    if not column.isidentifier():
+        raise ValueError(f"Unsafe filter column: {column!r}")
+
+    tree = parse_one(sql)
+    # Fail closed on anything that isn't a single plain SELECT. ``where`` only
+    # attaches the predicate to one arm of a set operation (e.g. UNION), which
+    # would leave the other arm unfiltered and leak cross-tenant rows.
+    if not isinstance(tree, exp.Select) or tree.find(exp.SetOperation) is not None:
+        raise ValueError(
+            "apply_row_filter only supports a single SELECT statement; "
+            f"refusing to filter: {sql!r}"
+        )
+    predicate = condition(exp.column(column).eq(exp.Literal.string(value)))
+    # ``where`` AND-combines with any existing WHERE on a Select.
+    tree = tree.where(predicate)
+    return tree.sql()

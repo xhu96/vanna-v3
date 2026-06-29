@@ -18,11 +18,15 @@ MAX_SEARCH_FILE_BYTES = 1_000_000
 class LocalFileSystem(FileSystem):
     """Local file system implementation with per-user isolation."""
 
-    def __init__(self, working_directory: str = "."):
+    def __init__(self, working_directory: str = ".vanna"):
         """Initialize with a working directory.
 
         Args:
-            working_directory: Base directory where user-specific folders will be created
+            working_directory: Base directory where user-specific folders will be
+                created. Defaults to ``.vanna`` so generated artifacts (e.g.
+                query-result CSVs) land in one contained, git-ignorable folder
+                rather than scattering per-user hash directories across the
+                current working directory.
         """
         self.working_directory = Path(working_directory)
 
