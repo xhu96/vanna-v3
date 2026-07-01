@@ -2,7 +2,6 @@
 Flask route implementations for Vanna Agents.
 """
 
-import asyncio
 import json
 import traceback
 import uuid
@@ -11,6 +10,7 @@ from typing import Any, AsyncGenerator, Dict, Generator, Optional, Union, Callab
 
 from flask import Flask, Response, jsonify, request
 
+from ._async import run_async, iter_async
 from ..base import ChatHandler, ChatRequest
 from ..base.events_v3 import ChatEvent
 from ..base.templates import get_index_html
@@ -42,22 +42,10 @@ def register_chat_routes(
             return
         result = request_guard(chat_request, request_context)
         if inspect.isawaitable(result):
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(result)
-            finally:
-                loop.close()
+            run_async(result)
 
     def _build_tool_context(request_context: RequestContext) -> ToolContext:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            user = loop.run_until_complete(
-                chat_handler.agent.user_resolver.resolve_user(request_context)
-            )
-        finally:
-            loop.close()
+        user = run_async(chat_handler.agent.user_resolver.resolve_user(request_context))
         return ToolContext(
             user=user,
             conversation_id=f"conv_{uuid.uuid4().hex[:8]}",
@@ -71,12 +59,7 @@ def register_chat_routes(
         if service is None:
             return {}
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            latest = loop.run_until_complete(service.get_latest_snapshot())
-        finally:
-            loop.close()
+        latest = run_async(service.get_latest_snapshot())
 
         if latest is None:
             return {}
@@ -131,25 +114,15 @@ def register_chat_routes(
 
         def generate() -> Generator[str, None, None]:
             """Generate SSE stream."""
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
 
-            try:
+            async def async_generate() -> AsyncGenerator[str, None]:
+                async for chunk in chat_handler.handle_stream(chat_request):
+                    chunk_json = chunk.model_dump_json()
+                    yield f"data: {chunk_json}\n\n"
 
-                async def async_generate() -> AsyncGenerator[str, None]:
-                    async for chunk in chat_handler.handle_stream(chat_request):
-                        chunk_json = chunk.model_dump_json()
-                        yield f"data: {chunk_json}\n\n"
-
-                gen = async_generate()
-                try:
-                    while True:
-                        chunk = loop.run_until_complete(gen.__anext__())
-                        yield chunk
-                except StopAsyncIteration:
-                    yield "data: [DONE]\n\n"
-            finally:
-                loop.close()
+            for chunk in iter_async(async_generate()):
+                yield chunk
+            yield "data: [DONE]\n\n"
 
         return Response(
             generate(),
@@ -188,34 +161,24 @@ def register_chat_routes(
             return jsonify({"error": f"Invalid request: {str(e)}"}), 400
 
         def generate() -> Generator[str, None, None]:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             last_conversation_id = chat_request.conversation_id or ""
             last_request_id = chat_request.request_id or ""
 
-            try:
+            async def async_generate() -> AsyncGenerator[str, None]:
+                nonlocal last_conversation_id, last_request_id
+                async for chunk in chat_handler.handle_stream(chat_request):
+                    last_conversation_id = chunk.conversation_id
+                    last_request_id = chunk.request_id
+                    event = ChatEvent.from_chunk(chunk)
+                    event_json = event.model_dump_json()
+                    yield f"event: {event.event_type}\n"
+                    yield f"data: {event_json}\n\n"
 
-                async def async_generate() -> AsyncGenerator[str, None]:
-                    nonlocal last_conversation_id, last_request_id
-                    async for chunk in chat_handler.handle_stream(chat_request):
-                        last_conversation_id = chunk.conversation_id
-                        last_request_id = chunk.request_id
-                        event = ChatEvent.from_chunk(chunk)
-                        event_json = event.model_dump_json()
-                        yield f"event: {event.event_type}\n"
-                        yield f"data: {event_json}\n\n"
-
-                gen = async_generate()
-                try:
-                    while True:
-                        chunk = loop.run_until_complete(gen.__anext__())
-                        yield chunk
-                except StopAsyncIteration:
-                    done = ChatEvent.done(last_conversation_id, last_request_id)
-                    yield "event: done\n"
-                    yield f"data: {done.model_dump_json()}\n\n"
-            finally:
-                loop.close()
+            for chunk in iter_async(async_generate()):
+                yield chunk
+            done = ChatEvent.done(last_conversation_id, last_request_id)
+            yield "event: done\n"
+            yield f"data: {done.model_dump_json()}\n\n"
 
         return Response(
             generate(),
@@ -253,8 +216,6 @@ def register_chat_routes(
             traceback.print_exc()
             return jsonify({"error": f"Invalid request: {str(e)}"}), 400
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
             events = []
 
@@ -262,7 +223,7 @@ def register_chat_routes(
                 async for chunk in chat_handler.handle_stream(chat_request):
                     events.append(ChatEvent.from_chunk(chunk).model_dump())
 
-            loop.run_until_complete(collect())
+            run_async(collect())
             if events:
                 events.append(
                     ChatEvent.done(
@@ -274,8 +235,6 @@ def register_chat_routes(
             traceback.print_stack()
             traceback.print_exc()
             return jsonify({"error": f"Chat failed: {str(e)}"}), 500
-        finally:
-            loop.close()
 
     @app.route(f"{v3_prefix}/schema/sync", methods=["POST"])
     def schema_sync() -> Union[Response, tuple[Response, int]]:
@@ -295,17 +254,13 @@ def register_chat_routes(
         _run_request_guard(dummy_request, request_context)
         tool_context = _build_tool_context(request_context)
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(service.sync(tool_context))
+            result = run_async(service.sync(tool_context))
             return jsonify(result.model_dump(mode="json"))
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()
             return jsonify({"error": f"Schema sync failed: {str(e)}"}), 500
-        finally:
-            loop.close()
 
     @app.route(f"{v3_prefix}/schema/status", methods=["GET"])
     def schema_status() -> Union[Response, tuple[Response, int]]:
@@ -314,10 +269,8 @@ def register_chat_routes(
         if service is None:
             return jsonify({"error": "Schema sync service is not configured."}), 501
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            latest = loop.run_until_complete(service.get_latest_snapshot())
+            latest = run_async(service.get_latest_snapshot())
             if latest is None:
                 return jsonify({"status": "empty", "snapshot": None})
             return jsonify({"status": "ok", "snapshot": latest.model_dump(mode="json")})
@@ -325,8 +278,6 @@ def register_chat_routes(
             traceback.print_stack()
             traceback.print_exc()
             return jsonify({"error": f"Schema status failed: {str(e)}"}), 500
-        finally:
-            loop.close()
 
     @app.route(f"{v3_prefix}/feedback", methods=["POST"])
     def feedback() -> Union[Response, tuple[Response, int]]:
@@ -359,10 +310,8 @@ def register_chat_routes(
         if feedback_request.request_id:
             tool_context.request_id = feedback_request.request_id
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(
+            result = run_async(
                 feedback_service.process_feedback(feedback_request, tool_context)
             )
             return jsonify(result.model_dump(mode="json"))
@@ -370,8 +319,6 @@ def register_chat_routes(
             traceback.print_stack()
             traceback.print_exc()
             return jsonify({"error": f"Feedback processing failed: {str(e)}"}), 500
-        finally:
-            loop.close()
 
     @app.route(f"{v2_prefix}/chat_websocket")
     def chat_websocket() -> tuple[Response, int]:
@@ -411,15 +358,10 @@ def register_chat_routes(
             traceback.print_exc()
             return jsonify({"error": f"Invalid request: {str(e)}"}), 400
 
-        # Run async handler in new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(chat_handler.handle_poll(chat_request))
+            result = run_async(chat_handler.handle_poll(chat_request))
             return jsonify(result.model_dump())
         except Exception as e:
             traceback.print_stack()
             traceback.print_exc()
             return jsonify({"error": f"Chat failed: {str(e)}"}), 500
-        finally:
-            loop.close()

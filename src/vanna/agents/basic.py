@@ -54,10 +54,9 @@ class SimpleAgentMemory(AgentMemory):
     async def save_text_memory(self, content: str, context: ToolContext) -> TextMemory:
         # Return a dummy memory
         return TextMemory(
-            id="dummy",
+            memory_id="dummy",
             content=content,
-            user_id=context.user.id,
-            timestamp=0,
+            timestamp=None,
         )
 
     async def search_similar_usage(

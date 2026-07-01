@@ -1,0 +1,7 @@
+metrics:
+  - name: revenue
+    synonyms: ["sales", "income"]
+    sql: "SELECT month, SUM(amount) AS revenue FROM sales GROUP BY month ORDER BY month"
+  - name: orders
+    synonyms: ["order count", "orders placed"]
+    sql: "SELECT day, COUNT(*) AS orders FROM orders_tbl GROUP BY day ORDER BY day"

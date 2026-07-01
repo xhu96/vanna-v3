@@ -199,43 +199,6 @@ class TestSqliteRunner:
         assert sqlite3 is not None
 
 
-class TestLegacySqlRunner:
-    """Sanity tests for LegacySqlRunner adapter."""
-
-    def test_legacy_sql_runner_import(self):
-        """Test that LegacySqlRunner can be imported."""
-        from vanna.legacy.adapter import LegacySqlRunner
-
-        assert LegacySqlRunner is not None
-
-    def test_legacy_sql_runner_implements_sql_runner(self):
-        """Test that LegacySqlRunner implements SqlRunner interface."""
-        from vanna.legacy.adapter import LegacySqlRunner
-        from vanna.capabilities.sql_runner import SqlRunner
-
-        assert issubclass(LegacySqlRunner, SqlRunner)
-
-    def test_legacy_sql_runner_has_run_sql_method(self):
-        """Test that LegacySqlRunner implements run_sql method."""
-        from vanna.legacy.adapter import LegacySqlRunner
-
-        assert hasattr(LegacySqlRunner, "run_sql")
-        # Should not be abstract anymore
-        assert not getattr(LegacySqlRunner.run_sql, "__isabstractmethod__", False)
-
-    def test_legacy_sql_runner_instantiation(self):
-        """Test that LegacySqlRunner can be instantiated with a VannaBase instance."""
-        from vanna.legacy.adapter import LegacySqlRunner
-        from unittest.mock import Mock
-
-        # Create a mock VannaBase instance
-        mock_vn = Mock()
-
-        runner = LegacySqlRunner(vn=mock_vn)
-        assert runner is not None
-        assert runner.vn is mock_vn
-
-
 class TestDatabaseIntegrationModules:
     """Test that database integration modules can be imported."""
 
@@ -268,60 +231,6 @@ class TestDatabaseIntegrationModules:
         from vanna.integrations.sqlite import SqliteRunner
 
         assert SqliteRunner is not None
-
-
-class TestLegacyVannaBaseConnections:
-    """Test that legacy VannaBase connection methods exist."""
-
-    def test_vanna_base_import(self):
-        """Test that VannaBase can be imported."""
-        from vanna.legacy.base.base import VannaBase
-
-        assert VannaBase is not None
-
-    def test_vanna_base_has_connection_methods(self):
-        """Test that VannaBase has various database connection methods."""
-        from vanna.legacy.base.base import VannaBase
-
-        connection_methods = [
-            "connect_to_snowflake",
-            "connect_to_sqlite",
-            "connect_to_postgres",
-            "connect_to_mysql",
-            "connect_to_clickhouse",
-            "connect_to_oracle",
-            "connect_to_bigquery",
-            "connect_to_duckdb",
-            "connect_to_mssql",
-            "connect_to_presto",
-            "connect_to_hive",
-        ]
-
-        for method_name in connection_methods:
-            assert hasattr(VannaBase, method_name), f"VannaBase missing {method_name}"
-
-    def test_vanna_base_has_run_sql_method(self):
-        """Test that VannaBase has a run_sql method."""
-        from vanna.legacy.base.base import VannaBase
-
-        assert hasattr(VannaBase, "run_sql")
-
-
-class TestLegacyVannaAdapter:
-    """Test the LegacyVannaAdapter."""
-
-    def test_legacy_vanna_adapter_import(self):
-        """Test that LegacyVannaAdapter can be imported."""
-        from vanna.legacy.adapter import LegacyVannaAdapter
-
-        assert LegacyVannaAdapter is not None
-
-    def test_legacy_vanna_adapter_is_tool_registry(self):
-        """Test that LegacyVannaAdapter extends ToolRegistry."""
-        from vanna.legacy.adapter import LegacyVannaAdapter
-        from vanna.core.registry import ToolRegistry
-
-        assert issubclass(LegacyVannaAdapter, ToolRegistry)
 
 
 class TestSnowflakeRunner:

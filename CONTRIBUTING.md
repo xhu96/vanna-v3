@@ -143,7 +143,6 @@ Tests are organized in the `tests/` directory:
 
 - `test_tool_permissions.py` - Tool access control tests
 - `test_llm_context_enhancer.py` - LLM enhancer tests
-- `test_legacy_adapter.py` - Legacy compatibility tests
 - `test_agent_memory.py` - Agent memory tests
 - `test_database_sanity.py` - Database integration tests
 - `test_agents.py` - End-to-end agent tests
@@ -159,9 +158,6 @@ pytest tests/test_tool_permissions.py -v
 
 # Run tests with a specific marker
 pytest tests/ -v -m anthropic
-
-# Run legacy adapter tests
-tox -e py311-legacy
 ```
 
 ### Writing Tests
@@ -455,16 +451,6 @@ class MyStoreMemory(AgentMemory):
 2. **Add tests** in `tests/test_agent_memory.py`
 
 3. **Add to extras** in `pyproject.toml`
-
----
-
-## Legacy Compatibility
-
-If you're working on legacy VannaBase compatibility:
-
-- The `LegacyVannaAdapter` bridges legacy code with Vanna 2.0+
-- Add tests to `tests/test_legacy_adapter.py`
-- See `src/vanna/legacy/adapter.py` for examples
 
 ---
 

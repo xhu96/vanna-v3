@@ -26,3 +26,8 @@ frontends/**/static/
 frontends/**/.storybook-static/
 frontends/**/package-lock.json
 frontends/**/.mypy_cache/
+
+# Generated query-result artifacts (written by RunSqlTool / LocalFileSystem)
+query_results_*.csv
+**/query_results_*.csv
+.vanna/
