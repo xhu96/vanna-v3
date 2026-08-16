@@ -4,7 +4,7 @@ Status date: 2026-08-16
 
 ## Disposition
 
-The source tree passes the deterministic local Python and frontend gates listed below. Automated package publication remains disabled. A source update on GitHub does not publish Python or npm artifacts, create a release, or move an existing tag.
+The source tree passes the deterministic local and GitHub CI gates listed below. Automated package publication remains disabled. A source update on GitHub does not publish Python or npm artifacts, create a release, or move an existing tag.
 
 ## Version Lineage
 
@@ -44,13 +44,25 @@ The wire protocol remains version `v3`. Package version `3.3.0` does not require
 
 The Storybook build reports its own development-runtime `eval` use and large Plotly/Vega preview chunks. Neither path introduces model-generated code execution; production chart payloads remain declarative and policy-validated. Bundle splitting remains a separate performance optimization.
 
+## Latest GitHub Verification
+
+[GitHub Actions run 31964163758](https://github.com/xhu96/vanna-v3/actions/runs/31964163758) passed on the uploaded `main` head:
+
+| Job | Result |
+|---|---|
+| Complete Python 3.11 gate | Passed |
+| Python package matrix | 3.11, 3.12, 3.13, and 3.14 passed |
+| PostgreSQL 15 integration | Passed with the read-only, multi-tenant reference flow |
+| Offline evaluation gate | Passed |
+| Frontend unit, deterministic build, Storybook, and Chromium tests | Passed |
+
+GitHub-maintained actions are pinned to immutable Node 24 release commits. The run completed without the previous action-runtime deprecation annotations.
+
 ## External Release Gates
 
-The following still require release-owner or CI evidence before package publication:
+The following still require release-owner or deployment evidence before package publication:
 
-- PostgreSQL 15 integration with a real read-only role and two tenants.
 - Wheel/sdist reproducibility, Twine validation, and clean-wheel installation.
-- Python 3.12, 3.13, and 3.14 package-matrix jobs.
 - Live dbt tenant compatibility and bounded semantic-query polling.
 - Deployment performance budgets, proxy buffering/cancellation, and lineage overhead against the reference PostgreSQL flow.
 - Reconciliation of the divergent `v3.2.0` line and package namespace approval.
