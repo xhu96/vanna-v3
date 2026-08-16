@@ -24,6 +24,7 @@ class SimpleUserResolver(UserResolver):
     def __init__(self, default_user: Optional[User] = None):
         self.default_user = default_user or User(
             id="default",
+            authenticated=False,
             username="default",
             email="default@example.com",
             group_memberships=[],
@@ -35,6 +36,8 @@ class SimpleUserResolver(UserResolver):
 
 class SimpleAgentMemory(AgentMemory):
     """Simple in-memory agent memory implementation (non-persistent)."""
+
+    supports_tenant_isolation = True
 
     def __init__(self) -> None:
         self.tool_memories: List[Dict[str, Any]] = []

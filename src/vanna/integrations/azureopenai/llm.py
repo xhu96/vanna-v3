@@ -21,6 +21,10 @@ from vanna.core.llm import (
 from vanna.core.tool import ToolCall, ToolSchema
 
 
+# Kept as an injectable seam while preserving lazy optional-dependency loading.
+AzureOpenAI: Any = None
+
+
 # Models that don't support temperature and other sampling parameters
 REASONING_MODELS: Set[str] = {
     "o1",
@@ -68,13 +72,16 @@ class AzureOpenAILlmService(LlmService):
         azure_ad_token_provider: Optional[Any] = None,
         **extra_client_kwargs: Any,
     ) -> None:
-        try:
-            from openai import AzureOpenAI
-        except Exception as e:  # pragma: no cover
-            raise ImportError(
-                "openai package is required. Install with: pip install 'vanna[azureopenai]' "
-                "or 'pip install openai'"
-            ) from e
+        client_type = AzureOpenAI
+        if client_type is None:
+            try:
+                from openai import AzureOpenAI as AzureOpenAIClient
+            except Exception as e:  # pragma: no cover
+                raise ImportError(
+                    "openai package is required. Install with: pip install "
+                    "'vanna[azureopenai]' or 'pip install openai'"
+                ) from e
+            client_type = AzureOpenAIClient
 
         # Model/deployment name is required for Azure OpenAI
         self.model = model or os.getenv("AZURE_OPENAI_MODEL")
@@ -114,7 +121,7 @@ class AzureOpenAILlmService(LlmService):
                 )
             client_kwargs["api_key"] = api_key
 
-        self._client = AzureOpenAI(**client_kwargs)
+        self._client = client_type(**client_kwargs)
         self._is_reasoning_model = _is_reasoning_model(self.model)
 
     async def send_request(self, request: LlmRequest) -> LlmResponse:

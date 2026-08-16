@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class MySQLRunner(SqlRunner):
     """MySQL implementation of the SqlRunner interface."""
 
+    dialect = "mysql"
+
     def __init__(
         self,
         host: str,

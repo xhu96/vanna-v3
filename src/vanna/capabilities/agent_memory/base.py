@@ -23,6 +23,19 @@ if TYPE_CHECKING:
 class AgentMemory(ABC):
     """Abstract base class for agent memory operations."""
 
+    # Legacy vector backends must opt in only after every read, write, and delete
+    # operation enforces authenticated tenant/principal scope.
+    supports_tenant_isolation: bool = False
+    # Schema drift patches require deterministic replacement by logical entity.
+    # Backends must opt in only when retries upsert the same tenant-scoped record.
+    supports_keyed_text_memory_upsert: bool = False
+    # Feedback retries require deterministic replacement by one logical patch key.
+    supports_keyed_tool_memory_upsert: bool = False
+    # Reviewed and immediate feedback patches can intentionally benefit every
+    # authenticated principal in one tenant. This remains a separate capability
+    # so ordinary tool-memory writes cannot accidentally widen their scope.
+    supports_tenant_keyed_tool_memory_upsert: bool = False
+
     @abstractmethod
     async def save_tool_usage(
         self,
@@ -42,6 +55,63 @@ class AgentMemory(ABC):
     ) -> "TextMemory":
         """Save a free-form text memory."""
         pass
+
+    async def upsert_tool_usage(
+        self,
+        question: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        context: "ToolContext",
+        *,
+        memory_key: str,
+        success: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Replace one tenant/principal-scoped tool memory by logical key.
+
+        This optional V3 capability is required by the feedback outbox. Backends
+        must not opt in unless a retry of the same key replaces exactly one
+        record rather than appending another influence entry.
+        """
+
+        del question, tool_name, args, context, memory_key, success, metadata
+        raise NotImplementedError("keyed tool-memory upsert is not supported")
+
+    async def upsert_tenant_tool_usage(
+        self,
+        question: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        context: "ToolContext",
+        *,
+        memory_key: str,
+        success: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Replace one tenant-visible tool memory by logical key.
+
+        This optional V3 capability is reserved for trusted services such as the
+        validated feedback workflow. Principal-scoped writes remain the default.
+        """
+
+        del question, tool_name, args, context, memory_key, success, metadata
+        raise NotImplementedError("tenant keyed tool-memory upsert is not supported")
+
+    async def upsert_text_memory(
+        self,
+        content: str,
+        context: "ToolContext",
+        *,
+        memory_key: str,
+    ) -> "TextMemory":
+        """Replace a tenant-scoped text memory by a stable logical key.
+
+        This is optional for V2 compatibility. Callers that require exactly-once
+        schema state must check ``supports_keyed_text_memory_upsert`` first.
+        """
+
+        del content, context, memory_key
+        raise NotImplementedError("keyed text-memory upsert is not supported")
 
     @abstractmethod
     async def search_similar_usage(

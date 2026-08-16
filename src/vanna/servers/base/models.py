@@ -2,15 +2,79 @@
 Request and response models for server endpoints.
 """
 
+import json
+import math
 import time
 import uuid
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ...components import UiComponent, RichComponent
 from ...core.component_manager import ComponentUpdate
 from ...core.user.request_context import RequestContext
+
+MAX_PUBLIC_METADATA_BYTES = 64 * 1024
+MAX_PUBLIC_METADATA_DEPTH = 8
+MAX_PUBLIC_METADATA_ITEMS = 100
+MAX_PUBLIC_METADATA_STRING = 4096
+_RESERVED_METADATA_KEYS = {
+    "schema_hash",
+    "schema_snapshot_id",
+    "schema_version",
+    "schema_drift_detected",
+}
+
+
+def validate_public_chat_metadata(metadata: Any) -> Dict[str, Any]:
+    """Validate untrusted chat metadata before server-owned values are attached."""
+
+    if not isinstance(metadata, dict):
+        raise ValueError("chat metadata must be an object")
+
+    def validate(value: Any, *, depth: int) -> None:
+        if depth > MAX_PUBLIC_METADATA_DEPTH:
+            raise ValueError("chat metadata exceeds the nesting limit")
+        if value is None or isinstance(value, (str, bool, int)):
+            if isinstance(value, str) and len(value) > MAX_PUBLIC_METADATA_STRING:
+                raise ValueError("chat metadata string exceeds the length limit")
+            return
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                raise ValueError("chat metadata numbers must be finite")
+            return
+        if isinstance(value, dict):
+            if len(value) > MAX_PUBLIC_METADATA_ITEMS:
+                raise ValueError("chat metadata object exceeds the item limit")
+            for key, item in value.items():
+                if not isinstance(key, str) or not key or len(key) > 128:
+                    raise ValueError("chat metadata keys must be bounded strings")
+                normalized = key.casefold()
+                if (
+                    normalized.startswith("_vanna_")
+                    or normalized in _RESERVED_METADATA_KEYS
+                ):
+                    raise ValueError("chat metadata contains a reserved key")
+                validate(item, depth=depth + 1)
+            return
+        if isinstance(value, list):
+            if len(value) > MAX_PUBLIC_METADATA_ITEMS:
+                raise ValueError("chat metadata list exceeds the item limit")
+            for item in value:
+                validate(item, depth=depth + 1)
+            return
+        raise ValueError("chat metadata must contain JSON values only")
+
+    validate(metadata, depth=0)
+    encoded = json.dumps(
+        metadata,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    if len(encoded) > MAX_PUBLIC_METADATA_BYTES:
+        raise ValueError("chat metadata exceeds the serialized byte limit")
+    return metadata
 
 
 class ChatRequest(BaseModel):
@@ -28,6 +92,11 @@ class ChatRequest(BaseModel):
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
+
+    @field_validator("metadata")
+    @classmethod
+    def validate_metadata(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        return validate_public_chat_metadata(value)
 
 
 class ChatStreamChunk(BaseModel):

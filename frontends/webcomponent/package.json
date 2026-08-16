@@ -1,16 +1,20 @@
 {
   "name": "@vanna/webcomponent",
-  "version": "3.0.0",
+  "version": "3.3.0",
   "description": "Lit-based web components for Vanna User Agents",
   "main": "dist/vanna-components.js",
+  "module": "dist/vanna-components.js",
   "scripts": {
-    "sync-version": "node scripts/sync-version.js",
+    "check-version": "node scripts/sync-version.js",
     "dev": "vite",
-    "build": "npm run sync-version && tsc && vite build",
+    "build": "npm run check-version && tsc && vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build-storybook": "storybook build --output-dir .storybook-static",
+    "media:tour": "node scripts/record-product-tour.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "npm run build && playwright test"
   },
   "keywords": [
     "vanna",
@@ -24,37 +28,51 @@
   ],
   "author": "Zain Hoda <zain@vanna.ai>",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19 <21",
+    "npm": "10.x"
+  },
+  "packageManager": "npm@10.9.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vanna-ai/vanna.git",
+    "url": "https://github.com/xhu96/vanna-v3.git",
     "directory": "frontends/webcomponent"
   },
-  "homepage": "https://github.com/vanna-ai/vanna",
+  "homepage": "https://github.com/xhu96/vanna-v3",
   "bugs": {
-    "url": "https://github.com/vanna-ai/vanna/issues"
+    "url": "https://github.com/xhu96/vanna-v3/issues"
   },
   "files": [
     "dist",
     "src"
   ],
   "dependencies": {
+    "@fontsource-variable/ibm-plex-sans": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@spectrum-web-components/action-button": "1.12.2",
+    "@spectrum-web-components/button": "1.12.2",
+    "@spectrum-web-components/progress-circle": "1.12.2",
+    "@spectrum-web-components/textfield": "1.12.2",
+    "@spectrum-web-components/theme": "1.12.2",
+    "dompurify": "^3.4.13",
     "lit": "^3.3.1",
     "plotly.js-dist-min": "^3.1.0",
-    "vega": "^5.33.0",
+    "vega": "^6.3.1",
     "vega-embed": "^7.1.0",
-    "vega-lite": "^5.20.1"
+    "vega-lite": "^6.4.3"
   },
   "devDependencies": {
-    "@storybook/addon-actions": "^8.6.14",
-    "@storybook/addon-controls": "^8.6.14",
-    "@storybook/addon-docs": "^8.6.14",
-    "@storybook/addon-essentials": "^8.6.14",
-    "@storybook/web-components": "^8.6.14",
-    "@storybook/web-components-vite": "^8.6.14",
-    "@types/plotly.js-dist-min": "^2.3.4",
-    "storybook": "^8.6.14",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.5"
+    "@playwright/test": "1.62.1",
+    "@storybook/addon-controls": "8.6.18",
+    "@storybook/addon-docs": "8.6.18",
+    "@storybook/web-components": "8.6.18",
+    "@storybook/web-components-vite": "8.6.18",
+    "@types/plotly.js-dist-min": "2.3.4",
+    "happy-dom": "20.11.2",
+    "storybook": "8.6.18",
+    "typescript": "5.9.2",
+    "vite": "6.4.3",
+    "vitest": "4.1.10"
   }
 }

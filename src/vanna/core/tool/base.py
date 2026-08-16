@@ -5,12 +5,15 @@ This module contains the abstract base class for tools.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, List, Type, TypeVar
+from typing import FrozenSet, Generic, List, Type, TypeVar
 
 from .models import ToolContext, ToolResult, ToolSchema
 
 # Type variable for tool argument types
 T = TypeVar("T")
+
+ARBITRARY_CODE_EXECUTION_CAPABILITY = "arbitrary_code_execution"
+PRIVILEGED_SQL_WRITE_CAPABILITY = "privileged_sql_write"
 
 
 class Tool(ABC, Generic[T]):
@@ -32,6 +35,11 @@ class Tool(ABC, Generic[T]):
     def access_groups(self) -> List[str]:
         """Groups permitted to access this tool."""
         return []
+
+    @property
+    def capabilities(self) -> FrozenSet[str]:
+        """Execution categories used by policy without relying on tool names."""
+        return frozenset()
 
     @abstractmethod
     def get_args_schema(self) -> Type[T]:

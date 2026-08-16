@@ -1,7 +1,12 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
-import Plotly from 'plotly.js-dist-min';
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { vannaDesignTokens } from "../styles/vanna-design-tokens.js";
+import Plotly from "plotly.js-dist-min";
+import {
+  buildSafePlotlyConfig,
+  sanitizePlotlyData,
+  sanitizePlotlyValue,
+} from "../security/content-security.js";
 
 export interface PlotlyData {
   x?: any[];
@@ -29,7 +34,7 @@ export interface PlotlyLayout {
   [key: string]: any;
 }
 
-@customElement('plotly-chart')
+@customElement("plotly-chart")
 export class PlotlyChart extends LitElement {
   static styles = [
     vannaDesignTokens,
@@ -43,7 +48,7 @@ export class PlotlyChart extends LitElement {
 
       .plotly-div {
         width: 100%;
-        min-height: 400px;
+        min-height: 280px;
       }
 
       /* Plotly layering fix for Shadow DOM */
@@ -79,21 +84,29 @@ export class PlotlyChart extends LitElement {
         text-align: center;
         font-style: italic;
       }
-    `
+
+      @media (max-width: 600px) {
+        .plotly-div {
+          min-height: 240px;
+        }
+      }
+    `,
   ];
 
   @property({ type: Array }) data: PlotlyData[] = [];
   @property({ type: Object }) layout: PlotlyLayout = {};
   @property({ type: Object }) config = {};
   @property({ type: Boolean }) loading = false;
-  @property() error = '';
-  @property() theme: 'light' | 'dark' = 'dark';
+  @property() error = "";
+  @property() theme: "light" | "dark" = "dark";
 
   private plotlyDiv?: HTMLElement;
   private resizeObserver?: ResizeObserver;
 
   firstUpdated() {
-    this.plotlyDiv = this.shadowRoot?.querySelector('.plotly-div') as HTMLElement;
+    this.plotlyDiv = this.shadowRoot?.querySelector(
+      ".plotly-div",
+    ) as HTMLElement;
     this._renderChart();
     this._setupResizeObserver();
   }
@@ -117,56 +130,64 @@ export class PlotlyChart extends LitElement {
   }
 
   updated(changedProperties: Map<string | number | symbol, unknown>) {
-    if (changedProperties.has('data') || changedProperties.has('layout') || changedProperties.has('theme')) {
+    if (
+      changedProperties.has("config") ||
+      changedProperties.has("data") ||
+      changedProperties.has("layout") ||
+      changedProperties.has("theme")
+    ) {
       this._renderChart();
     }
   }
 
   private _getDefaultLayout(): PlotlyLayout {
-    const isDark = this.theme === 'dark';
+    const isDark = this.theme === "dark";
 
-    // Start with layout from backend (which may include white background)
+    const requestedLayout = sanitizePlotlyValue(this.layout || {});
+
     const mergedLayout = {
-      ...this.layout,
+      ...requestedLayout,
       // Only add font/modebar if not already set by backend
-      font: this.layout.font || {
-        family: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        color: isDark ? 'rgb(242, 244, 247)' : 'rgb(17, 24, 39)',
-        size: 12
+      font: requestedLayout.font || {
+        family:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+        color: isDark ? "#edf5f3" : "#49636b",
+        size: 11,
       },
-      modebar: this.layout.modebar || {
-        bgcolor: isDark ? 'rgba(21, 26, 38, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-        color: isDark ? 'rgb(177, 186, 196)' : 'rgb(75, 85, 99)',
-        activecolor: isDark ? 'rgb(242, 244, 247)' : 'rgb(17, 24, 39)',
-        orientation: 'h'
+      modebar: requestedLayout.modebar || {
+        bgcolor: isDark ? "rgba(19, 25, 28, 0.92)" : "rgba(255, 255, 255, 0.94)",
+        color: isDark ? "#b2c5c3" : "#71868b",
+        activecolor: isDark ? "#f2f5f5" : "#182125",
+        orientation: "h",
       },
       // Set explicit dimensions for Shadow DOM compatibility
       autosize: false,
-      width: this.layout.width || undefined,
-      height: this.layout.height || 400,
+      width: requestedLayout.width || undefined,
+      height: requestedLayout.height || 280,
     };
 
     // If backend didn't set background colors, use transparent
-    if (!this.layout.paper_bgcolor) {
-      mergedLayout.paper_bgcolor = 'transparent';
+    if (!requestedLayout.paper_bgcolor) {
+      mergedLayout.paper_bgcolor = "transparent";
     }
-    if (!this.layout.plot_bgcolor) {
-      mergedLayout.plot_bgcolor = 'transparent';
+    if (!requestedLayout.plot_bgcolor) {
+      mergedLayout.plot_bgcolor = "transparent";
     }
 
     return mergedLayout;
   }
 
   private _getDefaultConfig() {
-    return {
-      responsive: true,
-      displayModeBar: false,
-      ...this.config
-    };
+    return buildSafePlotlyConfig(this.config);
   }
 
   private async _renderChart() {
-    if (!this.plotlyDiv || this.loading || this.error || this.data.length === 0) {
+    if (
+      !this.plotlyDiv ||
+      this.loading ||
+      this.error ||
+      this.data.length === 0
+    ) {
       return;
     }
 
@@ -174,28 +195,27 @@ export class PlotlyChart extends LitElement {
       const layout = this._getDefaultLayout();
       const config = this._getDefaultConfig();
 
-      await Plotly.newPlot(this.plotlyDiv, this.data, layout, config);
+      const data = sanitizePlotlyData(this.data);
+      await Plotly.newPlot(this.plotlyDiv, data, layout, config);
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to render chart';
-      console.error('Plotly chart error:', err);
+      this.error =
+        err instanceof Error ? err.message : "Failed to render chart";
     }
   }
 
   render() {
     return html`
-      ${this.loading ? html`
-        <div class="loading-message">Loading chart...</div>
-      ` : this.error ? html`
-        <div class="error-message">Error: ${this.error}</div>
-      ` : html`
-        <div class="plotly-div"></div>
-      `}
+      ${this.loading
+        ? html` <div class="loading-message">Loading chart...</div> `
+        : this.error
+          ? html` <div class="error-message">Error: ${this.error}</div> `
+          : html` <div class="plotly-div"></div> `}
     `;
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'plotly-chart': PlotlyChart;
+    "plotly-chart": PlotlyChart;
   }
 }

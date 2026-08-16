@@ -1,348 +1,230 @@
-# Vanna 3.0: Turn Questions into Data Insights
+# Vanna 3.3.0
 
-**Natural language → SQL → Answers.** Secure-by-default, enterprise-operable, with declarative visualization, schema drift sync, semantic routing, lineage, and feedback loops.
+Secure natural-language analytics built on the Vanna 2.x agent runtime.
+
+[![CI](https://github.com/xhu96/vanna-v3/actions/workflows/tests.yml/badge.svg)](https://github.com/xhu96/vanna-v3/actions/workflows/tests.yml)
+[![Python 3.11-3.14](https://img.shields.io/badge/Python-3.11--3.14-3776AB.svg)](https://www.python.org/)
+[![Node 20](https://img.shields.io/badge/Node-20.19-339933.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2F855A.svg)](LICENSE)
+
+[![Vanna 3.3 analysis workbench](media/vanna-3.3-workbench.png)](media/vanna-3.3-product-tour.mp4)
 
 > [!IMPORTANT]
-> **This is a community fork** — not the official [Vanna AI](https://github.com/vanna-ai/vanna) project. It was forked from [vanna-ai/vanna](https://github.com/vanna-ai/vanna) v2.0.2 and targets the v2.0+ agent architecture directly. The pre-2.0 legacy adapter path has been **removed** in this fork; v3.0 adds security hardening, observability, and reliability on top of the agent runtime. The upstream project is maintained by the Vanna team.
+> This repository is a community fork of [vanna-ai/vanna](https://github.com/vanna-ai/vanna), not the official Vanna project. It retains the MIT license and upstream attribution while developing the 3.x architecture independently.
 
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+## Overview
 
-https://github.com/user-attachments/assets/476cd421-d0b0-46af-8b29-0f40c73d6d83
+Vanna turns natural-language questions into governed data answers. A request can be resolved through a semantic layer or a policy-enforced SQL path, then returned as typed streaming events containing text, tables, declarative charts, warnings, and reproducible lineage.
 
-![Vanna Architecture](img/architecture.png)
+Version 3.3.0 focuses on production boundaries rather than a new agent abstraction:
 
----
+- read-only SQL enforcement at the parser, tool, connection, and database-role layers;
+- recursive tenant row policies across joins, CTEs, subqueries, and set operations;
+- semantic-first routing through the dbt Semantic Layer GraphQL API;
+- portable schema snapshots, canonical hashes, drift history, and memory updates;
+- strictly validated Vega-Lite or Plotly `ChartSpec` payloads with no Python chart execution;
+- typed V3 SSE and poll events with deterministic terminal behavior;
+- answer lineage containing schema, retrieval, tool, query, runtime, row-count, and validation evidence;
+- tenant-scoped corrective feedback with approval and offline evaluation gates;
+- preserved V2 SSE, poll, and FastAPI WebSocket compatibility.
 
-## What's New in 3.0
+The Python and npm packages are both versioned `3.3.0`. Automated package publication remains disabled until the documented release gates are approved.
 
-🛡️ **Read-Only SQL, Enforced Two Ways** — Every query is AST-validated for read-only intent (via `sqlglot`) *and* run through connection-level read-only guards (`src/vanna/tools/run_sql.py`), so a mutating statement is rejected before it can reach the database. No LLM-generated Python `exec()` anywhere in the chart path.
+## Technology Stack
 
-📊 **Declarative Visualization** — Charts are emitted as a validated `ChartSpec` (Vega-Lite / Plotly JSON, `src/vanna/core/chart_spec.py`) and rendered client-side — no server-side code execution.
+| Layer | Technology | Role |
+|---|---|---|
+| Runtime and models | Python 3.11-3.14, Pydantic 2 | Agent runtime, typed contracts, validation, configuration |
+| HTTP servers | FastAPI, Flask, Uvicorn, ASGIRef | Namespaced V2/V3 APIs, authentication hooks, SSE and poll transports |
+| Query policy | SQLGlot, SQLAlchemy | Dialect-aware parsing, read-only validation, recursive RLS, database integration |
+| Data processing | pandas, tabulate | Bounded result sets, tabular serialization, answer components |
+| Databases | PostgreSQL 15 reference path, SQLite, MySQL, Snowflake, BigQuery, DuckDB, ClickHouse, Oracle, SQL Server, Presto, Hive | Query execution and portable catalog ingestion through optional adapters |
+| Semantic layer | dbt Semantic Layer GraphQL, HTTPX, YAML file adapter | Metric and dimension discovery, typed filters, semantic query execution |
+| Schema and feedback state | Catalog snapshots, canonical JSON hashes, transactional SQLite feedback store, pluggable memory interfaces | Drift detection, corrective memory, review state, approved-data export |
+| Frontend | Lit 3, TypeScript 5.9, Adobe Spectrum Web Components 1.12.2, IBM Plex | Framework-agnostic `<vanna-chat>` workbench and accessible controls |
+| Visualization | JSON Schema, Vega-Lite, Vega, Plotly | Declarative charts with bounded inline data and closed safe profiles |
+| Browser security | DOMPurify, sandboxed static artifacts, renderer-owned chart configuration | Active-content removal, URL restrictions, isolated artifact display |
+| Quality | pytest, tox, Ruff, mypy, Vitest, Happy DOM, Playwright, Storybook | Unit, integration, typing, lint, component, browser, and security verification |
+| Build and CI | Flit, Vite 6, npm lockfile, GitHub Actions, PostgreSQL 15 service container | Reproducible packages, frontend bundles, release verification, regression gates |
 
-🔐 **Safe Row-Level Security** — `apply_row_filter` (`src/vanna/security/rls.py`) injects per-user predicates into the SQL AST rather than string-concatenating, so RLS filters can't be broken by crafted values.
-
-🧠 **Real Semantic Routing** — A working `FileSemanticAdapter` (`src/vanna/integrations/semantic/file_adapter.py`) resolves metrics/dimensions from a config file; queries route through the semantic layer before falling back to SQL generation.
-
-✅ **Real Eval Gate** — A deterministic offline evaluation harness (`src/vanna/core/evaluation/`) computes pass-rate/score from actual runs and gates regressions — not hardcoded CI numbers.
-
-📋 **Explainability & Lineage** — Every answer ships with schema version, retrieved memories, tool calls, SQL, and a confidence tier (labeled as heuristic).
-
-👍 **Feedback Loop** — Thumbs-down + corrected SQL patches memory with weighted corrections that re-rank subsequent retrieval.
-
-⚡ **Typed Streaming Events** — Versioned SSE/poll event contract (`v3`) with namespaced API routes.
-
-> **Upgrading from 2.0 → 3.0?** See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md). The pre-2.0 legacy adapter path was removed in this fork.
-
----
-
-## Get Started
-
-### Try it with Sample Data
-
-[Quickstart](https://vanna.ai/docs/quick-start)
-
-### Configure
-
-[Configure](https://vanna.ai/docs/configure)
-
-### Web Component
-
-```html
-<!-- Drop into any existing webpage -->
-<script src="https://img.vanna.ai/vanna-components.js"></script>
-<vanna-chat sse-endpoint="https://your-api.com/chat" theme="dark"> </vanna-chat>
-```
-
-Uses your existing cookies/JWTs. Works with React, Vue, or plain HTML.
-
----
-
-## What You Get
-
-Ask a question in natural language and get back:
-
-**1. Streaming Progress Updates**
-
-**2. SQL Code Block (By default only shown to "admin" users)**
-
-**3. Interactive Data Table**
-
-**4. Charts** (Plotly visualizations)
-
-**5. Natural Language Summary**
-
-All streamed in real-time to your web component.
-
----
-
-## Why Vanna 3.0?
-
-### ✅ Get Started Instantly
-
-- Production chat interface
-- Custom agent with your database
-- Embed in any webpage
-
-### ✅ Enterprise-Ready Security
-
-**Read-only by default** — SQL is AST-validated for read-only intent and run through connection-level read-only guards
-**Safe row-level security** — `apply_row_filter` injects per-user predicates into the SQL AST (no string concatenation)
-**User-aware at every layer** — Identity flows through system prompts, tool execution, and SQL filtering
-**Rate limiting** — Per-user quotas via lifecycle hooks
-
-### ✅ Beautiful Web UI Included
-
-**Pre-built `<vanna-chat>` component** — No need to build your own chat interface
-**Streaming tables & charts** — Rich components, not just text
-**Responsive & customizable** — Works on mobile, desktop, light/dark themes
-**Framework-agnostic** — React, Vue, plain HTML
-
-### ✅ Works With Your Stack
-
-**Any LLM:** OpenAI, Anthropic, Ollama, Azure, Google Gemini, AWS Bedrock, Mistral, Others
-**Any Database:** PostgreSQL, MySQL, Snowflake, BigQuery, Redshift, SQLite, Oracle, SQL Server, DuckDB, ClickHouse, Others
-**Your Auth System:** Bring your own — cookies, JWTs, OAuth tokens
-**Your Framework:** FastAPI, Flask
-
-### ✅ Extensible But Opinionated
-
-**Custom tools** — Extend the `Tool` base class
-**Lifecycle hooks** — Quota checking, logging, content filtering
-**LLM middlewares** — Caching, prompt engineering
-**Observability** — Built-in tracing and metrics
-
----
+Frontend dependencies and fonts are bundled locally. The web component does not require a runtime component-library, font, or chart CDN.
 
 ## Architecture
 
-![Vanna 3.0 Architecture](img/vanna3.svg)
-
----
-
-## How It Works
-
 ```mermaid
-sequenceDiagram
-    participant U as 👤 User
-    participant W as 🌐 <vanna-chat>
-    participant S as 🐍 Your Server
-    participant A as 🤖 Agent
-    participant T as 🧰 Tools
-
-    U->>W: "Show Q4 sales"
-    W->>S: POST /api/vanna/v3/chat/events (with auth)
-    S->>A: User(id=alice, groups=[read_sales])
-    A->>T: Execute SQL tool (user-aware)
-    T->>T: Apply row-level security
-    T->>A: Filtered results
-    A->>W: Stream: Table → Chart → Summary
-    W->>U: Display beautiful UI
+flowchart LR
+    UI["Bundled or custom UI"] --> API["FastAPI or Flask routes"]
+    API --> SEC["Authentication, authorization, rate limits"]
+    SEC --> AGENT["Agent runtime"]
+    AGENT --> PLAN["Semantic-first planner"]
+    PLAN --> DBT["dbt Semantic Layer"]
+    PLAN --> SQL["Read-only SQL tool"]
+    SQL --> POLICY["Dialect AST policy and tenant RLS"]
+    POLICY --> DB["Read-only database runner"]
+    DB --> CATALOG["Portable schema catalog"]
+    CATALOG --> MEMORY["Versioned snapshots and memory patches"]
+    AGENT --> LINEAGE["Evidence and confidence"]
+    AGENT --> CHART["Validated ChartSpec"]
+    LINEAGE --> EVENTS["Typed V3 SSE or poll events"]
+    CHART --> EVENTS
+    EVENTS --> UI
+    UI --> FEEDBACK["Authenticated feedback"]
+    FEEDBACK --> MEMORY
+    FEEDBACK --> EVAL["Approved-data evaluation gate"]
 ```
 
-**Key Concepts:**
+The detailed component model, trust boundaries, performance budgets, and operational guidance are in [the V3 architecture document](docs/v3/architecture-and-design.md).
 
-1. **User Resolver** — You define how to extract user identity from requests (cookies, JWTs, etc.)
-2. **User-Aware Tools** — Tools automatically check permissions based on user's group memberships
-3. **Streaming Components** — Backend streams structured UI components (tables, charts) to frontend
-4. **Built-in Web UI** — Pre-built `<vanna-chat>` component renders everything beautifully
+## Quick Start
 
----
+### Requirements
 
-## Production Setup with Your Auth
+- Python 3.11 through 3.14
+- Node.js 20.19.x and npm 10 for the optional web component
+- a database account restricted to read-only access for production deployments
 
-Here's a complete example integrating Vanna with your existing FastAPI app and authentication:
+### Install From Source
 
-```python
-from fastapi import FastAPI
-from vanna import Agent
-from vanna.servers.fastapi.routes import register_chat_routes
-from vanna.servers.base import ChatHandler
-from vanna.core.user import UserResolver, User, RequestContext
-from vanna.integrations.anthropic import AnthropicLlmService
-from vanna.tools import RunSqlTool
-from vanna.integrations.sqlite import SqliteRunner
-from vanna.core.registry import ToolRegistry
+```bash
+git clone https://github.com/xhu96/vanna-v3.git
+cd vanna-v3
 
-# Your existing FastAPI app
-app = FastAPI()
-
-# 1. Define your user resolver (using YOUR auth system)
-class MyUserResolver(UserResolver):
-    async def resolve_user(self, request_context: RequestContext) -> User:
-        # Extract from cookies, JWTs, or session
-        token = request_context.get_header('Authorization')
-        user_data = self.decode_jwt(token)  # Your existing logic
-
-        return User(
-            id=user_data['id'],
-            email=user_data['email'],
-            group_memberships=user_data['groups']  # Used for permissions
-        )
-
-# 2. Set up agent with tools
-llm = AnthropicLlmService(model="claude-sonnet-4-5")
-tools = ToolRegistry()
-tools.register(RunSqlTool(sql_runner=SqliteRunner("./data.db")))
-
-agent = Agent(
-    llm_service=llm,
-    tool_registry=tools,
-    user_resolver=MyUserResolver()
-)
-
-# 3. Add Vanna routes to your app
-chat_handler = ChatHandler(agent)
-register_chat_routes(app, chat_handler)
-
-# Now you have:
-# - POST /api/vanna/v2/chat_sse (streaming endpoint)
-# - GET / (optional web UI)
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[fastapi,postgres,jwt]'
 ```
 
-**Then in your frontend:**
+Run the deterministic local semantic example without an external model service:
+
+```bash
+python examples/v3/semantic_adapter_demo.py
+```
+
+For a production-oriented server configuration, start with [the FastAPI, JWT, and PostgreSQL example](examples/v3/fastapi_jwt_postgres.py). It demonstrates verified JWT identity, a read-only PostgreSQL runner, tenant row policies, production security mode, disabled default CORS/UI routes, rate limiting, schema sync, and feedback wiring.
+
+Additional reference deployments are listed in [examples/v3](examples/v3/README.md).
+
+### Build the Web Component
+
+```bash
+cd frontends/webcomponent
+nvm use
+npm ci
+npm test
+npm run build
+```
+
+Serve `frontends/webcomponent/dist/` from your application origin, then mount either protocol explicitly:
 
 ```html
-<vanna-chat sse-endpoint="/api/vanna/v2/chat_sse"></vanna-chat>
+<script type="module" src="/assets/vanna-components.js"></script>
+
+<!-- Existing V2 behavior remains the default. -->
+<vanna-chat api-version="v2"></vanna-chat>
+
+<!-- V3 uses typed SSE or poll events. -->
+<vanna-chat api-version="v3" transport="sse"></vanna-chat>
 ```
 
-See [Full Documentation](https://vanna.ai/docs) for custom tools, lifecycle hooks, and advanced configuration
+A custom UI can consume the same event stream without registering or serving the bundled interface. See [the BYO UI stream example](examples/v3/byo_ui_event_stream.py).
 
----
+## API Contracts
 
-## Custom Tools
+| Protocol | Endpoint | Status |
+|---|---|---|
+| V2 SSE | `POST /api/vanna/v2/chat_sse` | Preserved |
+| V2 poll | `POST /api/vanna/v2/chat_poll` | Preserved |
+| V2 WebSocket | `WS /api/vanna/v2/chat_websocket` | FastAPI only; authenticated |
+| V3 SSE | `POST /api/vanna/v3/chat/events` | Typed, versioned contract |
+| V3 poll | `POST /api/vanna/v3/chat/poll` | Same event models and terminal rules as SSE |
+| V3 feedback | `/api/vanna/v3/feedback` | Authenticated, tenant-scoped |
+| V3 schema sync | `/api/vanna/v3/schema/*` | Admin-authorized by default |
 
-Extend Vanna with custom tools for your specific use case:
+V3 event envelopes carry an event version, discriminated event type, unique event ID, monotonic sequence, conversation ID, request ID, UTC timestamp, and typed payload. Every response contains exactly one terminal `done` or `error` event. There is no V3 WebSocket contract.
 
-```python
-from vanna.core.tool import Tool, ToolContext, ToolResult
-from pydantic import BaseModel, Field
-from typing import Type
+See [the V3 API event specification](docs/v3/api-events-v3.md) and its checked-in [JSON Schemas](docs/v3/schemas/).
 
-class EmailArgs(BaseModel):
-    recipient: str = Field(description="Email recipient")
-    subject: str = Field(description="Email subject")
+## Security Model
 
-class EmailTool(Tool[EmailArgs]):
-    @property
-    def name(self) -> str:
-        return "send_email"
+Production mode is the default server posture:
 
-    @property
-    def access_groups(self) -> list[str]:
-        return ["send_email"]  # Permission check
+- authenticated users are required for chat and feedback;
+- admin authorization is required for schema operations and feedback review;
+- CORS and bundled UI routes are disabled unless explicitly configured;
+- public errors use stable codes and correlation IDs rather than raw exceptions;
+- rate limiting is keyed by trusted authenticated identity;
+- SQL must pass dialect-aware single-statement and read-only checks;
+- protected tables require recursive, alias-qualified tenant filters;
+- database runners must declare and enforce a native read-only boundary;
+- chart specifications reject external URLs, scripts, expressions, arbitrary transforms, unknown properties, oversized data, and non-finite numbers;
+- static artifacts render with restrictive CSP and sandboxing;
+- conversation ownership is tenant-qualified and cannot be claimed by another user.
 
-    def get_args_schema(self) -> Type[EmailArgs]:
-        return EmailArgs
+Development mode must be selected explicitly and is intended for loopback use only. These controls do not replace least-privilege database roles, network policy, secret management, or deployment-specific authorization.
 
-    async def execute(self, context: ToolContext, args: EmailArgs) -> ToolResult:
-        user = context.user  # Automatically injected
+## Repository Layout
 
-        # Your business logic
-        await self.email_service.send(
-            from_email=user.email,
-            to=args.recipient,
-            subject=args.subject
-        )
-
-        return ToolResult(success=True, result_for_llm=f"Email sent to {args.recipient}")
-
-# Register your tool
-tools.register(EmailTool())
+```text
+src/vanna/                         Python runtime, servers, policies, services, integrations
+src/evals/                         Offline datasets, candidate execution, promotion gates
+frontends/webcomponent/            Lit web component, Spectrum controls, tests, Storybook
+examples/v3/                       Auth, RLS, semantic, schema sync, and custom UI examples
+docs/v3/                           Architecture, API contracts, migration, schemas, operations
+tests/                             Unit, security, integration, and inventory-controlled tests
+media/                             Current workbench poster and product tour
 ```
 
----
+## Development and Verification
 
-## Advanced Features
+Run the deterministic Python gate:
 
-Vanna 3.0 includes powerful enterprise features for production use:
+```bash
+python -m pip install -e '.[dev,fastapi,flask,postgres]'
+tox
+```
 
-**Lifecycle Hooks** — Add quota checking, custom logging, content filtering at key points in the request lifecycle
+Run frontend checks:
 
-**LLM Middlewares** — Implement caching, prompt engineering, or cost tracking around LLM calls
+```bash
+cd frontends/webcomponent
+npm ci
+npm test
+npm run test:e2e
+npm run build-storybook
+npm audit
+```
 
-**Schema Drift Sync** — Automatically detect and patch schema changes via cron-compatible scheduler
+CI also runs the Python 3.11-3.14 package matrix, a PostgreSQL 15 integration job, approved-data evaluation checks, deterministic frontend builds, and artifact verification without publication.
 
-**Semantic Layer Integration** — Route queries through metrics/dimensions before falling back to raw SQL
+## Compatibility and Migration
 
-**Lineage & Confidence** — Every answer includes provenance, evidence panel, and tiered confidence scores
+V2 remains the default frontend protocol and its existing SSE, poll, and FastAPI WebSocket payloads are preserved. V3 is opt-in through `api-version="v3"`, `protocol: "v3"`, or the V3 routes.
 
-**Feedback-Driven Memory** — User corrections immediately improve subsequent behavior via weighted memory patches
+Important migration changes:
 
-**Eval Harness & CI Gates** — Regression detection with configurable score delta thresholds
+- Python 3.11 is the minimum supported interpreter.
+- The pre-2.0 legacy adapter path is not included in this fork.
+- SQL runners must expose a supported dialect and native read-only capability.
+- Charts and artifacts are declarative and static; there is no executable compatibility mode.
+- Production server mode requires configured authentication and authorization.
 
-**Conversation Storage** — Persist and retrieve conversation history per user
-
-**Observability** — Built-in tracing and metrics integration
-
-**Context Enrichers** — Add RAG, memory, or documentation to enhance agent responses
-
-**Agent Configuration** — Control streaming, temperature, max iterations, and more
-
----
-
-## Use Cases
-
-**Vanna is ideal for:**
-
-- 📊 Data analytics applications with natural language interfaces
-- 🔐 Multi-tenant SaaS needing user-aware permissions
-- 🎨 Teams wanting a pre-built web component + backend
-- 🏢 Enterprise environments with security/audit requirements
-- 📈 Applications needing rich streaming responses (tables, charts, SQL)
-- 🔄 Integrating with existing authentication systems
-
----
-
-## Community & Support
-
-- 📖 **[Full Documentation](https://vanna.ai/docs)** — Complete guides and API reference
-- 💡 **[GitHub Discussions](https://github.com/vanna-ai/vanna/discussions)** — Feature requests and Q&A
-- 🐛 **[GitHub Issues](https://github.com/vanna-ai/vanna/issues)** — Bug reports
-- 📧 **Enterprise Support** — support@vanna.ai
-
----
-
-## Migration Notes
-
-This fork was forked from [vanna-ai/vanna](https://github.com/vanna-ai/vanna) v2.0.2. The pre-2.0 legacy adapter path (`LegacyVannaAdapter`) has been **removed** — this fork targets the v2.0+ agent architecture directly.
-
-**Upgrading from Vanna 2.x to 3.0?**
-
-v2 routes remain available. Key additions in 3.0:
-
-- **Read-only SQL, enforced**: AST validation + connection-level read-only guards
-- **Declarative charts**: validated `ChartSpec` replaces any code execution
-- **Safe RLS**: `apply_row_filter` injects per-user predicates into the SQL AST
-- **Semantic routing**: a real `FileSemanticAdapter` resolves metrics/dimensions before SQL generation
-- **Real eval gate**: deterministic offline evaluation gates regressions
-- **Lineage & feedback**: evidence panels and weighted corrective memory patches
-
-**Migration path:**
-
-1. **Keep v2 routes** — existing v2 endpoints continue to work
-2. **Switch to v3 endpoints** — migrate to `/api/vanna/v3/` routes for typed streaming events
-3. **Enable new features** — schema sync, feedback, semantic routing
-
-See the [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md) for details.
-
----
+Follow the [V2 to V3 migration guide](docs/v3/migration-v2-to-v3.md) before changing an existing deployment.
 
 ## Documentation
 
-- 📐 [v3 Architecture & Design](docs/v3/architecture-and-design.md)
-- 📡 [v3 API Events Reference](docs/v3/api-events-v3.md)
-- 🔀 [v2 → v3 Migration Guide](docs/v3/migration-v2-to-v3.md)
-- 📘 [Golden-Path Examples](examples/v3/)
-- 📖 [Upstream Vanna Docs](https://vanna.ai/docs)
+- [V3 documentation index](docs/v3/README.md)
+- [Architecture and design](docs/v3/architecture-and-design.md)
+- [Typed event API](docs/v3/api-events-v3.md)
+- [Migration guide](docs/v3/migration-v2-to-v3.md)
+- [Implementation status](docs/v3/implementation-plan.md)
+- [Reference examples](examples/v3/README.md)
+- [Web component guide](frontends/webcomponent/README.md)
+- [Release readiness](RELEASE_READINESS.md)
+- [Upstream Vanna documentation](https://vanna.ai/docs/)
 
----
+## License and Attribution
 
-## License
+Licensed under the [MIT License](LICENSE).
 
-MIT License — See [LICENSE](LICENSE) for details.
-
----
-
-**Fork maintained by [xhu96](https://github.com/xhu96)** | Based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) | [Upstream Docs](https://vanna.ai/docs)
+This fork is based on [vanna-ai/vanna](https://github.com/vanna-ai/vanna) and preserves the upstream package names and attribution. Vanna and associated upstream branding belong to their respective owners.

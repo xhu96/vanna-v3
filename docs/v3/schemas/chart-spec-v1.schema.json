@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xhu96/vanna-v3/blob/main/docs/v3/schemas/chart-spec-v1.schema.json",
+  "title": "Vanna Safe ChartSpec V1",
+  "type": "object",
+  "required": ["format", "schema_version", "spec", "dataset", "metadata"],
+  "properties": {
+    "format": {"enum": ["vega-lite", "plotly-json"]},
+    "schema_version": {"enum": ["v5-safe-1", "plotly-safe-1"]},
+    "spec": {"type": "object"},
+    "dataset": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "maxProperties": 100,
+        "additionalProperties": {"$ref": "#/$defs/jsonScalar"}
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["row_count", "columns"],
+      "properties": {
+        "row_count": {"type": "integer", "minimum": 0},
+        "columns": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {"type": "string", "maxLength": 512}
+        },
+        "truncated": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"format": {"const": "vega-lite"}}},
+      "then": {
+        "properties": {
+          "schema_version": {"const": "v5-safe-1"},
+          "spec": {"$ref": "#/$defs/vegaLiteSpec"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"format": {"const": "plotly-json"}}},
+      "then": {
+        "properties": {
+          "schema_version": {"const": "plotly-safe-1"},
+          "spec": {"$ref": "#/$defs/plotlySpec"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "jsonScalar": {
+      "type": ["string", "number", "integer", "boolean", "null"]
+    },
+    "vegaField": {
+      "type": "object",
+      "required": ["field", "type"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1, "maxLength": 512},
+        "type": {"enum": ["quantitative", "temporal", "ordinal", "nominal"]},
+        "title": {"type": "string", "maxLength": 500},
+        "aggregate": {
+          "enum": ["count", "sum", "mean", "median", "min", "max", "distinct"]
+        },
+        "bin": {"type": "boolean"},
+        "timeUnit": {
+          "enum": ["year", "quarter", "month", "week", "day", "date", "hours", "minutes", "seconds"]
+        },
+        "sort": {"enum": ["ascending", "descending"]}
+      },
+      "additionalProperties": false
+    },
+    "vegaMark": {
+      "oneOf": [
+        {"enum": ["bar", "line", "point", "area", "arc", "tick", "rule"]},
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"enum": ["bar", "line", "point", "area", "arc", "tick", "rule"]},
+            "point": {"type": "boolean"},
+            "filled": {"type": "boolean"},
+            "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+            "color": {"type": "string", "maxLength": 128}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "vegaLiteSpec": {
+      "type": "object",
+      "required": ["$schema", "mark", "encoding"],
+      "properties": {
+        "$schema": {"const": "https://vega.github.io/schema/vega-lite/v5.json"},
+        "title": {"type": "string", "maxLength": 500},
+        "description": {"type": "string", "maxLength": 2000},
+        "mark": {"$ref": "#/$defs/vegaMark"},
+        "encoding": {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "x": {"$ref": "#/$defs/vegaField"},
+            "y": {"$ref": "#/$defs/vegaField"},
+            "color": {"$ref": "#/$defs/vegaField"},
+            "size": {"$ref": "#/$defs/vegaField"},
+            "theta": {"$ref": "#/$defs/vegaField"},
+            "detail": {"$ref": "#/$defs/vegaField"},
+            "tooltip": {
+              "oneOf": [
+                {"$ref": "#/$defs/vegaField"},
+                {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {"$ref": "#/$defs/vegaField"}
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "width": {
+          "oneOf": [
+            {"type": "integer", "minimum": 100, "maximum": 4000},
+            {"const": "container"}
+          ]
+        },
+        "height": {"type": "integer", "minimum": 100, "maximum": 2400}
+      },
+      "additionalProperties": false
+    },
+    "plotlyMarker": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "oneOf": [
+            {"type": "string", "maxLength": 128},
+            {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {"type": "string", "maxLength": 128}
+            }
+          ]
+        },
+        "opacity": {"type": "number", "minimum": 0, "maximum": 1},
+        "size": {
+          "oneOf": [
+            {"type": "number", "minimum": 0, "maximum": 500},
+            {
+              "type": "array",
+              "maxItems": 5000,
+              "items": {"type": "number", "minimum": 0, "maximum": 500}
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "plotlyTrace": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["bar", "scatter", "pie"]},
+        "name": {"type": "string", "maxLength": 500},
+        "mode": {"enum": ["lines", "markers", "lines+markers"]},
+        "x": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {"$ref": "#/$defs/jsonScalar"}
+        },
+        "y": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {"$ref": "#/$defs/jsonScalar"}
+        },
+        "labels": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {"type": "string", "maxLength": 512}
+        },
+        "values": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {"type": "number"}
+        },
+        "orientation": {"enum": ["h", "v"]},
+        "marker": {"$ref": "#/$defs/plotlyMarker"}
+      },
+      "additionalProperties": false
+    },
+    "plotlyAxis": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string", "maxLength": 500},
+        "type": {"enum": ["linear", "log", "date", "category"]},
+        "autorange": {"type": "boolean"},
+        "showgrid": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "plotlyLayout": {
+      "type": "object",
+      "properties": {
+        "title": {"type": "string", "maxLength": 500},
+        "xaxis": {"$ref": "#/$defs/plotlyAxis"},
+        "yaxis": {"$ref": "#/$defs/plotlyAxis"},
+        "showlegend": {"type": "boolean"},
+        "barmode": {"enum": ["group", "stack", "relative", "overlay"]},
+        "width": {"type": "integer", "minimum": 100, "maximum": 4000},
+        "height": {"type": "integer", "minimum": 100, "maximum": 2400}
+      },
+      "additionalProperties": false
+    },
+    "plotlySpec": {
+      "type": "object",
+      "required": ["data"],
+      "properties": {
+        "data": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/plotlyTrace"}
+        },
+        "layout": {"$ref": "#/$defs/plotlyLayout"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

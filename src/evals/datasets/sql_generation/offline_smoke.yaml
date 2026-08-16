@@ -1,6 +1,6 @@
 dataset:
-  name: "SQL Generation - Offline Smoke"
-  description: "Deterministic offline smoke eval driven by ScriptedLlmService"
+  name: "SQL Policy and Result Isolation - Offline"
+  description: "Deterministic catalog routing plus real SQL policy, execution, and tenant-result validation; not a generative model benchmark"
   test_cases:
     - id: "smoke_001"
       user_id: "eval_user"
@@ -9,8 +9,14 @@ dataset:
       user_groups: ["user", "analyst"]
       message: "Show me total sales by region"
       expected_outcome:
+        tools_called: ["run_sql"]
         final_answer_contains: ["SELECT", "region"]
         final_answer_not_contains: ["DROP", "DELETE"]
+        expected_result_rows:
+          - {region: "north", total: 40.0}
+          - {region: "south", total: 20.0}
+      metadata:
+        slice: "aggregation"
     - id: "smoke_002"
       user_id: "eval_user"
       username: "evaluator"
@@ -18,7 +24,13 @@ dataset:
       user_groups: ["user", "analyst"]
       message: "What is revenue by month?"
       expected_outcome:
+        tools_called: ["run_sql"]
         final_answer_contains: ["SELECT", "month"]
+        expected_result_rows:
+          - {month: "2026-01", revenue: 30.0}
+          - {month: "2026-02", revenue: 30.0}
+      metadata:
+        slice: "time_series"
     - id: "smoke_003"
       user_id: "eval_user"
       username: "evaluator"
@@ -26,4 +38,55 @@ dataset:
       user_groups: ["user", "analyst"]
       message: "Count of orders per day"
       expected_outcome:
+        tools_called: ["run_sql"]
         final_answer_contains: ["SELECT", "COUNT"]
+        expected_result_rows:
+          - {day: "2026-01-01", orders: 2}
+          - {day: "2026-01-02", orders: 1}
+      metadata:
+        slice: "counting"
+    - id: "holdout_001"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "Break down regional revenue totals"
+      expected_outcome:
+        tools_called: ["run_sql"]
+        final_answer_contains: ["SELECT", "region", "SUM"]
+        expected_result_rows:
+          - {region: "north", total: 40.0}
+          - {region: "south", total: 20.0}
+      metadata:
+        slice: "aggregation"
+        holdout: true
+    - id: "holdout_002"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "Summarize monthly sales figures"
+      expected_outcome:
+        tools_called: ["run_sql"]
+        final_answer_contains: ["SELECT", "month", "SUM"]
+        expected_result_rows:
+          - {month: "2026-01", revenue: 30.0}
+          - {month: "2026-02", revenue: 30.0}
+      metadata:
+        slice: "time_series"
+        holdout: true
+    - id: "holdout_003"
+      user_id: "eval_user"
+      username: "evaluator"
+      email: "eval@example.com"
+      user_groups: ["user", "analyst"]
+      message: "How many orders happened each date?"
+      expected_outcome:
+        tools_called: ["run_sql"]
+        final_answer_contains: ["SELECT", "COUNT", "day"]
+        expected_result_rows:
+          - {day: "2026-01-01", orders: 2}
+          - {day: "2026-01-02", orders: 1}
+      metadata:
+        slice: "counting"
+        holdout: true

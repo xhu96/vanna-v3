@@ -1,4 +1,4 @@
-import { css } from 'lit';
+import { css } from "lit";
 
 export const richComponentStyles = css`
   .rich-component {
@@ -196,7 +196,6 @@ export const richComponentStyles = css`
     height: 100%;
     background: var(--vanna-accent-primary-default);
     border-radius: 3px;
-    transition: width var(--vanna-duration-300) ease;
   }
 
   .task-list-items {
@@ -258,7 +257,6 @@ export const richComponentStyles = css`
   .task-progress-fill {
     height: 100%;
     background: var(--vanna-accent-primary-default);
-    transition: width var(--vanna-duration-300) ease;
   }
 
   .task-progress-text {
@@ -341,7 +339,6 @@ export const richComponentStyles = css`
   .tool-progress .progress-fill {
     height: 100%;
     background: var(--vanna-accent-primary-default);
-    transition: width var(--vanna-duration-300) ease;
   }
 
   .tool-progress .progress-text {
@@ -435,7 +432,6 @@ export const richComponentStyles = css`
   .progress-fill {
     height: 100%;
     background: var(--vanna-accent-primary-default);
-    transition: width var(--vanna-duration-300) ease;
   }
 
   .progress-fill.animated {
@@ -455,8 +451,13 @@ export const richComponentStyles = css`
   }
 
   @keyframes progressPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   /* Notifications */
@@ -472,24 +473,20 @@ export const richComponentStyles = css`
     position: relative;
   }
 
-  .notification-content.level-info {
-    border-left: 4px solid var(--vanna-accent-primary-default);
-    padding-left: var(--vanna-space-3);
+  .notification-content.level-info .notification-icon {
+    color: var(--vanna-accent-primary-default);
   }
 
-  .notification-content.level-success {
-    border-left: 4px solid var(--vanna-accent-positive-default);
-    padding-left: var(--vanna-space-3);
+  .notification-content.level-success .notification-icon {
+    color: var(--vanna-accent-positive-default);
   }
 
-  .notification-content.level-warning {
-    border-left: 4px solid var(--vanna-accent-warning-default);
-    padding-left: var(--vanna-space-3);
+  .notification-content.level-warning .notification-icon {
+    color: var(--vanna-accent-warning-default);
   }
 
-  .notification-content.level-error {
-    border-left: 4px solid var(--vanna-accent-negative-default);
-    padding-left: var(--vanna-space-3);
+  .notification-content.level-error .notification-icon {
+    color: var(--vanna-accent-negative-default);
   }
 
   .notification-icon {
@@ -617,8 +614,13 @@ export const richComponentStyles = css`
   }
 
   @keyframes statusPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.35); }
-    50% { box-shadow: 0 0 0 4px rgba(0, 123, 255, 0); }
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.35);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(0, 123, 255, 0);
+    }
   }
 
   /* Text components */
@@ -1057,7 +1059,9 @@ export const richComponentStyles = css`
 
   .metadata-value {
     color: var(--vanna-foreground-default);
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+    font-family:
+      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
+      "Courier New", monospace;
   }
 
   .metadata-string {
@@ -1123,7 +1127,6 @@ export const richComponentStyles = css`
     height: 100%;
     background: var(--vanna-accent-primary-default);
     border-radius: 6px;
-    transition: width var(--vanna-duration-300) ease;
     position: relative;
     overflow: hidden;
   }
@@ -1647,8 +1650,12 @@ export const richComponentStyles = css`
   }
 
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .button-icon {
@@ -1756,6 +1763,267 @@ export const richComponentStyles = css`
   .rich-button.button-grayed-out:hover {
     opacity: 0.4;
     filter: grayscale(50%);
+  }
+
+  /* Vanna workbench presentation layer */
+  .vanna-inline-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+
+  .icon-spinning {
+    animation: spin 700ms linear infinite;
+  }
+
+  .card-toggle .chevron-icon,
+  .status-card-toggle .chevron-icon {
+    transition: transform var(--vanna-duration-100) ease;
+  }
+
+  .card-toggle[aria-expanded="false"] .chevron-icon,
+  .status-card-toggle[aria-expanded="false"] .chevron-icon {
+    transform: rotate(-90deg);
+  }
+
+  .rich-component {
+    margin-bottom: 0;
+    color: var(--vanna-foreground-default);
+    background: var(--vanna-background-root);
+    border: 1px solid var(--vanna-outline-default);
+    border-radius: var(--vanna-border-radius-lg);
+    box-shadow: none;
+    font-family: var(--vanna-font-family-default);
+  }
+
+  .rich-component:hover {
+    border-color: var(--vanna-outline-default);
+    box-shadow: none;
+  }
+
+  .rich-text {
+    padding: 0 0 18px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--vanna-outline-dimmer);
+    border-radius: 0;
+  }
+
+  .text-markdown {
+    padding-left: 0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .text-markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .text-markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .card-header,
+  .task-list-header,
+  .dataframe-header,
+  .artifact-header,
+  .status-card-header {
+    background: var(--vanna-background-subtle);
+    border-bottom-color: var(--vanna-outline-default);
+  }
+
+  .card-title,
+  .task-list-title,
+  .dataframe-title,
+  .artifact-title,
+  .status-card-title {
+    font-family: var(--vanna-font-family-default);
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .card-status,
+  .artifact-type-badge,
+  .status-card-badge {
+    border-radius: var(--vanna-border-radius-full);
+    font-family: var(--vanna-font-family-default);
+    font-size: 10px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .notification-content[class*="level-"] {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .notification-icon,
+  .status-icon,
+  .status-card-icon,
+  .placeholder-icon,
+  .button-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .artifact-btn .vanna-inline-icon,
+  .placeholder-reopen .vanna-inline-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .rich-chart {
+    overflow: hidden;
+    padding: 0;
+    background: var(--vanna-background-root);
+  }
+
+  .chart-header {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    margin: 0;
+    padding: 13px 16px;
+    background: var(--vanna-background-subtle);
+    border-bottom: 1px solid var(--vanna-outline-default);
+  }
+
+  .chart-title {
+    margin: 0;
+    color: var(--vanna-foreground-default);
+    font-family: var(--vanna-font-family-default);
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .chart-content {
+    min-height: 260px;
+    padding: 6px 12px 0;
+  }
+
+  .rich-chart > plotly-chart,
+  .rich-chart > vega-lite-chart {
+    display: block;
+    min-height: 260px;
+    padding: 6px 12px 0;
+  }
+
+  .rich-dataframe {
+    overflow: hidden;
+  }
+
+  .dataframe-header {
+    padding: 13px 16px;
+  }
+
+  .dataframe-description {
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  .dataframe-meta {
+    gap: 14px;
+    font-size: 10px;
+  }
+
+  .dataframe-actions {
+    padding: 10px 12px;
+    background: var(--vanna-background-root);
+  }
+
+  .search-input {
+    min-height: 34px;
+    background: var(--vanna-background-root);
+    font-family: var(--vanna-font-family-default);
+  }
+
+  .search-input:focus {
+    border-color: var(--vanna-accent-primary-default);
+    box-shadow: 0 0 0 3px var(--vanna-accent-primary-subtle);
+  }
+
+  .dataframe-table-container {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .dataframe-table {
+    font-size: 12px;
+  }
+
+  .dataframe-table th {
+    padding: 10px 13px;
+    color: var(--vanna-foreground-dimmer);
+    background: var(--vanna-background-default);
+    border-bottom: 1px solid var(--vanna-outline-default);
+    font-family: var(--vanna-font-family-default);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .dataframe-table td {
+    padding: 10px 13px;
+    border-bottom-color: var(--vanna-outline-dimmer);
+  }
+
+  .dataframe-table tbody tr:hover {
+    background: var(--vanna-background-subtle);
+  }
+
+  .rich-status-indicator {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .status-indicator-content {
+    border-radius: var(--vanna-border-radius-md);
+    font-size: 11px;
+  }
+
+  .card-action,
+  .export-btn,
+  .artifact-btn,
+  .rich-button {
+    border-radius: var(--vanna-border-radius-md);
+    font-family: var(--vanna-font-family-default);
+    font-weight: 600;
+    transition:
+      color var(--vanna-duration-100) ease,
+      background var(--vanna-duration-100) ease,
+      border-color var(--vanna-duration-100) ease;
+  }
+
+  .card-action.primary,
+  .rich-button.button-primary {
+    color: #ffffff;
+    background: var(--vanna-navy);
+    border-color: var(--vanna-navy);
+  }
+
+  @media (max-width: 600px) {
+    .chart-content,
+    .rich-chart > plotly-chart,
+    .rich-chart > vega-lite-chart {
+      min-height: 246px;
+      padding-right: 3px;
+      padding-left: 3px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rich-component,
+    .rich-button,
+    .progress-fill {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 `;
 

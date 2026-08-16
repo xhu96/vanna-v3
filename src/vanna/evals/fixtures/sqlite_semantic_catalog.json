@@ -1,0 +1,54 @@
+{
+  "metrics": [
+    {
+      "name": "sales_amount",
+      "source": "sales",
+      "column": "amount",
+      "aggregate": "sum",
+      "aliases": [
+        "sales",
+        "revenue",
+        "turnover",
+        "proceeds",
+        "transaction value",
+        "transaction values"
+      ],
+      "dimensions": ["region", "month"]
+    },
+    {
+      "name": "order_count",
+      "source": "orders_tbl",
+      "column": "*",
+      "aggregate": "count",
+      "aliases": ["order", "orders", "purchase", "purchases"],
+      "dimensions": ["day"]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "region",
+      "aliases": [
+        "region",
+        "regions",
+        "regional",
+        "territory",
+        "territories",
+        "geography",
+        "area",
+        "areas",
+        "zone",
+        "zones",
+        "geographic zone",
+        "geographic zones"
+      ]
+    },
+    {
+      "name": "month",
+      "aliases": ["month", "months", "monthly", "calendar month"]
+    },
+    {
+      "name": "day",
+      "aliases": ["day", "days", "daily", "date", "dates", "calendar date"]
+    }
+  ]
+}

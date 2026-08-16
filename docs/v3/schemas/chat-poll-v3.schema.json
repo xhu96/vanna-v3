@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xhu96/vanna-v3/blob/main/docs/v3/schemas/chat-poll-v3.schema.json",
+  "title": "Vanna V3 Chat Poll Response",
+  "type": "object",
+  "required": [
+    "event_version",
+    "conversation_id",
+    "request_id",
+    "events",
+    "terminal_event"
+  ],
+  "properties": {
+    "event_version": {"const": "v3"},
+    "conversation_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "request_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "events": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/nonTerminalEvent"}
+    },
+    "terminal_event": {"$ref": "#/$defs/terminalEvent"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonTerminalEvent": {
+      "allOf": [
+        {"$ref": "chat-events-v3.schema.json"},
+        {
+          "type": "object",
+          "properties": {
+            "event_type": {
+              "enum": [
+                "status",
+                "assistant_text",
+                "table_result",
+                "chart_spec",
+                "component",
+                "warning",
+                "lineage"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "terminalEvent": {
+      "allOf": [
+        {"$ref": "chat-events-v3.schema.json"},
+        {
+          "type": "object",
+          "properties": {
+            "event_type": {"enum": ["done", "error"]}
+          }
+        }
+      ]
+    }
+  },
+  "$comment": "Runtime validation also requires contiguous sequence values and matching request/conversation IDs across all envelopes."
+}

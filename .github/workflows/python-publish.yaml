@@ -1,39 +1,123 @@
-# This workflow will upload a Python Package using Twine when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Upload Python Package
+name: Verify Release Artifacts (Publishing Disabled)
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
-
-    runs-on: ubuntu-latest
-
+  verify-artifacts:
+    runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.x'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build
-    - name: Build package
-      run: python -m build
-    - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python 3.11
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.11"
+      - name: Install exact build tooling
+        run: |
+          python -m pip install --disable-pip-version-check \
+            'build==1.5.0' 'twine==7.0.0' 'flit_core==3.11.0'
+      - name: Verify immutable name, version, and optional tag
+        env:
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          project = tomllib.loads(Path("pyproject.toml").read_text())["project"]
+          package = json.loads(Path("frontends/webcomponent/package.json").read_text())
+          lock = json.loads(Path("frontends/webcomponent/package-lock.json").read_text())
+          source = Path("src/vanna/__init__.py").read_text()
+          source_version = re.search(r'^__version__ = "([^"]+)"$', source, re.M)
+          versions = {
+              project["version"],
+              package["version"],
+              lock["packages"][""]["version"],
+              source_version.group(1) if source_version else "missing",
+          }
+          assert project["name"] == "vanna"
+          assert package["name"] == "@vanna/webcomponent"
+          assert versions == {"3.3.0"}, versions
+          if os.environ.get("RELEASE_REF_TYPE") == "tag":
+              assert os.environ["RELEASE_REF_NAME"] == "v3.3.0"
+          PY
+      - name: Set reproducible source epoch
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+      - name: Build twice without publishing
+        run: |
+          rm -rf dist-a dist-b
+          python -m build --no-isolation --sdist --wheel --outdir dist-a
+          python -m build --no-isolation --sdist --wheel --outdir dist-b
+          for artifact in dist-a/*; do
+            name=$(basename "$artifact")
+            cmp "$artifact" "dist-b/$name"
+          done
+      - name: Verify metadata and wheel contents
+        run: |
+          python -m twine check dist-a/* dist-b/*
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+
+          wheel = next(Path("dist-a").glob("vanna-3.3.0-*.whl"))
+          with zipfile.ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+          assert any(name.endswith(".dist-info/licenses/LICENSE") for name in names)
+          assert "vanna/core/schemas/chart-spec-v1.schema.json" in names
+          assert "vanna/core/lineage/models.py" in names
+          assert "vanna/integrations/semantic/dbt_adapter.py" in names
+          PY
+      - name: Clean-wheel import, CLI, and read-only SQLite smoke
+        run: |
+          python -m venv /tmp/vanna-wheel-smoke
+          /tmp/vanna-wheel-smoke/bin/python -m pip install dist-a/vanna-3.3.0-*.whl
+          /tmp/vanna-wheel-smoke/bin/python -c 'import vanna; assert vanna.__version__ == "3.3.0"'
+          /tmp/vanna-wheel-smoke/bin/vanna --help
+          /tmp/vanna-wheel-smoke/bin/python - <<'PY'
+          import asyncio
+          import sqlite3
+          import tempfile
+          from pathlib import Path
+
+          from vanna.capabilities.sql_runner import RunSqlToolArgs
+          from vanna.core.tool import ToolContext
+          from vanna.core.user import User
+          from vanna.integrations.local.agent_memory import DemoAgentMemory
+          from vanna.integrations.sqlite import SqliteRunner
+
+          with tempfile.TemporaryDirectory() as directory:
+              path = Path(directory) / "smoke.sqlite3"
+              with sqlite3.connect(path) as connection:
+                  connection.execute("CREATE TABLE values_table (value INTEGER)")
+                  connection.execute("INSERT INTO values_table VALUES (3)")
+              context = ToolContext(
+                  user=User(id="release-smoke", authenticated=True),
+                  conversation_id="release-smoke",
+                  request_id="release-smoke",
+                  agent_memory=DemoAgentMemory(),
+              )
+              frame = asyncio.run(
+                  SqliteRunner(str(path)).run_sql(
+                      RunSqlToolArgs(sql="SELECT value FROM values_table"), context
+                  )
+              )
+              assert frame.to_dict(orient="records") == [{"value": 3}]
+          PY
+      - name: Record SHA-256 checksums
+        run: sha256sum dist-a/* | tee dist-a/SHA256SUMS
+      - name: Upload verified artifacts for human review only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: vanna-3.3.0-verified-no-publish
+          path: dist-a/
+          if-no-files-found: error

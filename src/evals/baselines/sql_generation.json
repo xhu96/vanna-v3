@@ -1,1 +1,37 @@
-{"pass_rate": 1.0, "average_score": 1.0}
+{
+  "aggregate": {
+    "average_score": 0.5833333333333335,
+    "case_count": 6,
+    "pass_rate": 0.0
+  },
+  "candidate": {
+    "metadata": {
+      "mode": "offline",
+      "provider": "scripted"
+    },
+    "name": "scripted-offline-reference"
+  },
+  "dataset": {
+    "case_count": 6,
+    "name": "SQL Policy and Result Isolation - Offline",
+    "sha256": "ce5be376fc407a6ef7795b072b00395a750064dc2adc7d0dbd74f9802506a081"
+  },
+  "schema_version": "vanna-eval-metrics-v1",
+  "slices": {
+    "aggregation": {
+      "average_score": 0.5833333333333334,
+      "case_count": 2,
+      "pass_rate": 0.0
+    },
+    "counting": {
+      "average_score": 0.5833333333333334,
+      "case_count": 2,
+      "pass_rate": 0.0
+    },
+    "time_series": {
+      "average_score": 0.5833333333333334,
+      "case_count": 2,
+      "pass_rate": 0.0
+    }
+  }
+}

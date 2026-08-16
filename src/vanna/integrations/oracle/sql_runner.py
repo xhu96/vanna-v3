@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class OracleRunner(SqlRunner):
     """Oracle implementation of the SqlRunner interface."""
 
+    dialect = "oracle"
+
     def __init__(self, user: str, password: str, dsn: str, **kwargs):
         """Initialize with Oracle connection parameters.
 

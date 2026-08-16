@@ -25,6 +25,7 @@ class TextMemory(BaseModel):
     memory_id: Optional[str] = None
     content: str
     timestamp: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class ToolMemorySearchResult(BaseModel):

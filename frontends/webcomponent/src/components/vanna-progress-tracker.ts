@@ -1,199 +1,174 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
+import { LitElement, html, css } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import "@spectrum-web-components/progress-circle/sp-progress-circle.js";
+import { vannaDesignTokens } from "../styles/vanna-design-tokens.js";
 
 interface ProgressItem {
   id: string;
   text: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'error';
+  status: "pending" | "in_progress" | "completed" | "error";
   detail?: string;
 }
 
-@customElement('vanna-progress-tracker')
+@customElement("vanna-progress-tracker")
 export class VannaProgressTracker extends LitElement {
   static styles = [
     vannaDesignTokens,
     css`
       :host {
         display: block;
-        background: var(--vanna-background-default);
-        border: 1px solid var(--vanna-outline-default);
-        border-radius: 0 0 var(--vanna-border-radius-lg) var(--vanna-border-radius-lg);
         overflow: hidden;
+        color: var(--vanna-foreground-default);
+        background: transparent;
         font-family: var(--vanna-font-family-default);
       }
 
       .progress-label {
-        padding: var(--vanna-space-3) var(--vanna-space-4) var(--vanna-space-2);
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
+        padding: 0 0 8px;
       }
 
       .progress-label-text {
-        font-size: 11px;
-        font-weight: 500;
-        color: var(--vanna-foreground-dimmest);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
         margin: 0;
+        color: var(--vanna-foreground-dimmer);
+        font-size: 10px;
+        font-weight: 620;
       }
 
       .progress-summary {
-        font-size: 10px;
         color: var(--vanna-foreground-dimmest);
-        font-weight: 400;
+        font-size: 9px;
       }
 
       .progress-list {
-        max-height: 300px;
+        max-height: 390px;
         overflow-y: auto;
-        padding-top: 0;
+        border-top: 1px solid var(--vanna-outline-dimmer);
       }
 
       .progress-item {
-        padding: var(--vanna-space-3) var(--vanna-space-4);
-        border-bottom: 1px solid var(--vanna-outline-dimmest);
+        position: relative;
         display: flex;
         align-items: flex-start;
-        gap: var(--vanna-space-3);
-        transition: background var(--vanna-duration-150) ease;
+        gap: 10px;
+        padding: 10px 0;
       }
 
-      .progress-item:last-child {
-        border-bottom: none;
-      }
-
-      .progress-item:hover {
-        background: var(--vanna-background-higher);
+      .progress-item + .progress-item {
+        border-top: 1px solid var(--vanna-outline-dimmer);
       }
 
       .progress-item.in_progress {
-        background: rgba(0, 123, 255, 0.05);
-        border-left: 3px solid var(--vanna-accent-primary-default);
-      }
-
-      .progress-item.completed {
-        opacity: 0.7;
+        color: var(--vanna-accent-primary-stronger);
       }
 
       .progress-item.error {
-        background: var(--vanna-accent-negative-subtle);
-        border-left: 3px solid var(--vanna-accent-negative-default);
-        padding-left: calc(var(--vanna-space-3) - 3px);
-      }
-
-      .progress-item.error .progress-text {
         color: var(--vanna-accent-negative-stronger);
       }
 
-      .progress-item.error .progress-detail {
-        color: var(--vanna-accent-negative-default);
-        font-weight: 500;
-      }
-
       .progress-icon {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        display: grid;
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
         margin-top: 1px;
-      }
-
-      .progress-icon.pending {
-        background: var(--vanna-outline-default);
+        place-items: center;
+        color: var(--vanna-foreground-dimmest);
       }
 
       .progress-icon.in_progress {
-        background: var(--vanna-accent-primary-default);
+        color: var(--vanna-accent-primary-default);
       }
 
       .progress-icon.completed {
-        background: var(--vanna-accent-positive-default);
+        color: var(--vanna-accent-positive-default);
       }
 
       .progress-icon.error {
-        background: var(--vanna-accent-negative-default);
-        box-shadow: 0 0 0 2px var(--vanna-accent-negative-subtle);
+        color: var(--vanna-accent-negative-default);
       }
 
       .progress-icon svg {
-        width: 10px;
-        height: 10px;
-        color: white;
-      }
-
-      .progress-icon.error svg {
-        width: 8px;
-        height: 8px;
-        color: white;
+        width: 14px;
+        height: 14px;
       }
 
       .spinner-mini {
-        width: 10px;
-        height: 10px;
-        border: 1.5px solid rgba(255, 255, 255, 0.3);
-        border-top-color: white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
+        width: 13px;
+        height: 13px;
+
+        --mod-progress-circle-track-fill-color: var(
+          --vanna-accent-primary-default
+        );
       }
 
       .progress-content {
-        flex: 1;
         min-width: 0;
+        flex: 1;
+        padding-top: 0;
       }
 
       .progress-text {
-        font-size: 13px;
+        margin: 0;
         color: var(--vanna-foreground-default);
-        font-weight: 500;
-        margin: 0 0 var(--vanna-space-1) 0;
-        line-height: 1.3;
+        font-size: 11px;
+        font-weight: 610;
+        line-height: 1.35;
       }
 
       .progress-detail {
-        font-size: 11px;
+        margin: 3px 0 0;
         color: var(--vanna-foreground-dimmest);
-        margin: 0;
-        line-height: 1.3;
+        font-size: 10px;
+        line-height: 1.45;
+      }
+
+      .progress-item.error .progress-text,
+      .progress-item.error .progress-detail {
+        color: var(--vanna-accent-negative-stronger);
       }
 
       .empty-state {
-        padding: var(--vanna-space-6) var(--vanna-space-4);
-        text-align: center;
+        padding: 12px 0;
         color: var(--vanna-foreground-dimmest);
-        font-size: 12px;
+        font-size: 10px;
+        line-height: 1.5;
+        text-align: left;
       }
 
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
+      @media (prefers-reduced-motion: reduce) {
+        .spinner-mini {
+          animation-duration: 0.01ms;
+          animation-iteration-count: 1;
         }
       }
-    `
+    `,
   ];
 
-  @property() title = 'Progress';
-  @property() theme = 'light';
+  @property() title = "Progress";
+  @property() theme = "light";
   @state() private items: ProgressItem[] = [];
 
   addItem(text: string, detail?: string, id?: string): string {
     const itemId = id || Date.now().toString();
-    this.items = [...this.items, {
-      id: itemId,
-      text,
-      status: 'pending',
-      detail
-    }];
+    this.items = [
+      ...this.items,
+      {
+        id: itemId,
+        text,
+        status: "pending",
+        detail,
+      },
+    ];
     return itemId;
   }
 
-  updateItem(id: string, status: ProgressItem['status'], detail?: string) {
-    this.items = this.items.map(item =>
-      item.id === id ? { ...item, status, detail } : item
+  updateItem(id: string, status: ProgressItem["status"], detail?: string) {
+    this.items = this.items.map((item) =>
+      item.id === id ? { ...item, status, detail } : item,
     );
   }
 
@@ -201,62 +176,85 @@ export class VannaProgressTracker extends LitElement {
     this.items = [];
   }
 
-  private getStatusIcon(status: ProgressItem['status']) {
+  private getStatusIcon(status: ProgressItem["status"]) {
     switch (status) {
-      case 'pending':
+      case "pending":
         return html``;
-      case 'in_progress':
-        return html`<div class="spinner-mini"></div>`;
-      case 'completed':
+      case "in_progress":
+        return html`<sp-progress-circle
+          class="spinner-mini"
+          size="s"
+          label="Step in progress"
+        ></sp-progress-circle>`;
+      case "completed":
         return html`
           <svg viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            <path
+              fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"
+            />
           </svg>
         `;
-      case 'error':
+      case "error":
         return html`
           <svg viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clip-rule="evenodd"
+            />
           </svg>
         `;
     }
   }
 
   private getProgressSummary() {
-    const completed = this.items.filter(item => item.status === 'completed').length;
+    const completed = this.items.filter(
+      (item) => item.status === "completed",
+    ).length;
     const total = this.items.length;
-    const inProgress = this.items.filter(item => item.status === 'in_progress').length;
+    const inProgress = this.items.filter(
+      (item) => item.status === "in_progress",
+    ).length;
 
     if (inProgress > 0) {
-      return `${completed}/${total} completed`;
+        return `${completed} of ${total} complete`;
     }
-    return total > 0 ? `${completed}/${total} completed` : '';
+    return total > 0 ? `${completed} of ${total} complete` : "";
   }
 
   render() {
     return html`
-      ${this.items.length > 0 ? html`
-        <div class="progress-label">
-          <span class="progress-label-text">Tasks</span>
-          <span class="progress-summary">${this.getProgressSummary()}</span>
-        </div>
-      ` : ''}
+      ${this.items.length > 0
+        ? html`
+            <div class="progress-label">
+              <span class="progress-label-text">${this.title}</span>
+              <span class="progress-summary">${this.getProgressSummary()}</span>
+            </div>
+          `
+        : ""}
 
       <div class="progress-list">
         ${this.items.length === 0
-          ? html`<div class="empty-state">No tasks yet</div>`
-          : this.items.map(item => html`
-              <div class="progress-item ${item.status}">
-                <div class="progress-icon ${item.status}">
-                  ${this.getStatusIcon(item.status)}
+          ? html`<div class="empty-state">
+              Execution steps will appear here when a question is running.
+            </div>`
+          : this.items.map(
+              (item) => html`
+                <div class="progress-item ${item.status}">
+                  <div class="progress-icon ${item.status}">
+                    ${this.getStatusIcon(item.status)}
+                  </div>
+                  <div class="progress-content">
+                    <p class="progress-text">${item.text}</p>
+                    ${item.detail
+                      ? html`<p class="progress-detail">${item.detail}</p>`
+                      : ""}
+                  </div>
                 </div>
-                <div class="progress-content">
-                  <p class="progress-text">${item.text}</p>
-                  ${item.detail ? html`<p class="progress-detail">${item.detail}</p>` : ''}
-                </div>
-              </div>
-            `)
-        }
+              `,
+            )}
       </div>
     `;
   }

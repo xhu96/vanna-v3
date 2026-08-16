@@ -6,7 +6,7 @@ with tool execution, conversation management, and user scoping.
 """
 
 # Version information
-__version__ = "3.0.0"
+__version__ = "3.3.0"
 
 # Import core framework components
 from .core import (

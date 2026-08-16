@@ -16,7 +16,16 @@ if TYPE_CHECKING:
 
 
 class SqlRunner(ABC):
-    """Interface for SQL execution with different implementations."""
+    """Interface for SQL execution with different implementations.
+
+    V2 custom runners remain source-compatible because the security capabilities
+    are concrete defaults rather than new abstract methods. Integrations should
+    override ``dialect`` and set ``native_read_only`` per instance when the
+    database driver provides a read-only enforcement boundary.
+    """
+
+    dialect: str = "unknown"
+    native_read_only: bool = False
 
     @abstractmethod
     async def run_sql(

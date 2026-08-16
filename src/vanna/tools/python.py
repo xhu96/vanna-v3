@@ -1,29 +1,39 @@
-"""Python-specific tooling built on top of the file system service."""
+"""Disabled V2 Python-tool compatibility shims.
+
+Vanna v3 core never executes Python or package-manager commands. Deployments that
+need code execution must provide a separately administered sandbox service rather
+than exposing host execution to the model tool registry.
+"""
 
 from __future__ import annotations
 
-import shlex
-import sys
-from typing import Any, List, Optional, Sequence, Type
+from typing import Any, FrozenSet, List, Optional, Sequence, Type
 
 from pydantic import BaseModel, Field
 
 from vanna.components import (
-    UiComponent,
-    CardComponent,
     ComponentType,
     NotificationComponent,
     SimpleTextComponent,
+    UiComponent,
 )
-from vanna.core.tool import Tool, ToolContext, ToolResult
+from vanna.core.tool import (
+    ARBITRARY_CODE_EXECUTION_CAPABILITY,
+    Tool,
+    ToolContext,
+    ToolResult,
+)
 
-from .file_system import CommandResult, FileSystem, LocalFileSystem
+from .file_system import FileSystem, LocalFileSystem
 
-MAX_OUTPUT_LENGTH = 4000
+_DISABLED_MESSAGE = (
+    "Built-in Python and package execution is disabled in Vanna v3. "
+    "Use a separately administered sandbox service outside the core tool registry."
+)
 
 
 class RunPythonFileArgs(BaseModel):
-    """Arguments required to execute a Python file."""
+    """Arguments retained for V2 import and schema compatibility."""
 
     filename: str = Field(
         description="Python file to execute (relative to the workspace root)"
@@ -40,7 +50,7 @@ class RunPythonFileArgs(BaseModel):
 
 
 class RunPythonFileTool(Tool[RunPythonFileArgs]):
-    """Execute a Python file using the provided file system service."""
+    """Inert V2 compatibility shim; Vanna v3 core does not execute Python."""
 
     def __init__(self, file_system: Optional[FileSystem] = None):
         self.file_system = file_system or LocalFileSystem()
@@ -51,7 +61,11 @@ class RunPythonFileTool(Tool[RunPythonFileArgs]):
 
     @property
     def description(self) -> str:
-        return "Execute a Python file using the workspace interpreter"
+        return "Disabled V2 compatibility shim for Python file execution"
+
+    @property
+    def capabilities(self) -> FrozenSet[str]:
+        return frozenset({ARBITRARY_CODE_EXECUTION_CAPABILITY})
 
     def get_args_schema(self) -> Type[RunPythonFileArgs]:
         return RunPythonFileArgs
@@ -59,32 +73,12 @@ class RunPythonFileTool(Tool[RunPythonFileArgs]):
     async def execute(
         self, context: ToolContext, args: RunPythonFileArgs
     ) -> ToolResult:
-        exists = await self.file_system.exists(args.filename, context)
-        if not exists:
-            message = f"Cannot execute '{args.filename}' because it does not exist."
-            return _error_result(message)
-
-        command_parts = [sys.executable, args.filename]
-        command_parts.extend(args.arguments)
-        command = _quote_command(command_parts)
-
-        try:
-            result = await self.file_system.run_bash(
-                command,
-                context,
-                timeout=args.timeout_seconds,
-            )
-        except TimeoutError as exc:
-            message = str(exc)
-            return _error_result(message)
-
-        summary = f"Executed python {args.filename} (exit code {result.returncode})."
-        success = result.returncode == 0
-        return _result_from_command(summary, command, result, success=success)
+        del context, args
+        return _disabled_result()
 
 
 class PipInstallArgs(BaseModel):
-    """Arguments required to run pip install."""
+    """Arguments retained for V2 import and schema compatibility."""
 
     packages: List[str] = Field(
         description="Packages (with optional specifiers) to install", min_length=1
@@ -105,7 +99,7 @@ class PipInstallArgs(BaseModel):
 
 
 class PipInstallTool(Tool[PipInstallArgs]):
-    """Install Python packages using pip inside the workspace environment."""
+    """Inert V2 compatibility shim; Vanna v3 core does not install packages."""
 
     def __init__(self, file_system: Optional[FileSystem] = None):
         self.file_system = file_system or LocalFileSystem()
@@ -116,107 +110,39 @@ class PipInstallTool(Tool[PipInstallArgs]):
 
     @property
     def description(self) -> str:
-        return "Install Python packages using pip"
+        return "Disabled V2 compatibility shim for package installation"
+
+    @property
+    def capabilities(self) -> FrozenSet[str]:
+        return frozenset({ARBITRARY_CODE_EXECUTION_CAPABILITY})
 
     def get_args_schema(self) -> Type[PipInstallArgs]:
         return PipInstallArgs
 
     async def execute(self, context: ToolContext, args: PipInstallArgs) -> ToolResult:
-        command_parts = [sys.executable, "-m", "pip", "install"]
-        if args.upgrade:
-            command_parts.append("--upgrade")
-        command_parts.extend(args.packages)
-        command_parts.extend(args.extra_args)
-        command = _quote_command(command_parts)
-
-        try:
-            result = await self.file_system.run_bash(
-                command,
-                context,
-                timeout=args.timeout_seconds,
-            )
-        except TimeoutError as exc:
-            return _error_result(str(exc))
-
-        success = result.returncode == 0
-        summary = (
-            "pip install completed successfully"
-            if success
-            else f"pip install failed (exit code {result.returncode})."
-        )
-
-        return _result_from_command(summary, command, result, success=success)
+        del context, args
+        return _disabled_result()
 
 
 def create_python_tools(file_system: Optional[FileSystem] = None) -> List[Tool[Any]]:
-    """Create Python-specific tools backed by a shared file system service."""
+    """Return inert V2 compatibility shims without any execution path."""
 
     fs = file_system or LocalFileSystem()
-    return [
-        RunPythonFileTool(fs),
-        PipInstallTool(fs),
-    ]
+    return [RunPythonFileTool(fs), PipInstallTool(fs)]
 
 
-def _quote_command(parts: Sequence[str]) -> str:
-    return " ".join(shlex.quote(part) for part in parts)
-
-
-def _truncate(text: str, limit: int = MAX_OUTPUT_LENGTH) -> str:
-    if len(text) <= limit:
-        return text
-    return f"{text[: limit - 1]}…"
-
-
-def _result_from_command(
-    summary: str,
-    command: str,
-    result: CommandResult,
-    *,
-    success: bool = True,
-) -> ToolResult:
-    stdout = result.stdout.strip()
-    stderr = result.stderr.strip()
-
-    blocks: List[str] = [f"$ {command}"]
-    if stdout:
-        blocks.append("STDOUT:\n" + _truncate(stdout))
-    if stderr:
-        blocks.append("STDERR:\n" + _truncate(stderr))
-    if not stdout and not stderr:
-        blocks.append("(no output)")
-
-    content = "\n\n".join(blocks)
-    card_status = "success" if success else "error"
-    component = CardComponent(
-        type=ComponentType.CARD,
-        title="Command Result",
-        content=content,
-        status=card_status,
-    )
-
-    return ToolResult(
-        success=success,
-        result_for_llm=f"{summary}\n\n{content}",
-        ui_component=UiComponent(
-            rich_component=component,
-            simple_component=SimpleTextComponent(text=summary),
-        ),
-        error=None if success else content,
-    )
-
-
-def _error_result(message: str) -> ToolResult:
+def _disabled_result() -> ToolResult:
     return ToolResult(
         success=False,
-        result_for_llm=message,
+        result_for_llm=_DISABLED_MESSAGE,
         ui_component=UiComponent(
             rich_component=NotificationComponent(
                 type=ComponentType.NOTIFICATION,
                 level="error",
-                message=message,
+                message=_DISABLED_MESSAGE,
             ),
-            simple_component=SimpleTextComponent(text=message),
+            simple_component=SimpleTextComponent(text=_DISABLED_MESSAGE),
         ),
-        error=message,
+        error=_DISABLED_MESSAGE,
+        metadata={"code": "code_execution_disabled"},
     )

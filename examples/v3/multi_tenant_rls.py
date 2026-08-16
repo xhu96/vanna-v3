@@ -1,55 +1,95 @@
-"""Golden path: multi-tenant query isolation with query-layer enforcement."""
+"""Golden path: verified tenant claims plus recursive query-layer RLS."""
 
-from typing import Union
+from __future__ import annotations
+
+from typing import Any, Callable, Mapping
 
 from vanna import Agent
-from vanna.capabilities.sql_runner import RunSqlToolArgs
 from vanna.core.registry import ToolRegistry
-from vanna.core.tool import ToolRejection, ToolContext, Tool
+from vanna.core.tool import ToolContext
 from vanna.core.user import User
-from vanna.core.user.resolver import UserResolver
 from vanna.core.user.request_context import RequestContext
+from vanna.core.user.resolver import UserResolver
 from vanna.integrations.local.agent_memory import DemoAgentMemory
 from vanna.integrations.mock import MockLlmService
 from vanna.integrations.sqlite import SqliteRunner
-from vanna.security.rls import apply_row_filter
+from vanna.security.rls import RowFilterPolicy
+from vanna.security.sql_policy import SqlQueryPolicy
 from vanna.tools import RunSqlTool
 
+TENANT_SCOPED_TABLES = {"orders", "customers", "invoices"}
+ClaimsVerifier = Callable[[str], Mapping[str, Any]]
 
-class TenantAwareRegistry(ToolRegistry):
-    async def transform_args(
-        self,
-        tool: Tool,
-        args: RunSqlToolArgs,
-        user: User,
-        context: ToolContext,
-    ) -> Union[RunSqlToolArgs, ToolRejection]:
-        if tool.name != "run_sql":
-            return args
 
-        tenant_id = user.metadata.get("tenant_id")
-        if tenant_id is None:
-            return ToolRejection(reason="Missing tenant context.")
-
-        safe_sql = apply_row_filter(args.sql, "tenant_id", str(tenant_id))
-        return RunSqlToolArgs(sql=safe_sql)
+def tenant_row_policies(context: ToolContext) -> list[RowFilterPolicy]:
+    tenant_id = context.user.metadata.get("tenant_id")
+    if not isinstance(tenant_id, str) or not tenant_id:
+        raise PermissionError("Verified tenant context is required")
+    return [
+        RowFilterPolicy(
+            column="tenant_id",
+            value=tenant_id,
+            tables=frozenset(TENANT_SCOPED_TABLES),
+        )
+    ]
 
 
 class TenantResolver(UserResolver):
+    def __init__(self, verify_claims: ClaimsVerifier) -> None:
+        self.verify_claims = verify_claims
+
     async def resolve_user(self, request_context: RequestContext) -> User:
-        tenant_id = request_context.headers.get("x-tenant-id", "tenant-a")
-        return User(id="tenant-user", group_memberships=["user"], metadata={"tenant_id": tenant_id})
+        authorization = request_context.get_header("Authorization", "") or ""
+        scheme, separator, token = authorization.partition(" ")
+        if scheme != "Bearer" or not separator or not token:
+            raise PermissionError("Bearer authentication is required")
+        claims = self.verify_claims(token)
+        subject = claims.get("sub")
+        tenant_id = claims.get("tenant_id")
+        raw_groups = claims.get("groups", [])
+        if not isinstance(subject, str) or not subject:
+            raise PermissionError("Verified subject is missing")
+        if not isinstance(tenant_id, str) or not tenant_id:
+            raise PermissionError("Verified tenant is missing")
+        if not isinstance(raw_groups, list):
+            raise PermissionError("Verified groups are invalid")
+        groups = [
+            group
+            for group in raw_groups
+            if isinstance(group, str) and group in {"user", "analyst", "admin"}
+        ]
+        return User(
+            id=subject,
+            authenticated=True,
+            group_memberships=groups,
+            metadata={"tenant_id": tenant_id},
+        )
 
 
-def build_agent() -> Agent:
-    registry = TenantAwareRegistry()
-    sql_tool = RunSqlTool(sql_runner=SqliteRunner(database_path="tenant.db"), read_only=True)
-    registry.register_local_tool(sql_tool, ["user"])
-
+def build_agent(verify_claims: ClaimsVerifier, database_path: str) -> Agent:
+    registry = ToolRegistry()
+    registry.register_local_tool(
+        RunSqlTool(
+            sql_runner=SqliteRunner(database_path=database_path, read_only=True),
+            read_only=True,
+            query_policy=SqlQueryPolicy(
+                "sqlite",
+                row_policies=tenant_row_policies,
+                require_row_policies=True,
+            ),
+        ),
+        ["user", "analyst", "admin"],
+    )
     return Agent(
         llm_service=MockLlmService(),
         tool_registry=registry,
-        user_resolver=TenantResolver(),
+        user_resolver=TenantResolver(verify_claims),
         agent_memory=DemoAgentMemory(),
     )
 
+
+if __name__ == "__main__":
+    raise SystemExit(
+        "Inject the same cryptographic claims verifier used by the API gateway. "
+        "Never derive tenant_id from a caller-controlled tenant header."
+    )

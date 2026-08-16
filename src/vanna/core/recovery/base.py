@@ -62,7 +62,8 @@ class ErrorRecoveryStrategy(ABC):
         """
         # Default: fail immediately
         return RecoveryAction(
-            action=RecoveryActionType.FAIL, message=f"Tool error: {str(error)}"
+            action=RecoveryActionType.FAIL,
+            message=f"Tool execution failed ({type(error).__name__}).",
         )
 
     async def handle_llm_error(
@@ -80,5 +81,6 @@ class ErrorRecoveryStrategy(ABC):
         """
         # Default: fail immediately
         return RecoveryAction(
-            action=RecoveryActionType.FAIL, message=f"LLM error: {str(error)}"
+            action=RecoveryActionType.FAIL,
+            message=f"LLM request failed ({type(error).__name__}).",
         )

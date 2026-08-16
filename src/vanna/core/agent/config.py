@@ -98,9 +98,7 @@ class AuditConfig(BaseModel):
     log_ui_feature_checks: bool = Field(
         default=False, description="Log UI feature access checks (can be noisy)"
     )
-    log_ai_responses: bool = Field(
-        default=True, description="Log AI-generated responses"
-    )
+    log_ai_responses: bool = Field(default=True, description="Log assistant responses")
     include_full_ai_responses: bool = Field(
         default=False,
         description="Include full AI response text in logs (privacy concern)",

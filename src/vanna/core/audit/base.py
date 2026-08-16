@@ -6,6 +6,7 @@ decisions for security, compliance, and debugging.
 """
 
 import hashlib
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
@@ -216,7 +217,7 @@ class AuditLogger(ABC):
             user: User receiving the response
             conversation_id: Conversation identifier
             request_id: Request identifier
-            response_text: The AI-generated response text
+            response_text: The assistant response text
             tool_calls: List of tool calls in the response
             model_info: Optional model configuration info
             include_full_text: Whether to include full response text
@@ -274,11 +275,7 @@ class AuditLogger(ABC):
         Returns:
             Tuple of (sanitized_parameters, was_sanitized)
         """
-        sanitized = parameters.copy()
-        was_sanitized = False
-
-        # Common sensitive field patterns
-        sensitive_patterns = [
+        sensitive_patterns = (
             "password",
             "secret",
             "token",
@@ -288,12 +285,45 @@ class AuditLogger(ABC):
             "auth",
             "private_key",
             "access_key",
-        ]
+            "sql",
+            "query",
+            "prompt",
+            "message",
+            "content",
+        )
+        embedded_secret = re.compile(
+            r"(?i)\b(?:password|secret|token|api[_-]?key|authorization)\b\s*[:=]"
+        )
+        was_sanitized = False
 
-        for key in list(sanitized.keys()):
-            key_lower = key.lower()
-            if any(pattern in key_lower for pattern in sensitive_patterns):
-                sanitized[key] = "[REDACTED]"
+        def sanitize(value: Any, *, key: str = "", depth: int = 0) -> Any:
+            nonlocal was_sanitized
+            if any(pattern in key.casefold() for pattern in sensitive_patterns):
                 was_sanitized = True
+                return "[REDACTED]"
+            if depth >= 8:
+                was_sanitized = True
+                return "[REDACTED:DEPTH_LIMIT]"
+            if isinstance(value, dict):
+                return {
+                    str(item_key)[:128]: sanitize(
+                        item_value,
+                        key=str(item_key),
+                        depth=depth + 1,
+                    )
+                    for item_key, item_value in list(value.items())[:100]
+                }
+            if isinstance(value, (list, tuple)):
+                if len(value) > 100:
+                    was_sanitized = True
+                return [sanitize(item, depth=depth + 1) for item in list(value)[:100]]
+            if isinstance(value, str):
+                if embedded_secret.search(value):
+                    was_sanitized = True
+                    return "[REDACTED]"
+                if len(value) > 512:
+                    was_sanitized = True
+                    return value[:512] + "[TRUNCATED]"
+            return value
 
-        return sanitized, was_sanitized
+        return sanitize(parameters), was_sanitized

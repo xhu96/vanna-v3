@@ -51,6 +51,7 @@ from .runner import EvaluationRunner
 from .evaluators import (
     TrajectoryEvaluator,
     OutputEvaluator,
+    ResultDataEvaluator,
     LLMAsJudgeEvaluator,
     EfficiencyEvaluator,
 )
@@ -71,6 +72,7 @@ __all__ = [
     # Built-in evaluators
     "TrajectoryEvaluator",
     "OutputEvaluator",
+    "ResultDataEvaluator",
     "LLMAsJudgeEvaluator",
     "EfficiencyEvaluator",
     # Reporting

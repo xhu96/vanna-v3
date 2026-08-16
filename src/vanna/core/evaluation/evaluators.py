@@ -50,14 +50,20 @@ class TrajectoryEvaluator(Evaluator):
             )
 
         tools_called = agent_result.get_tool_names_called()
+        successful_tools = agent_result.get_successful_tool_names_called()
         issues = []
         score = 1.0
 
         # Check expected tools were called
         if expected.tools_called:
             for expected_tool in expected.tools_called:
-                if expected_tool not in tools_called:
-                    issues.append(f"Expected tool '{expected_tool}' was not called")
+                if expected_tool not in successful_tools:
+                    issue = (
+                        f"Expected tool '{expected_tool}' failed"
+                        if expected_tool in tools_called
+                        else f"Expected tool '{expected_tool}' was not called"
+                    )
+                    issues.append(issue)
                     score -= 0.5 / len(expected.tools_called)
 
         # Check unexpected tools were not called
@@ -84,6 +90,7 @@ class TrajectoryEvaluator(Evaluator):
             reasoning=reasoning,
             metrics={
                 "tools_called": tools_called,
+                "successful_tools": successful_tools,
                 "num_tools_called": len(tools_called),
                 "issues": issues,
             },
@@ -164,6 +171,62 @@ class OutputEvaluator(Evaluator):
             metrics={
                 "output_length": len(final_answer),
                 "issues": issues,
+            },
+        )
+
+
+class ResultDataEvaluator(Evaluator):
+    """Compare expected tabular rows with an actually rendered tool result."""
+
+    @property
+    def name(self) -> str:
+        return "result_data"
+
+    async def evaluate(
+        self, test_case: TestCase, agent_result: AgentResult
+    ) -> EvaluationResult:
+        expected = test_case.expected_outcome
+        if agent_result.error:
+            return EvaluationResult(
+                test_case_id=test_case.id,
+                evaluator_name=self.name,
+                passed=False,
+                score=0.0,
+                reasoning="Agent execution failed before result validation",
+            )
+        if expected is None or expected.expected_result_rows is None:
+            return EvaluationResult(
+                test_case_id=test_case.id,
+                evaluator_name=self.name,
+                passed=True,
+                score=1.0,
+                reasoning="No expected result rows specified",
+            )
+
+        result_sets: list[list[dict[str, Any]]] = []
+        for component in agent_result.components:
+            rich_component = getattr(component, "rich_component", None)
+            rows = getattr(rich_component, "rows", None)
+            if not isinstance(rows, list) or not all(
+                isinstance(row, dict) for row in rows
+            ):
+                continue
+            result_sets.append(rows)
+
+        passed = any(rows == expected.expected_result_rows for rows in result_sets)
+        return EvaluationResult(
+            test_case_id=test_case.id,
+            evaluator_name=self.name,
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=(
+                "Actual tool rows match the expected tenant-scoped result"
+                if passed
+                else "No actual tool result matched the expected rows"
+            ),
+            metrics={
+                "expected_row_count": len(expected.expected_result_rows),
+                "observed_result_sets": len(result_sets),
             },
         )
 
@@ -253,13 +316,16 @@ REASONING: <your explanation>
                 metrics={"judge_response": judgment},
             )
 
-        except Exception as e:
+        except Exception as error:
             return EvaluationResult(
                 test_case_id=test_case.id,
                 evaluator_name=self.name,
                 passed=False,
                 score=0.0,
-                reasoning=f"LLM judge evaluation failed: {str(e)}",
+                reasoning=(
+                    "LLM judge evaluation failed: "
+                    f"{type(error).__name__} (details redacted)"
+                ),
             )
 
     def _parse_score(self, judgment: str) -> float:

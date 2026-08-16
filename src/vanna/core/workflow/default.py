@@ -6,9 +6,9 @@ that provides a smart starter UI based on available tools and setup status.
 """
 
 from typing import TYPE_CHECKING, List, Optional, Dict, Any
-import traceback
 import uuid
 from .base import WorkflowHandler, WorkflowResult
+from vanna.core.tool.errors import public_tool_failure
 
 if TYPE_CHECKING:
     from ..agent.agent import Agent
@@ -663,16 +663,23 @@ class DefaultWorkflowHandler(WorkflowHandler):
 
             return WorkflowResult(should_skip_llm=True, components=components)
 
-        except Exception as e:
-            traceback.print_exc()
+        except Exception as error:
+            public_message, _ = public_tool_failure(
+                operation="Memory retrieval",
+                code="memory_retrieval_failed",
+                error=error,
+            )
             return WorkflowResult(
                 should_skip_llm=True,
                 components=[
                     UiComponent(
                         rich_component=RichTextComponent(
-                            content=f"# ❌ Error Retrieving Memories\n\n"
-                            f"Failed to get recent memories: {str(e)}\n\n"
-                            f"This may indicate an issue with the agent memory configuration.",
+                            content=(
+                                "# ❌ Error Retrieving Memories\n\n"
+                                f"{public_message}\n\n"
+                                "This may indicate an issue with the agent memory "
+                                "configuration."
+                            ),
                             markdown=True,
                         ),
                         simple_component=None,
@@ -771,16 +778,23 @@ class DefaultWorkflowHandler(WorkflowHandler):
                     ],
                 )
 
-        except Exception as e:
-            traceback.print_exc()
+        except Exception as error:
+            public_message, _ = public_tool_failure(
+                operation="Memory deletion",
+                code="memory_deletion_failed",
+                error=error,
+            )
             return WorkflowResult(
                 should_skip_llm=True,
                 components=[
                     UiComponent(
                         rich_component=RichTextComponent(
-                            content=f"# ❌ Error Deleting Memory\n\n"
-                            f"Failed to delete memory: {str(e)}\n\n"
-                            f"This may indicate an issue with the agent memory configuration.",
+                            content=(
+                                "# ❌ Error Deleting Memory\n\n"
+                                f"{public_message}\n\n"
+                                "This may indicate an issue with the agent memory "
+                                "configuration."
+                            ),
                             markdown=True,
                         ),
                         simple_component=None,

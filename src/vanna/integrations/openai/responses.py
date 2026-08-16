@@ -29,7 +29,6 @@ class OpenAIResponsesService(LlmService):
     async def send_request(self, request: LlmRequest) -> LlmResponse:
         payload = self._payload(request)
         resp: Response = await self.client.responses.create(**payload)
-        self._debug_print("response", resp)
         text, tools, status, usage = self._extract(resp)
         return LlmResponse(
             content=text,
@@ -45,14 +44,12 @@ class OpenAIResponsesService(LlmService):
         payload = self._payload(request)
         async with self.client.responses.stream(**payload) as stream:
             async for event in stream:
-                self._debug_print("stream_event", event)
                 event_type = getattr(event, "type", None)
                 if event_type == "response.output_text.delta":
                     delta = getattr(event, "delta", None)
                     if delta:
                         yield LlmStreamChunk(content=delta)
             final: Response = await stream.get_final_response()
-            self._debug_print("final_response", final)
 
         _text, tools, status, _usage = self._extract(final)
         yield LlmStreamChunk(tool_calls=tools or None, finish_reason=status)
@@ -72,16 +69,6 @@ class OpenAIResponsesService(LlmService):
         if request.tools:
             p["tools"] = [self._serialize_tool(t) for t in request.tools]
         return p
-
-    def _debug_print(self, label: str, obj: Any) -> None:
-        try:
-            payload = obj.model_dump()
-        except AttributeError:
-            try:
-                payload = obj.dict()
-            except AttributeError:
-                payload = obj
-        print(f"[OpenAIResponsesService] {label}: {payload}")
 
     def _extract(
         self, resp: Response

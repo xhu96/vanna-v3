@@ -1,22 +1,31 @@
 """Tool for visualizing DataFrame data from CSV files."""
 
-from typing import Any, Optional, Type, cast
+import io
 import logging
+from typing import Any, Literal, Optional, Type, cast
+
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from vanna.core.tool import Tool, ToolContext, ToolResult
-from vanna.core.chart_spec import ChartSpec, dataframe_to_vega_lite_spec
 from vanna.components import (
-    UiComponent,
     ChartComponent,
-    NotificationComponent,
     ComponentType,
+    NotificationComponent,
     SimpleTextComponent,
+    UiComponent,
 )
+from vanna.core.chart_spec import (
+    MAX_CHART_FIELDS,
+    MAX_CHART_ROWS,
+    ChartSpec,
+    dataframe_to_vega_lite_spec,
+    normalize_plotly_json_spec,
+)
+from vanna.core.tool import Tool, ToolContext, ToolResult
+from vanna.core.tool.errors import public_tool_failure
+from vanna.integrations.plotly import PlotlyChartGenerator
 
 from .file_system import FileSystem, LocalFileSystem
-from vanna.integrations.plotly import PlotlyChartGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +37,26 @@ class VisualizeDataArgs(BaseModel):
     title: Optional[str] = Field(
         default=None, description="Optional title for the chart"
     )
-    format: str = Field(
+    format: Literal["vega-lite", "plotly-json"] = Field(
         default="vega-lite",
         description="Declarative chart format: 'vega-lite' (default) or 'plotly-json'",
     )
 
 
 class VisualizeDataTool(Tool[VisualizeDataArgs]):
-    """Tool that reads CSV files and generates visualizations using dependency injection."""
+    """Read CSV data and return a validated declarative chart."""
 
     def __init__(
         self,
         file_system: Optional[FileSystem] = None,
         plotly_generator: Optional[PlotlyChartGenerator] = None,
     ):
-        """Initialize the tool with FileSystem and PlotlyChartGenerator.
+        """Initialize the tool with injected file and chart services.
 
         Args:
-            file_system: FileSystem implementation for reading CSV files (defaults to LocalFileSystem)
-            plotly_generator: PlotlyChartGenerator for creating Plotly charts (defaults to PlotlyChartGenerator())
+            file_system: CSV storage, defaulting to a local file system.
+            plotly_generator: Trusted heuristic generator whose output is reduced to
+                the safe Plotly JSON profile.
         """
         self.file_system = file_system or LocalFileSystem()
         self.plotly_generator = plotly_generator or PlotlyChartGenerator()
@@ -57,7 +67,10 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
 
     @property
     def description(self) -> str:
-        return "Create a visualization from a CSV file. The tool automatically selects an appropriate chart type based on the data."
+        return (
+            "Create a validated declarative visualization from a CSV file "
+            "without executing generated code."
+        )
 
     def get_args_schema(self) -> Type[VisualizeDataArgs]:
         return VisualizeDataArgs
@@ -67,46 +80,63 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
     ) -> ToolResult:
         """Read CSV file and generate visualization."""
         try:
-            logger.info(f"Starting visualization for file: {args.filename}")
+            logger.info("Starting visualization for file: %s", args.filename)
 
             # Read the CSV file using FileSystem
             csv_content = await self.file_system.read_file(args.filename, context)
-            logger.info(f"Read {len(csv_content)} bytes from CSV file")
+            logger.info("Read %d bytes from CSV file", len(csv_content))
 
             # Parse CSV into DataFrame
-            import io
-
             df = pd.read_csv(io.StringIO(csv_content))
             logger.info(
-                f"Parsed DataFrame with shape {df.shape}, columns: {df.columns.tolist()}, dtypes: {df.dtypes.to_dict()}"
+                "Parsed DataFrame with shape %s and %d columns",
+                df.shape,
+                len(df.columns),
             )
+
+            if len(df.columns) > MAX_CHART_FIELDS:
+                raise ValueError(
+                    f"Dataset has {len(df.columns)} columns; "
+                    f"safe charts allow at most {MAX_CHART_FIELDS}."
+                )
 
             # Generate title
             title = args.title or f"Visualization of {args.filename}"
 
             # Build declarative chart spec (safe-by-default).
-            records = cast("list[dict[str, Any]]", df.head(500).to_dict("records"))
+            row_count = len(df)
+            chart_df = df.head(MAX_CHART_ROWS)
+            records = cast("list[dict[str, Any]]", chart_df.to_dict(orient="records"))
+            columns = df.columns.tolist()
             column_types = self._infer_column_types(df)
             if args.format == "plotly-json":
-                chart_dict = self.plotly_generator.generate_chart(df, title)
+                generated_chart = self.plotly_generator.generate_chart(chart_df, title)
+                chart_dict = normalize_plotly_json_spec(generated_chart)
+                metadata: dict[str, Any] = {
+                    "row_count": row_count,
+                    "columns": columns,
+                }
+                if row_count > len(records):
+                    metadata["truncated"] = True
                 chart_spec = ChartSpec(
                     format="plotly-json",
-                    schema_version="v1",
+                    schema_version="plotly-safe-1",
                     spec=chart_dict,
                     dataset=records,
-                    metadata={"source_file": args.filename},
+                    metadata=metadata,
                 )
             else:
                 chart_spec = dataframe_to_vega_lite_spec(
                     rows=records,
-                    columns=df.columns.tolist(),
+                    columns=columns,
                     column_types=column_types,
                     title=title,
+                    row_count=row_count,
                 )
-                chart_spec.metadata["source_file"] = args.filename
+
+            chart_payload = chart_spec.model_dump()
 
             # Create result message
-            row_count = len(df)
             col_count = len(df.columns)
             result = (
                 f"Created declarative chart spec from '{args.filename}' "
@@ -117,7 +147,7 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
             logger.info("Creating ChartComponent...")
             chart_component = ChartComponent(
                 chart_type="declarative",
-                data=chart_spec.model_dump(),
+                data=chart_payload,
                 title=title,
                 config={
                     "data_shape": {"rows": row_count, "columns": col_count},
@@ -139,14 +169,16 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     "filename": args.filename,
                     "rows": row_count,
                     "columns": col_count,
-                    "chart_spec": chart_spec.model_dump(),
+                    "chart_spec": chart_payload,
                 },
             )
             logger.info("ToolResult created successfully")
             return tool_result
 
-        except FileNotFoundError as e:
-            logger.error(f"File not found: {args.filename}", exc_info=True)
+        except FileNotFoundError:
+            logger.warning(
+                "Visualization input was not found request_id=%s", context.request_id
+            )
             error_message = f"File not found: {args.filename}"
             return ToolResult(
                 success=False,
@@ -159,12 +191,14 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
-                error=str(e),
+                error=error_message,
                 metadata={"error_type": "file_not_found"},
             )
-        except pd.errors.ParserError as e:
-            logger.error(f"CSV parse error for {args.filename}", exc_info=True)
-            error_message = f"Failed to parse CSV file '{args.filename}': {str(e)}"
+        except pd.errors.ParserError:
+            logger.warning(
+                "Visualization CSV parse failed request_id=%s", context.request_id
+            )
+            error_message = f"Failed to parse CSV file '{args.filename}'."
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
@@ -176,12 +210,15 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
-                error=str(e),
+                error=error_message,
                 metadata={"error_type": "csv_parse_error"},
             )
-        except ValueError as e:
-            logger.error(f"Visualization error for {args.filename}", exc_info=True)
-            error_message = f"Cannot visualize data: {str(e)}"
+        except ValueError as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Visualization safety validation",
+                code="visualization_error",
+                error=error,
+            )
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
@@ -193,15 +230,15 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
-                error=str(e),
-                metadata={"error_type": "visualization_error"},
+                error=error_message,
+                metadata=failure_metadata,
             )
-        except Exception as e:
-            logger.error(
-                f"Unexpected error creating visualization for {args.filename}",
-                exc_info=True,
+        except Exception as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Visualization",
+                code="general_error",
+                error=error,
             )
-            error_message = f"Error creating visualization: {str(e)}"
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
@@ -213,8 +250,8 @@ class VisualizeDataTool(Tool[VisualizeDataArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
-                error=str(e),
-                metadata={"error_type": "general_error"},
+                error=error_message,
+                metadata=failure_metadata,
             )
 
     def _infer_column_types(self, df: pd.DataFrame) -> dict[str, str]:

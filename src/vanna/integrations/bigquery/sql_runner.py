@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class BigQueryRunner(SqlRunner):
     """BigQuery implementation of the SqlRunner interface."""
 
+    dialect = "bigquery"
+
     def __init__(self, project_id: str, cred_file_path: Optional[str] = None, **kwargs):
         """Initialize with BigQuery connection parameters.
 

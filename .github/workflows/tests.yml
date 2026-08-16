@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - "CodProj/v3-foundation"
   pull_request:
     branches:
       - main
@@ -14,11 +13,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.11"
       - name: Install pip
@@ -28,18 +27,88 @@ jobs:
       - name: Run tests
         env:
           PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: python
-          VANNA_API_KEY: ${{ secrets.VANNA_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USERNAME: ${{ secrets.SNOWFLAKE_USERNAME }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
         run: tox
 
+  frontend:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontends/webcomponent
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Node 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20.19.0"
+          cache: npm
+          cache-dependency-path: frontends/webcomponent/package-lock.json
+      - name: Install dependencies from lockfile
+        run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Build deterministic bundle twice
+        run: |
+          npm run build
+          first_hash=$(sha256sum dist/vanna-components.js | cut -d ' ' -f 1)
+          npm run build
+          second_hash=$(sha256sum dist/vanna-components.js | cut -d ' ' -f 1)
+          test "$first_hash" = "$second_hash"
+      - name: Build Storybook
+        run: npm run build-storybook
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser smoke tests
+        run: npm run test:e2e
+
+  v3-offline-eval:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python 3.11
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.11"
+      - name: Install eval dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test]'
+      - name: Evaluate and promotion-gate the approved production tool stack
+        run: |
+          python src/evals/pipelines/run_offline_eval.py \
+            --candidate-factory vanna.evals.candidates.sqlite_policy:build_variant \
+            --approved-feedback-manifest src/evals/fixtures/approved_feedback.manifest.json \
+            --approved-feedback src/evals/fixtures/approved_feedback.jsonl \
+            --out candidate.json
+          python src/evals/pipelines/offline_training_gate.py \
+            --baseline src/evals/baselines/sql_generation.json \
+            --candidate candidate.json \
+            --candidate-factory vanna.evals.candidates.sqlite_policy:build_variant \
+            --expected-candidate v3-sqlite-policy-stack \
+            --approved-feedback src/evals/fixtures/approved_feedback.jsonl \
+            --mode promote
+
+  python-package-matrix:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test,fastapi,flask]'
+      - name: Verify package metadata and offline SQLite flow
+        run: |
+          pytest tests/test_package_metadata.py tests/test_sql_runner_read_only.py -q
+
   v3-postgres-integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:15
@@ -55,9 +124,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.11"
       - name: Install test deps
@@ -66,16 +135,9 @@ jobs:
           pip install -e '.[postgres,test]'
       - name: Run v3 unit/security tests
         run: |
-          pytest tests/test_sql_security.py tests/test_chart_spec_validation.py tests/test_schema_diff.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py -q
+          pytest tests/test_sql_security.py tests/test_chart_spec_validation.py tests/test_schema_diff.py tests/test_dbt_semantic_adapter.py tests/test_semantic_planner.py tests/test_lineage_capture.py tests/test_feedback_memory_patching.py -q
       - name: Run Postgres integration
         env:
           VANNA_POSTGRES_TEST_DSN: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
           pytest tests/integration/test_postgres_v3_pipeline.py -q
-      - name: Offline eval regression gate
-        run: |
-          python src/evals/pipelines/run_offline_eval.py --out candidate.json
-          python src/evals/pipelines/offline_training_gate.py \
-            --baseline src/evals/baselines/sql_generation.json \
-            --candidate candidate.json \
-            --min-score-delta 0.0

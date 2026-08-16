@@ -11,6 +11,8 @@ from vanna.core.tool import ToolContext
 class SnowflakeRunner(SqlRunner):
     """Snowflake implementation of the SqlRunner interface."""
 
+    dialect = "snowflake"
+
     def __init__(
         self,
         account: str,

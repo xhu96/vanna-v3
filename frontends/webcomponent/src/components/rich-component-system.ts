@@ -6,6 +6,14 @@
  */
 
 import { richComponentStyleText } from '../styles/rich-component-styles.js';
+import {
+  buildStaticArtifactDocument,
+  escapeHtmlText,
+  renderSanitizedMarkdown,
+  sanitizeArtifactContent,
+  sanitizePlainText,
+  setSanitizedHtml,
+} from '../security/content-security.js';
 
 // Component interfaces matching Python backend
 export interface RichComponent {
@@ -25,8 +33,8 @@ export interface ArtifactOpenedEventDetail {
   artifactId: string;
 
   // Artifact content
-  content: string; // Full HTML/SVG/JS content
-  type: 'html' | 'svg' | 'visualization' | 'interactive' | 'd3' | 'threejs';
+  content: string; // Sanitized static markup; JavaScript is represented as source markup.
+  type: string;
   title?: string;
   description?: string;
 
@@ -51,6 +59,19 @@ declare global {
 
 
 const RICH_COMPONENT_STYLE_ATTR = 'data-vanna-rich-component-styles';
+
+const UI_ICONS = Object.freeze({
+  check: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.2l3 3L13 4.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  close: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8m0-8l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  info: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 7.2v3.4M8 5.1h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  warning: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.5l6 10.5H2L8 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6v3.2M8 11.2h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  pending: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.5l2.2 1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  running: '<svg class="vanna-inline-icon icon-spinning" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8a5 5 0 11-1.46-3.54" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 2.8v2.7H8.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chevron: '<svg class="vanna-inline-icon chevron-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 6l3.5 3.5L11.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  edit: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 11.8V13h1.2l7.9-7.9-1.2-1.2L3 11.8zM10 4.8l1.2 1.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  maximize: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
+  external: '<svg class="vanna-inline-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9 3h4v4M13 3L7.5 8.5M11.5 9v3.5h-8v-8H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+});
 
 function ensureRichComponentStyles(container: HTMLElement): void {
   const doc = container.ownerDocument;
@@ -104,21 +125,13 @@ export abstract class BaseComponentRenderer implements ComponentRenderer {
 // Card component renderer
 export class CardComponentRenderer extends BaseComponentRenderer {
   render(component: RichComponent): HTMLElement {
-    console.log('🎴 CardComponentRenderer.render() called', {
-      componentId: component.id,
-      componentData: component.data,
-      actions: component.data?.actions
-    });
-
     const card = document.createElement('div');
     card.className = 'rich-component rich-card';
     card.dataset.componentId = component.id;
 
     const { title, content, subtitle, icon, status, actions = [], collapsible, collapsed } = component.data;
 
-    console.log('🎴 Extracted actions:', actions, 'Length:', actions?.length);
-
-    card.innerHTML = `
+    setSanitizedHtml(card, `
       <div class="card-header ${collapsible ? 'collapsible' : ''}">
         ${icon ? `<span class="card-icon">${icon}</span>` : ''}
         <div class="card-title-section">
@@ -126,7 +139,7 @@ export class CardComponentRenderer extends BaseComponentRenderer {
           ${subtitle ? `<p class="card-subtitle">${subtitle}</p>` : ''}
         </div>
         ${status ? `<span class="card-status status-${status}">${status}</span>` : ''}
-        ${collapsible ? `<button class="card-toggle">${collapsed ? '▶' : '▼'}</button>` : ''}
+        ${collapsible ? `<button class="card-toggle" type="button" aria-label="Toggle details" aria-expanded="${!collapsed}">${UI_ICONS.chevron}</button>` : ''}
       </div>
       <div class="card-content ${collapsed ? 'collapsed' : ''}">
         ${content}
@@ -140,7 +153,7 @@ export class CardComponentRenderer extends BaseComponentRenderer {
           `).join('')}
         </div>
       ` : ''}
-    `;
+    `);
 
 
     // Add collapsible functionality
@@ -150,34 +163,19 @@ export class CardComponentRenderer extends BaseComponentRenderer {
 
       toggle?.addEventListener('click', () => {
         content.classList.toggle('collapsed');
-        toggle.textContent = content.classList.contains('collapsed') ? '▶' : '▼';
+        toggle.setAttribute('aria-expanded', String(!content.classList.contains('collapsed')));
       });
     }
 
     // Add click handlers for action buttons
-    console.log('🎴 Checking if should add click handlers:', {
-      hasActions: !!actions,
-      actionsLength: actions?.length
-    });
-
     if (actions && actions.length > 0) {
       const actionButtons = card.querySelectorAll('.card-action') as NodeListOf<HTMLButtonElement>;
-      console.log('🎴 Found action buttons:', actionButtons.length);
 
       actionButtons.forEach((button, index) => {
         const action = actions[index];
-        console.log(`🎴 Setting up listener for button ${index}:`, {
-          hasAction: !!action,
-          hasActionProperty: !!action?.action,
-          action: action
-        });
 
         if (action && action.action) {
-          console.log('🎴 Adding click listener to button:', button);
           button.addEventListener('click', async () => {
-            console.log('🔘 Card action button clicked:', action.label);
-            console.log('   Sending action:', action.action);
-
             // Apply visual feedback
             button.disabled = true;
             button.classList.add('button-transitioning', 'button-clicked');
@@ -190,22 +188,18 @@ export class CardComponentRenderer extends BaseComponentRenderer {
                 const success = await vannaChat.sendMessage(action.action);
 
                 if (success) {
-                  console.log('✅ Card action sent successfully');
                   // Keep button disabled after successful action
                 } else {
-                  console.error('❌ Failed to send card action');
                   // Re-enable button on failure
                   button.disabled = false;
                   button.classList.remove('button-transitioning', 'button-clicked');
                 }
-              } catch (error) {
-                console.error('❌ Error sending card action:', error);
+              } catch {
                 // Re-enable button on error
                 button.disabled = false;
                 button.classList.remove('button-transitioning', 'button-clicked');
               }
             } else {
-              console.warn('⚠️ vanna-chat component not found or sendMessage not available');
               button.disabled = false;
               button.classList.remove('button-transitioning', 'button-clicked');
             }
@@ -228,7 +222,7 @@ export class CardComponentRenderer extends BaseComponentRenderer {
 
     if (updates.content) {
       const contentEl = element.querySelector('.card-content');
-      if (contentEl) contentEl.innerHTML = updates.content;
+      if (contentEl) setSanitizedHtml(contentEl, updates.content, 'rich-text');
     }
 
     if (updates.status) {
@@ -258,7 +252,7 @@ export class TaskListComponentRenderer extends BaseComponentRenderer {
     const completedTasks = tasks.filter((task: any) => task.status === 'completed').length;
     const progress = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="task-list-header">
         <h3 class="task-list-title">${title}</h3>
         ${show_progress ? `
@@ -273,7 +267,7 @@ export class TaskListComponentRenderer extends BaseComponentRenderer {
       <div class="task-list-items">
         ${tasks.map((task: any) => this.renderTask(task, show_timestamps)).join('')}
       </div>
-    `;
+    `);
 
 
     return container;
@@ -309,10 +303,10 @@ export class TaskListComponentRenderer extends BaseComponentRenderer {
 
   private getStatusIcon(status: string): string {
     switch (status) {
-      case 'completed': return '✅';
-      case 'running': return '🔄';
-      case 'failed': return '❌';
-      default: return '⭕';
+      case 'completed': return UI_ICONS.check;
+      case 'running': return UI_ICONS.running;
+      case 'failed': return UI_ICONS.close;
+      default: return UI_ICONS.pending;
     }
   }
 }
@@ -327,7 +321,7 @@ export class ProgressBarComponentRenderer extends BaseComponentRenderer {
     const { value, label, show_percentage, status, animated } = component.data;
     const percentage = Math.round(value * 100);
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="progress-header">
         ${label ? `<span class="progress-label">${label}</span>` : ''}
         ${show_percentage ? `<span class="progress-percentage">${percentage}%</span>` : ''}
@@ -336,7 +330,7 @@ export class ProgressBarComponentRenderer extends BaseComponentRenderer {
         <div class="progress-fill ${animated ? 'animated' : ''} ${status ? `status-${status}` : ''}"
              style="width: ${percentage}%"></div>
       </div>
-    `;
+    `);
 
 
     return container;
@@ -384,10 +378,10 @@ export class NotificationComponentRenderer extends BaseComponentRenderer {
 
     const levelIcon = icon || this.getLevelIcon(level);
     const dismissButton = dismissible ? `
-      <button class="notification-dismiss" onclick="this.parentElement.remove()">×</button>
+      <button class="notification-dismiss" type="button" aria-label="Dismiss">${UI_ICONS.close}</button>
     ` : '';
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="notification-content level-${level}">
         ${levelIcon ? `<span class="notification-icon">${levelIcon}</span>` : ''}
         <div class="notification-body">
@@ -405,7 +399,11 @@ export class NotificationComponentRenderer extends BaseComponentRenderer {
         ` : ''}
         ${dismissButton}
       </div>
-    `;
+    `);
+
+    container.querySelector('.notification-dismiss')?.addEventListener('click', () => {
+      container.remove();
+    });
 
     // Auto-dismiss functionality
     if (auto_dismiss && component.data.auto_dismiss_delay) {
@@ -422,11 +420,11 @@ export class NotificationComponentRenderer extends BaseComponentRenderer {
 
   private getLevelIcon(level: string): string {
     switch (level) {
-      case 'success': return '✅';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
+      case 'success': return UI_ICONS.check;
+      case 'warning': return UI_ICONS.warning;
+      case 'error': return UI_ICONS.close;
       case 'info':
-      default: return 'ℹ️';
+      default: return UI_ICONS.info;
     }
   }
 }
@@ -443,12 +441,12 @@ export class StatusIndicatorComponentRenderer extends BaseComponentRenderer {
     const statusIcon = icon || this.getStatusIcon(status);
     const pulseClass = pulse ? 'pulse' : '';
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="status-indicator-content status-${status} ${pulseClass}">
         <span class="status-icon">${statusIcon}</span>
         <span class="status-message">${message}</span>
       </div>
-    `;
+    `);
 
 
     return container;
@@ -456,11 +454,11 @@ export class StatusIndicatorComponentRenderer extends BaseComponentRenderer {
 
   private getStatusIcon(status: string): string {
     switch (status) {
-      case 'loading': return '🔄';
-      case 'success': return '✅';
-      case 'warning': return '⚠️';
-      case 'error': return '❌';
-      default: return 'ℹ️';
+      case 'loading': return UI_ICONS.running;
+      case 'success': return UI_ICONS.check;
+      case 'warning': return UI_ICONS.warning;
+      case 'error': return UI_ICONS.close;
+      default: return UI_ICONS.info;
     }
   }
 
@@ -545,7 +543,7 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
             </div>
           ` : ''}
           ${exportable ? `
-            <button class="export-btn" title="Export to CSV">📥 Export</button>
+            <button class="export-btn" type="button" title="Export to CSV">Export CSV</button>
           ` : ''}
         </div>
       `;
@@ -601,11 +599,11 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
       `;
     }
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       ${headerHTML}
       ${actionsHTML}
       ${tableHTML}
-    `;
+    `);
 
 
     // Add event listeners
@@ -629,16 +627,10 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
           return String(value);
         }
       case 'boolean':
-        return value ? '✓' : '✗';
+        return value ? 'Yes' : 'No';
       default:
-        return this.escapeHtml(String(value));
+        return escapeHtmlText(value);
     }
-  }
-
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   private attachEventListeners(container: HTMLElement, data: any[], columns: string[]): void {
@@ -682,7 +674,7 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
       });
     });
 
-    tbody.innerHTML = filteredData.map(row => `
+    setSanitizedHtml(tbody, filteredData.map(row => `
       <tr>
         ${columns.map(col => {
           const value = row[col];
@@ -690,12 +682,13 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
           return `<td>${formattedValue}</td>`;
         }).join('')}
       </tr>
-    `).join('');
+    `).join(''));
   }
 
   private sortTable(container: HTMLElement, data: any[], columns: string[], column: string): void {
     const tbody = container.querySelector('tbody');
-    const header = container.querySelector(`th[data-column="${column}"]`) as HTMLElement;
+    const header = Array.from(container.querySelectorAll<HTMLElement>('th[data-column]'))
+      .find((candidate) => candidate.dataset.column === column);
     if (!tbody || !header) return;
 
     // Determine sort direction
@@ -735,7 +728,7 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
     });
 
     // Update table
-    tbody.innerHTML = sortedData.map(row => `
+    setSanitizedHtml(tbody, sortedData.map(row => `
       <tr>
         ${columns.map(col => {
           const value = row[col];
@@ -743,7 +736,7 @@ export class DataFrameComponentRenderer extends BaseComponentRenderer {
           return `<td>${formattedValue}</td>`;
         }).join('')}
       </tr>
-    `).join('');
+    `).join(''));
   }
 
   private exportToCSV(data: any[], columns: string[]): void {
@@ -798,43 +791,24 @@ export class TextComponentRenderer extends BaseComponentRenderer {
 
     if (code_language) {
       // Code block
-      container.innerHTML = `
-        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${this.escapeHtml(content)}</code></pre>
-      `;
+      setSanitizedHtml(container, `
+        <pre class="text-code" style="${textStyle}"><code class="language-${code_language}">${escapeHtmlText(content)}</code></pre>
+      `);
     } else if (markdown) {
-      // Markdown text (simple implementation)
-      container.innerHTML = `
-        <div class="text-markdown" style="${textStyle}">${this.renderMarkdown(content)}</div>
-      `;
+      setSanitizedHtml(container, `
+        <div class="text-markdown" style="${textStyle}">${renderSanitizedMarkdown(content)}</div>
+      `);
     } else {
       // Plain text
-      container.innerHTML = `
-        <div class="text-content" style="${textStyle}">${this.escapeHtml(content)}</div>
-      `;
+      setSanitizedHtml(container, `
+        <div class="text-content" style="${textStyle}">${escapeHtmlText(content)}</div>
+      `);
     }
 
 
     return container;
   }
 
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  private renderMarkdown(text: string): string {
-    // Simple markdown rendering - just basic formatting
-    return text
-      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^- (.*$)/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<[h|u|l])(.+)$/gm, '<p>$1</p>');
-  }
 }
 
 // Primitive Component Renderers (Domain-Agnostic)
@@ -851,14 +825,14 @@ export class StatusCardComponentRenderer extends BaseComponentRenderer {
     const statusIcon = icon || this.getStatusIcon(status);
     const hasMetadata = Object.keys(metadata).length > 0;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="status-card-header ${collapsible ? 'collapsible' : ''}">
         <div class="status-card-icon">${statusIcon}</div>
         <div class="status-card-title-section">
           <h3 class="status-card-title">${title}</h3>
           <span class="status-card-badge status-${status}">${status}</span>
         </div>
-        ${collapsible ? `<button class="status-card-toggle">${collapsed ? '▶' : '▼'}</button>` : ''}
+        ${collapsible ? `<button class="status-card-toggle" type="button" aria-label="Toggle details" aria-expanded="${!collapsed}">${UI_ICONS.chevron}</button>` : ''}
       </div>
       ${description ? `
         <div class="status-card-content ${collapsed ? 'collapsed' : ''}">
@@ -882,7 +856,7 @@ export class StatusCardComponentRenderer extends BaseComponentRenderer {
           `).join('')}
         </div>
       ` : ''}
-    `;
+    `);
 
     // Add collapsible functionality
     if (collapsible) {
@@ -892,7 +866,7 @@ export class StatusCardComponentRenderer extends BaseComponentRenderer {
       toggle?.addEventListener('click', () => {
         if (content) {
           content.classList.toggle('collapsed');
-          toggle.textContent = content.classList.contains('collapsed') ? '▶' : '▼';
+          toggle.setAttribute('aria-expanded', String(!content.classList.contains('collapsed')));
         }
       });
     }
@@ -905,7 +879,7 @@ export class StatusCardComponentRenderer extends BaseComponentRenderer {
       const formattedValue = this.formatMetadataValue(value);
       return `
         <tr>
-          <td class="metadata-key">${this.escapeHtml(key)}</td>
+          <td class="metadata-key">${escapeHtmlText(key)}</td>
           <td class="metadata-value">${formattedValue}</td>
         </tr>
       `;
@@ -940,30 +914,24 @@ export class StatusCardComponentRenderer extends BaseComponentRenderer {
       return `<span class="metadata-number">${value}</span>`;
     }
     if (typeof value === 'string') {
-      return `<span class="metadata-string">${this.escapeHtml(value)}</span>`;
+      return `<span class="metadata-string">${escapeHtmlText(value)}</span>`;
     }
     if (Array.isArray(value) || typeof value === 'object') {
       return `<pre class="metadata-json">${JSON.stringify(value, null, 2)}</pre>`;
     }
-    return this.escapeHtml(String(value));
-  }
-
-  private escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return escapeHtmlText(value);
   }
 
   private getStatusIcon(status: string): string {
     switch (status) {
-      case 'pending': return '⏳';
-      case 'running': return '⚙️';
-      case 'completed': return '✅';
-      case 'success': return '✅';
-      case 'failed': return '❌';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      default: return 'ℹ️';
+      case 'pending': return UI_ICONS.pending;
+      case 'running': return UI_ICONS.running;
+      case 'completed': return UI_ICONS.check;
+      case 'success': return UI_ICONS.check;
+      case 'failed': return UI_ICONS.close;
+      case 'error': return UI_ICONS.close;
+      case 'warning': return UI_ICONS.warning;
+      default: return UI_ICONS.info;
     }
   }
 }
@@ -978,7 +946,7 @@ export class ProgressDisplayComponentRenderer extends BaseComponentRenderer {
     const { label, value, description, status, show_percentage, animated, indeterminate } = component.data;
     const percentage = Math.round(value * 100);
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="progress-display-container">
         <div class="progress-display-header">
           <span class="progress-display-label">${label}</span>
@@ -990,7 +958,7 @@ export class ProgressDisplayComponentRenderer extends BaseComponentRenderer {
         </div>
         ${description ? `<div class="progress-display-description">${description}</div>` : ''}
       </div>
-    `;
+    `);
 
     return container;
   }
@@ -1005,7 +973,7 @@ export class LogViewerComponentRenderer extends BaseComponentRenderer {
 
     const { title, entries = [], searchable, show_timestamps, auto_scroll } = component.data;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="log-viewer-container">
         <div class="log-viewer-header">
           <h3 class="log-viewer-title">${title}</h3>
@@ -1025,7 +993,7 @@ export class LogViewerComponentRenderer extends BaseComponentRenderer {
           `).join('')}
         </div>
       </div>
-    `;
+    `);
 
     // Auto-scroll to bottom if enabled
     if (auto_scroll) {
@@ -1048,10 +1016,10 @@ export class BadgeComponentRenderer extends BaseComponentRenderer {
 
     const { text, icon } = component.data;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       ${icon ? `<span class="badge-icon">${icon}</span>` : ''}
       <span class="badge-text">${text}</span>
-    `;
+    `);
 
     return container;
   }
@@ -1066,10 +1034,10 @@ export class IconTextComponentRenderer extends BaseComponentRenderer {
 
     const { icon, text } = component.data;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <span class="icon-text-icon">${icon}</span>
       <span class="icon-text-text">${text}</span>
-    `;
+    `);
 
     return container;
   }
@@ -1099,7 +1067,7 @@ export class ButtonComponentRenderer extends BaseComponentRenderer {
     // Build button content
     let buttonContent = '';
     if (loading) {
-      buttonContent = `<span class="button-spinner">⏳</span><span class="button-label">${label}</span>`;
+      buttonContent = `<span class="button-spinner">${UI_ICONS.running}</span><span class="button-label">${label}</span>`;
     } else if (icon) {
       if (icon_position === 'right') {
         buttonContent = `<span class="button-label">${label}</span><span class="button-icon">${icon}</span>`;
@@ -1110,38 +1078,29 @@ export class ButtonComponentRenderer extends BaseComponentRenderer {
       buttonContent = `<span class="button-label">${label}</span>`;
     }
 
-    button.innerHTML = buttonContent;
+    setSanitizedHtml(button, buttonContent);
 
     // Add click handler
     if (action && !disabled && !loading) {
       button.addEventListener('click', async () => {
-        console.log('🔘 Button clicked:', label);
-        console.log('   Sending action:', action);
-
         // Apply visual feedback immediately
         button.disabled = true;
         button.classList.add('button-transitioning', 'button-clicked');
 
         // Find vanna-chat component and send message with button action
         const vannaChat = document.querySelector('vanna-chat') as any;
-        console.log('   Found vanna-chat:', !!vannaChat);
 
         if (vannaChat && typeof vannaChat.sendMessage === 'function') {
-          console.log('   Calling sendMessage...');
           try {
             const success = await vannaChat.sendMessage(action);
-            if (success) {
-              console.log('   ✓ Message sent successfully');
-            } else {
-              console.log('   ✗ Message failed, restoring button state');
+            if (!success) {
               // Restore button state if it wasn't originally disabled
               if (!disabled) {
                 button.disabled = false;
               }
               button.classList.remove('button-transitioning', 'button-clicked');
             }
-          } catch (error) {
-            console.error('   ✗ Message failed with error:', error);
+          } catch {
             // Restore button state if it wasn't originally disabled
             if (!disabled) {
               button.disabled = false;
@@ -1149,7 +1108,6 @@ export class ButtonComponentRenderer extends BaseComponentRenderer {
             button.classList.remove('button-transitioning', 'button-clicked');
           }
         } else {
-          console.error('   ✗ vanna-chat not found or sendMessage not available');
           // Restore button state if it wasn't originally disabled
           if (!disabled) {
             button.disabled = false;
@@ -1226,38 +1184,27 @@ export class ButtonGroupComponentRenderer extends BaseComponentRenderer {
         buttonContent = `<span class="button-label">${buttonConfig.label}</span>`;
       }
 
-      button.innerHTML = buttonContent;
+      setSanitizedHtml(button, buttonContent);
 
       // Add click handler with enhanced functionality
       if (buttonConfig.action && !buttonConfig.disabled) {
         button.addEventListener('click', async () => {
-          console.log('🔘 Button Group button clicked:', buttonConfig.label);
-          console.log('   Button index:', index);
-          console.log('   Sending action:', buttonConfig.action);
-
           // Immediately apply visual changes to all buttons in the group
           this.applyButtonGroupClickState(container, index);
 
           // Find vanna-chat component and send message with button action
           const vannaChat = document.querySelector('vanna-chat') as any;
-          console.log('   Found vanna-chat:', !!vannaChat);
 
           if (vannaChat && typeof vannaChat.sendMessage === 'function') {
-            console.log('   Calling sendMessage...');
             try {
               const success = await vannaChat.sendMessage(buttonConfig.action);
-              if (success) {
-                console.log('   ✓ Message sent successfully');
-              } else {
-                console.log('   ✗ Message failed, restoring button state');
+              if (!success) {
                 this.restoreButtonGroupState(container);
               }
-            } catch (error) {
-              console.error('   ✗ Message failed with error:', error);
+            } catch {
               this.restoreButtonGroupState(container);
             }
           } else {
-            console.error('   ✗ vanna-chat not found or sendMessage not available');
             this.restoreButtonGroupState(container);
           }
         });
@@ -1323,12 +1270,12 @@ export class ChartComponentRenderer extends BaseComponentRenderer {
     const title = component.data?.title || chartPayload?.title;
 
     if (title) {
-      container.innerHTML = `
+      setSanitizedHtml(container, `
         <div class="chart-header">
-          <h3 class="chart-title">${title}</h3>
+          <h3 class="chart-title">${escapeHtmlText(title)}</h3>
         </div>
         <div class="chart-content"></div>
-      `;
+      `);
     }
 
     const mountTarget = (container.querySelector('.chart-content') as HTMLElement) || container;
@@ -1339,7 +1286,7 @@ export class ChartComponentRenderer extends BaseComponentRenderer {
       mountTarget.appendChild(vegaElement);
       requestAnimationFrame(() => {
         vegaElement.spec = chartPayload.spec;
-        vegaElement.dataset = chartPayload.dataset || [];
+        vegaElement.chartData = chartPayload.dataset || [];
       });
       return container;
     }
@@ -1381,12 +1328,12 @@ export class ChartComponentRenderer extends BaseComponentRenderer {
     }
 
     // Fallback for invalid chart data
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="chart-error">
         <p>Invalid chart data format</p>
-        <pre>${JSON.stringify(component.data, null, 2).substring(0, 200)}...</pre>
+        <pre>${escapeHtmlText(JSON.stringify(component.data, null, 2).substring(0, 200))}...</pre>
       </div>
-    `;
+    `);
 
     return container;
   }
@@ -1397,15 +1344,12 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
   private defaultPrevented = false;
 
   render(component: RichComponent): HTMLElement {
-    console.log('🔧 ArtifactComponentRenderer.render called with:', component);
-
     const container = document.createElement('div');
     container.className = 'rich-component rich-artifact';
     container.dataset.componentId = component.id;
     container.dataset.artifactId = component.data.artifact_id;
 
     const {
-      content,
       artifact_type,
       title,
       description,
@@ -1414,24 +1358,25 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
       external_renderable
     } = component.data;
 
-    // Create artifact preview and controls
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="artifact-header">
         <div class="artifact-meta">
-          <h3 class="artifact-title">${title || 'Artifact'}</h3>
+          <h3 class="artifact-title">${escapeHtmlText(title || 'Artifact')}</h3>
           ${description ? `<p class="artifact-description">${description}</p>` : ''}
-          <span class="artifact-type-badge">${artifact_type}</span>
+          <span class="artifact-type-badge">${escapeHtmlText(artifact_type)}</span>
         </div>
         <div class="artifact-controls">
-          ${editable ? '<button class="artifact-btn edit-btn" title="Edit">✏️</button>' : ''}
-          ${fullscreen_capable ? '<button class="artifact-btn fullscreen-btn" title="Fullscreen">⛶</button>' : ''}
-          ${external_renderable ? '<button class="artifact-btn external-btn" title="Open External">🔗</button>' : ''}
+          ${editable ? `<button class="artifact-btn edit-btn" type="button" aria-label="Edit" title="Edit">${UI_ICONS.edit}</button>` : ''}
+          ${fullscreen_capable ? `<button class="artifact-btn fullscreen-btn" type="button" aria-label="Fullscreen" title="Fullscreen">${UI_ICONS.maximize}</button>` : ''}
+          ${external_renderable ? `<button class="artifact-btn external-btn" type="button" aria-label="Open static view" title="Open static view">${UI_ICONS.external}</button>` : ''}
         </div>
       </div>
-      <div class="artifact-preview">
-        <iframe class="artifact-iframe" sandbox="allow-scripts allow-same-origin" srcdoc="${this.escapeHtml(content)}"></iframe>
-      </div>
-    `;
+      <div class="artifact-preview"></div>
+    `);
+
+    container.querySelector('.artifact-preview')?.appendChild(
+      this.createArtifactFrame(component, 'artifact-iframe')
+    );
 
     // Attach event listeners
     this.attachEventListeners(container, component);
@@ -1441,18 +1386,18 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
 
     // If default was prevented, show a placeholder instead
     if (!shouldRenderInChat) {
-      container.innerHTML = `
+      setSanitizedHtml(container, `
         <div class="artifact-placeholder">
           <div class="placeholder-content">
-            <span class="placeholder-icon">🎨</span>
+            <span class="placeholder-icon">${UI_ICONS.info}</span>
             <div class="placeholder-text">
-              <strong>${title || 'Artifact'}</strong> opened externally
-              <div class="placeholder-type">${artifact_type}</div>
+              <strong>${escapeHtmlText(title || 'Artifact')}</strong> opened externally
+              <div class="placeholder-type">${escapeHtmlText(artifact_type)}</div>
             </div>
-            <button class="placeholder-reopen" title="Reopen">↗</button>
+            <button class="placeholder-reopen" type="button" aria-label="Reopen" title="Reopen">${UI_ICONS.external}</button>
           </div>
         </div>
-      `;
+      `);
 
       // Add reopen functionality
       const reopenBtn = container.querySelector('.placeholder-reopen') as HTMLButtonElement;
@@ -1464,6 +1409,17 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
     }
 
     return container;
+  }
+
+  private createArtifactFrame(component: RichComponent, className: string): HTMLIFrameElement {
+    const frame = document.createElement('iframe');
+    frame.className = className;
+    frame.setAttribute('sandbox', '');
+    frame.setAttribute('allow', '');
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.setAttribute('title', String(component.data.title || 'Artifact'));
+    frame.srcdoc = this.generateStandaloneHTML(component);
+    return frame;
   }
 
   private attachEventListeners(container: HTMLElement, component: RichComponent): void {
@@ -1493,19 +1449,16 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
   }
 
   private fireArtifactOpenedEvent(component: RichComponent, trigger: 'created' | 'user-action', container: HTMLElement): boolean {
-    console.log('🎯 fireArtifactOpenedEvent called:', { trigger, artifactId: component.data.artifact_id });
-
     this.defaultPrevented = false;
 
     const eventDetail: ArtifactOpenedEventDetail = {
-      artifactId: component.data.artifact_id,
-      content: component.data.content,
-      type: component.data.artifact_type,
-      title: component.data.title,
-      description: component.data.description,
+      artifactId: sanitizePlainText(component.data.artifact_id),
+      content: sanitizeArtifactContent(component.data.content, component.data.artifact_type),
+      type: sanitizePlainText(component.data.artifact_type || 'html'),
+      title: sanitizePlainText(component.data.title),
+      description: sanitizePlainText(component.data.description),
       trigger,
       preventDefault: () => {
-        console.log('🛑 preventDefault called!');
         this.defaultPrevented = true;
       },
       getStandaloneHTML: () => this.generateStandaloneHTML(component),
@@ -1518,23 +1471,18 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
       cancelable: true
     });
 
-    console.log('📡 Dispatching artifact-opened event:', event);
-
     // Fire the event from the container element (should bubble up to vanna-chat)
     container.dispatchEvent(event);
 
     // Also dispatch directly on the vanna-chat element as backup
     const vannaChat = container.closest('vanna-chat');
     if (vannaChat) {
-      console.log('📡 Also dispatching on vanna-chat element');
       vannaChat.dispatchEvent(new CustomEvent('artifact-opened', {
         detail: eventDetail,
         bubbles: true,
         cancelable: true
       }));
     }
-
-    console.log('📨 Event dispatched. defaultPrevented:', this.defaultPrevented);
 
     // Handle default behavior if not prevented and user triggered
     if (!this.defaultPrevented && trigger === 'user-action') {
@@ -1546,70 +1494,36 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
   }
 
   private generateStandaloneHTML(component: RichComponent): string {
-    const { content, title, dependencies = [] } = component.data;
-
-    let dependenciesHTML = '';
-
-    // Add common CDN links for dependencies
-    if (dependencies.includes('d3')) {
-      dependenciesHTML += '<script src="https://d3js.org/d3.v7.min.js"></script>\n';
-    }
-    if (dependencies.includes('plotly')) {
-      dependenciesHTML += '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>\n';
-    }
-    if (dependencies.includes('three') || dependencies.includes('threejs')) {
-      dependenciesHTML += '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n';
-    }
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title || 'Artifact'}</title>
-    ${dependenciesHTML}
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        .artifact-container {
-            width: 100%;
-            min-height: 100vh;
-        }
-    </style>
-</head>
-<body>
-    <div class="artifact-container">
-        ${content}
-    </div>
-</body>
-</html>`;
+    return buildStaticArtifactDocument(
+      component.data.content,
+      component.data.artifact_type,
+      component.data.title
+    );
   }
 
   private handleDefaultAction(component: RichComponent): void {
-    // Default action: open in new window
-    const newWindow = window.open('', '_blank', 'width=800,height=600');
-    if (newWindow) {
-      newWindow.document.write(this.generateStandaloneHTML(component));
-      newWindow.document.close();
-    }
+    this.openFullscreen(component);
   }
 
   private openFullscreen(component: RichComponent): void {
     // Create fullscreen overlay
     const overlay = document.createElement('div');
     overlay.className = 'artifact-fullscreen-overlay';
-    overlay.innerHTML = `
-      <div class="fullscreen-header">
-        <h3>${component.data.title || 'Artifact'}</h3>
-        <button class="close-fullscreen">✕</button>
-      </div>
-      <div class="fullscreen-content">
-        <iframe class="fullscreen-iframe" sandbox="allow-scripts allow-same-origin" srcdoc="${this.escapeHtml(component.data.content)}"></iframe>
-      </div>
-    `;
+
+    const header = document.createElement('div');
+    header.className = 'fullscreen-header';
+    const heading = document.createElement('h3');
+    heading.textContent = String(component.data.title || 'Artifact');
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-fullscreen';
+    closeBtn.textContent = '✕';
+    header.append(heading, closeBtn);
+
+    const content = document.createElement('div');
+    content.className = 'fullscreen-content';
+    const iframe = this.createArtifactFrame(component, 'fullscreen-iframe');
+    content.appendChild(iframe);
+    overlay.append(header, content);
 
     // Add styles
     overlay.style.cssText = `
@@ -1624,7 +1538,6 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
       flex-direction: column;
     `;
 
-    const header = overlay.querySelector('.fullscreen-header') as HTMLElement;
     header.style.cssText = `
       padding: 16px;
       border-bottom: 1px solid #eee;
@@ -1633,13 +1546,11 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
       align-items: center;
     `;
 
-    const content = overlay.querySelector('.fullscreen-content') as HTMLElement;
     content.style.cssText = `
       flex: 1;
       padding: 16px;
     `;
 
-    const iframe = overlay.querySelector('.fullscreen-iframe') as HTMLIFrameElement;
     iframe.style.cssText = `
       width: 100%;
       height: 100%;
@@ -1647,32 +1558,23 @@ export class ArtifactComponentRenderer extends BaseComponentRenderer {
     `;
 
     // Close button functionality
-    const closeBtn = overlay.querySelector('.close-fullscreen') as HTMLButtonElement;
-    closeBtn.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-    });
-
-    // Escape key to close
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.body.removeChild(overlay);
-        document.removeEventListener('keydown', handleEscape);
+        close();
       }
     };
+    const close = () => {
+      overlay.remove();
+      document.removeEventListener('keydown', handleEscape);
+    };
+    closeBtn.addEventListener('click', close);
     document.addEventListener('keydown', handleEscape);
 
     document.body.appendChild(overlay);
   }
 
-  private openEditor(component: RichComponent): void {
+  private openEditor(_component: RichComponent): void {
     // Placeholder for future editor implementation
-    console.log('Editor functionality not yet implemented for artifact:', component.data.artifact_id);
-  }
-
-  private escapeHtml(html: string): string {
-    const div = document.createElement('div');
-    div.textContent = html;
-    return div.innerHTML.replace(/"/g, '&quot;');
   }
 }
 
@@ -1711,6 +1613,22 @@ export class AssistantMessageComponentRenderer extends BaseComponentRenderer {
 // Component registry for managing all component types
 export class ComponentRegistry {
   private renderers: Map<string, ComponentRenderer> = new Map();
+  private readonly webComponentProperties: Record<string, ReadonlySet<string>> = {
+    'rich-card': new Set([
+      'actions', 'collapsed', 'collapsible', 'content', 'icon', 'markdown', 'status',
+      'subtitle', 'title',
+    ]),
+    'rich-progress-bar': new Set([
+      'animated', 'description', 'indeterminate', 'label', 'showPercentage', 'status',
+      'value',
+    ]),
+    'rich-task-list': new Set(['showProgress', 'showTimestamps', 'tasks', 'title']),
+  };
+  private readonly webComponentPropertyAliases: Record<string, string> = {
+    show_percentage: 'showPercentage',
+    show_progress: 'showProgress',
+    show_timestamps: 'showTimestamps',
+  };
 
   constructor() {
     // Register primitive component renderers (domain-agnostic)
@@ -1773,13 +1691,13 @@ export class ComponentRegistry {
 
   private renderWebComponent(tagName: string, component: RichComponent): HTMLElement {
     const element = document.createElement(tagName) as any;
+    const allowedProperties = this.webComponentProperties[tagName] ?? new Set<string>();
 
-    // Set properties based on component data
-    Object.keys(component.data).forEach(key => {
-      if (key === 'actions' && Array.isArray(component.data[key])) {
-        element.actions = component.data[key];
-      } else {
-        element[key] = component.data[key];
+    // Never allow payload keys such as innerHTML to become DOM properties.
+    Object.entries(component.data).forEach(([key, value]) => {
+      const property = this.webComponentPropertyAliases[key] ?? key;
+      if (allowedProperties.has(property)) {
+        element[property] = value;
       }
     });
 
@@ -1816,12 +1734,12 @@ export class ComponentRegistry {
     container.className = 'rich-component rich-fallback';
     container.dataset.componentId = component.id;
 
-    container.innerHTML = `
+    setSanitizedHtml(container, `
       <div class="fallback-header">
-        <strong>Unknown Component: ${component.type}</strong>
+        <strong>Unknown Component: ${escapeHtmlText(component.type)}</strong>
       </div>
-      <pre class="fallback-data">${JSON.stringify(component.data, null, 2)}</pre>
-    `;
+      <pre class="fallback-data">${escapeHtmlText(JSON.stringify(component.data, null, 2))}</pre>
+    `);
 
     return container;
   }
@@ -1949,7 +1867,7 @@ export class ComponentManager {
   clear(): void {
     this.components.clear();
     this.elements.clear();
-    this.container.innerHTML = '';
+    this.container.replaceChildren();
     ensureRichComponentStyles(this.container);
   }
 
@@ -1986,8 +1904,6 @@ export class ComponentManager {
   }
 
   private processUIStateUpdate(component: RichComponent): void {
-    console.log('processUIStateUpdate called with type:', component.type, 'component:', component);
-
     switch (component.type) {
       case 'status_bar_update':
         this.updateStatusBar(component);
@@ -2026,10 +1942,6 @@ export class ComponentManager {
   }
 
   private updateTaskTracker(component: RichComponent): void {
-    // Debug logging
-    console.log('updateTaskTracker called with component:', component);
-    console.log('component.data:', component.data);
-
     // Find the progress tracker component - first try shadow DOM, then document
     let progressTracker = null;
 
@@ -2044,23 +1956,18 @@ export class ComponentManager {
       progressTracker = document.querySelector('vanna-progress-tracker');
     }
 
-    console.log('Found progressTracker:', progressTracker);
     if (!progressTracker) return;
 
     const { operation, task, task_id, status, detail } = component.data || {};
-    console.log('Extracted data:', { operation, task, task_id, status, detail });
 
     switch (operation) {
       case 'add_task':
-        console.log('Adding task:', task);
         if (task && progressTracker.addItem) {
           // Use the backend task ID instead of generating a new one
-          const result = progressTracker.addItem(task.title || task.text, task.description || task.detail, task.id);
-          console.log('addItem result:', result, 'using backend ID:', task.id);
+          progressTracker.addItem(task.title || task.text, task.description || task.detail, task.id);
         }
         break;
       case 'update_task':
-        console.log('Updating task:', task_id, status, detail);
         if (task_id && progressTracker.updateItem) {
           progressTracker.updateItem(task_id, status, detail);
         }
@@ -2085,12 +1992,16 @@ export class ComponentManager {
     // Look for vanna-chat and search within its shadow root
     const vannaChat = document.querySelector('vanna-chat') as any;
     if (vannaChat && vannaChat.shadowRoot) {
-      chatInput = vannaChat.shadowRoot.querySelector('textarea.message-input, input.message-input');
+      chatInput = vannaChat.shadowRoot.querySelector(
+        'sp-textfield.message-input, textarea.message-input, input.message-input',
+      );
     }
 
     // Fallback to document search with multiple selectors
     if (!chatInput) {
-      chatInput = document.querySelector('textarea[data-testid="message-input"], input[type="text"].message-input, .message-input input, .message-input textarea');
+      chatInput = document.querySelector(
+        'sp-textfield.message-input, textarea[data-testid="message-input"], input[type="text"].message-input, .message-input input, .message-input textarea',
+      );
     }
 
     if (!chatInput) return;

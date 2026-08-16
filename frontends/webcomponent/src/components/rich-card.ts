@@ -1,14 +1,18 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { vannaDesignTokens } from "../styles/vanna-design-tokens.js";
+import {
+  renderSanitizedHtml,
+  renderSanitizedMarkdown,
+} from "../security/content-security.js";
 
 export interface CardAction {
   label: string;
   action: string;
-  variant?: 'primary' | 'secondary';
+  variant?: "primary" | "secondary";
 }
 
-@customElement('rich-card')
+@customElement("rich-card")
 export class RichCard extends LitElement {
   static styles = [
     vannaDesignTokens,
@@ -202,19 +206,130 @@ export class RichCard extends LitElement {
       .card-action.primary:hover {
         background: var(--vanna-accent-primary-stronger);
       }
-    `
+
+      :host {
+        margin-bottom: 0;
+      }
+
+      .card {
+        background: var(--vanna-background-root);
+        border-color: var(--vanna-outline-default);
+        border-radius: var(--vanna-border-radius-lg);
+        box-shadow: none;
+      }
+
+      .card:hover {
+        box-shadow: none;
+      }
+
+      .card-header {
+        padding: 14px 17px;
+        background: var(--vanna-background-subtle);
+        border-bottom-color: var(--vanna-outline-dimmer);
+      }
+
+      .card-title {
+        font-family: var(--vanna-font-family-display);
+        font-size: 14px;
+        font-weight: 650;
+        letter-spacing: -0.015em;
+      }
+
+      .card-subtitle {
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .card-status {
+        border-radius: var(--vanna-border-radius-full);
+        font-family: var(--vanna-font-family-default);
+        font-size: 10px;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .card-status.status-success {
+        color: var(--vanna-accent-positive-stronger);
+        background: var(--vanna-accent-positive-subtle);
+      }
+
+      .card-status.status-warning {
+        color: var(--vanna-accent-warning-stronger);
+        background: var(--vanna-accent-warning-subtle);
+      }
+
+      .card-status.status-error {
+        color: var(--vanna-accent-negative-stronger);
+        background: var(--vanna-accent-negative-subtle);
+      }
+
+      .card-status.status-info {
+        color: var(--vanna-accent-primary-stronger);
+        background: var(--vanna-accent-primary-subtle);
+      }
+
+      .card-content {
+        padding: 16px 17px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .card-actions {
+        padding: 11px 17px;
+        background: var(--vanna-background-subtle);
+        border-top-color: var(--vanna-outline-dimmer);
+      }
+
+      .card-action {
+        padding: 7px 11px;
+        background: var(--vanna-background-root);
+        border-radius: var(--vanna-border-radius-md);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .card-action.primary {
+        background: var(--vanna-navy);
+        border-color: var(--vanna-navy);
+      }
+
+      .card-toggle svg {
+        display: block;
+        width: 16px;
+        height: 16px;
+        transition: transform var(--vanna-duration-100) ease;
+      }
+
+      .card-toggle[aria-expanded="false"] svg {
+        transform: rotate(-90deg);
+      }
+
+      .card-action:focus-visible,
+      .card-toggle:focus-visible {
+        outline: 2px solid var(--vanna-teal);
+        outline-offset: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .card,
+        .card-content,
+        .card-action {
+          transition-duration: 0.01ms;
+        }
+      }
+    `,
   ];
 
-  @property() title = '';
-  @property() subtitle = '';
-  @property() content = '';
-  @property() icon = '';
-  @property() status: 'info' | 'success' | 'warning' | 'error' = 'info';
+  @property() title = "";
+  @property() subtitle = "";
+  @property() content = "";
+  @property() icon = "";
+  @property() status: "info" | "success" | "warning" | "error" = "info";
   @property({ type: Array }) actions: CardAction[] = [];
   @property({ type: Boolean }) collapsible = false;
   @property({ type: Boolean }) collapsed = false;
   @property({ type: Boolean }) markdown = false;
-  @property() theme: 'light' | 'dark' = 'dark';
+  @property() theme: "light" | "dark" = "dark";
 
   private _toggleCollapsed() {
     if (this.collapsible) {
@@ -222,88 +337,99 @@ export class RichCard extends LitElement {
     }
   }
 
-  private _renderMarkdown(text: string): string {
-    // Simple markdown rendering - basic formatting
-    return text
-      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/^- (.*$)/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<[h|u|l|p])(.+)$/gm, '<p>$1</p>');
-  }
-
   render() {
     const contentHtml = this.markdown
-      ? html`<div class="card-content ${this.collapsed ? 'collapsed' : ''}" .innerHTML=${this._renderMarkdown(this.content)}></div>`
-      : html`<div class="card-content ${this.collapsed ? 'collapsed' : ''}">${this.content}</div>`;
+      ? html`<div class="card-content ${this.collapsed ? "collapsed" : ""}">
+          ${renderSanitizedHtml(renderSanitizedMarkdown(this.content))}
+        </div>`
+      : html`<div class="card-content ${this.collapsed ? "collapsed" : ""}">
+          ${this.content}
+        </div>`;
 
     return html`
       <div class="card">
-        <div class="card-header ${this.collapsible ? 'collapsible' : ''}"
-             @click=${this._toggleCollapsed}>
-          ${this.icon ? html`<span class="card-icon">${this.icon}</span>` : ''}
+        <div
+          class="card-header ${this.collapsible ? "collapsible" : ""}"
+          @click=${this._toggleCollapsed}
+        >
+          ${this.icon ? html`<span class="card-icon">${this.icon}</span>` : ""}
           <div class="card-title-section">
             <h3 class="card-title">${this.title}</h3>
-            ${this.subtitle ? html`<p class="card-subtitle">${this.subtitle}</p>` : ''}
+            ${this.subtitle
+              ? html`<p class="card-subtitle">${this.subtitle}</p>`
+              : ""}
           </div>
-          ${this.status ? html`<span class="card-status status-${this.status}">${this.status}</span>` : ''}
-          ${this.collapsible ? html`
-            <button class="card-toggle">${this.collapsed ? '▶' : '▼'}</button>
-          ` : ''}
+          ${this.status
+            ? html`<span class="card-status status-${this.status}"
+                >${this.status}</span
+              >`
+            : ""}
+          ${this.collapsible
+            ? html`
+                <button
+                  class="card-toggle"
+                  type="button"
+                  aria-label="Toggle details"
+                  aria-expanded=${String(!this.collapsed)}
+                >
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path
+                      d="M4.5 6l3.5 3.5L11.5 6"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              `
+            : ""}
         </div>
         ${contentHtml}
-        ${this.actions.length > 0 ? html`
-          <div class="card-actions">
-            ${this.actions.map(action => html`
-              <button class="card-action ${action.variant || 'secondary'}"
-                      @click=${() => this._handleAction(action.action)}>
-                ${action.label}
-              </button>
-            `)}
-          </div>
-        ` : ''}
+        ${this.actions.length > 0
+          ? html`
+              <div class="card-actions">
+                ${this.actions.map(
+                  (action) => html`
+                    <button
+                      class="card-action ${action.variant || "secondary"}"
+                      @click=${() => this._handleAction(action.action)}
+                    >
+                      ${action.label}
+                    </button>
+                  `,
+                )}
+              </div>
+            `
+          : ""}
       </div>
     `;
   }
 
   private async _handleAction(action: string) {
-    console.log('🔘 Card action button clicked (rich-card)');
-    console.log('   Action:', action);
-
     // Dispatch event for any listeners
-    this.dispatchEvent(new CustomEvent('card-action', {
-      detail: { action },
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent("card-action", {
+        detail: { action },
+        bubbles: true,
+        composed: true,
+      }),
+    );
 
     // Also directly send to vanna-chat
-    const vannaChat = document.querySelector('vanna-chat') as any;
-    if (vannaChat && typeof vannaChat.sendMessage === 'function') {
-      console.log('   Found vanna-chat, sending message...');
+    const vannaChat = document.querySelector("vanna-chat") as any;
+    if (vannaChat && typeof vannaChat.sendMessage === "function") {
       try {
-        const success = await vannaChat.sendMessage(action);
-        if (success) {
-          console.log('   ✅ Action sent successfully');
-        } else {
-          console.error('   ❌ Failed to send action');
-        }
-      } catch (error) {
-        console.error('   ❌ Error sending action:', error);
+        await vannaChat.sendMessage(action);
+      } catch {
+        // The chat component owns user-visible transport errors.
       }
-    } else {
-      console.warn('   ⚠️ vanna-chat component not found or sendMessage not available');
     }
   }
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'rich-card': RichCard;
+    "rich-card": RichCard;
   }
 }

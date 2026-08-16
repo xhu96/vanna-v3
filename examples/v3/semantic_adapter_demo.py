@@ -26,7 +26,7 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "semantic_model.yaml")
 
 class Resolver(UserResolver):
     async def resolve_user(self, request_context: RequestContext) -> User:
-        return User(id="semantic-user", group_memberships=["user"])
+        return User(id="semantic-user", authenticated=True, group_memberships=["user"])
 
 
 def _seed_db() -> str:

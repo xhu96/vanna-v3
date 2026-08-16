@@ -1,57 +1,134 @@
-"""
-FastAPI route implementations for Vanna Agents.
-"""
+"""FastAPI route implementations for Vanna Agents."""
 
-import json
-import traceback
-import uuid
+import asyncio
 import inspect
-from typing import Any, AsyncGenerator, Dict, Optional, Callable, Awaitable
+import json
+import logging
+import uuid
+from typing import Any, AsyncGenerator, Callable, Dict, Optional, cast
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, StreamingResponse
 
-from ..base import ChatHandler, ChatRequest, ChatResponse
-from ..base.events_v3 import ChatEvent
-from ..base.templates import get_index_html
-from ...core.user.request_context import RequestContext
+from ...capabilities.schema_catalog import get_latest_snapshot_compat
+from ...core.storage import ConversationAccessDeniedError, REQUEST_ID_METADATA_KEY
 from ...core.tool import ToolContext
-from ...services.feedback import FeedbackRequest
+from ...core.user import (
+    RequestContext,
+    TRUSTED_SCHEMA_LINEAGE_METADATA_KEY,
+    User,
+    same_principal,
+)
+from ...security.sql_policy import SqlPolicyViolation
+from ...services.feedback import FeedbackRequest, FeedbackReviewRequest
+from ...services.feedback_store import FeedbackStateError
+from ..base import ChatHandler, ChatRequest, ChatResponse
+from ..base.authorization import (
+    CHAT_EXECUTE,
+    FEEDBACK_CREATE,
+    FEEDBACK_EXPORT,
+    FEEDBACK_REVIEW,
+    SCHEMA_READ,
+    SCHEMA_SYNC,
+    UI_READ,
+    attach_resolved_user,
+    resolve_and_authorize,
+)
+from ..base.errors import (
+    AuthenticationRequiredError,
+    ConversationRouteAccessDeniedError,
+    InternalServerError,
+    InvalidRequestError,
+    PublicServerError,
+    RateLimitExceededError,
+    RequestConflictError,
+    RouteAccessDeniedError,
+    ServiceNotConfiguredError,
+)
+from ..base.events_v3 import (
+    collect_v3_poll,
+    format_sse_event,
+    iter_v3_events,
+    prepare_v3_request,
+)
+from ..base.rate_limit import configured_rate_limiter, enforce_rate_limit
+from ..base.security import route_authorizer, security_mode
+from ..base.templates import (
+    bundled_ui_security_headers,
+    get_index_html,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def register_chat_routes(
     app: FastAPI, chat_handler: ChatHandler, config: Optional[Dict[str, Any]] = None
 ) -> None:
-    """Register chat routes on FastAPI app.
+    """Register authenticated V2/V3 chat and service routes."""
 
-    Args:
-        app: FastAPI application
-        chat_handler: Chat handler instance
-        config: Server configuration
-    """
     config = config or {}
+    mode = security_mode(config)
     v2_prefix = config.get("api_v2_prefix", "/api/vanna/v2")
     v3_prefix = config.get("api_v3_prefix", "/api/vanna/v3")
-    enable_default_ui_route = config.get("enable_default_ui_route", True)
-    request_guard: Optional[
-        Callable[[ChatRequest, RequestContext], Optional[Awaitable[None]]]
-    ] = config.get("request_guard")
+    ui_enabled = bool(config.get("enable_default_ui_route", False))
+    authorizer = route_authorizer(config, mode=mode, default_ui_enabled=ui_enabled)
+    rate_limiter = configured_rate_limiter(config, security_mode=mode)
+    request_guard: Optional[Callable[[ChatRequest, RequestContext], Any]] = config.get(
+        "request_guard"
+    )
 
     async def _run_request_guard(
         chat_request: ChatRequest, request_context: RequestContext
     ) -> None:
         if request_guard is None:
             return
-        result = request_guard(chat_request, request_context)
-        if inspect.isawaitable(result):
-            await result
+        try:
+            result = request_guard(chat_request, request_context)
+            if inspect.isawaitable(result):
+                result = await result
+        except RateLimitExceededError:
+            raise
+        except PermissionError as exc:
+            raise RateLimitExceededError() from exc
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", getattr(exc, "code", None))
+            if status_code == 429:
+                raise RateLimitExceededError() from exc
+            raise InternalServerError() from exc
+        if result is False:
+            raise RateLimitExceededError()
+
+    async def _authorize(
+        action: str,
+        request_context: RequestContext,
+        guard_request: Optional[ChatRequest] = None,
+        *,
+        apply_rate_limit: bool = True,
+        expected_user: Optional[User] = None,
+    ) -> User:
+        user = await resolve_and_authorize(
+            action=action,
+            resolver=chat_handler.agent.user_resolver,
+            authorizer=authorizer,
+            context=request_context,
+            security_mode=mode,
+        )
+        if expected_user is not None and not same_principal(user, expected_user):
+            raise AuthenticationRequiredError()
+        attach_resolved_user(request_context, user)
+        if apply_rate_limit:
+            await enforce_rate_limit(rate_limiter, user, request_context)
+        if guard_request is not None:
+            await _run_request_guard(guard_request, request_context)
+        return user
 
     async def _build_tool_context(
-        request_context: RequestContext,
+        user: User,
         conversation_id: Optional[str] = None,
         request_id: Optional[str] = None,
     ) -> ToolContext:
-        user = await chat_handler.agent.user_resolver.resolve_user(request_context)
         return ToolContext(
             user=user,
             conversation_id=conversation_id or f"conv_{uuid.uuid4().hex[:8]}",
@@ -60,325 +137,503 @@ def register_chat_routes(
             metadata={"schema_sync": True},
         )
 
-    async def _load_schema_metadata() -> Dict[str, Any]:
+    async def _load_schema_metadata(context: ToolContext) -> Dict[str, Any]:
         service = config.get("schema_sync_service")
         if service is None:
             return {}
-        latest = await service.get_latest_snapshot()
+        latest = await get_latest_snapshot_compat(service, context)
         if latest is None:
             return {}
-        return {
+        lineage: Dict[str, Any] = {
             "schema_hash": latest.schema_hash,
             "schema_snapshot_id": latest.snapshot_id,
         }
+        schema_version = getattr(latest, "schema_version", None)
+        if isinstance(schema_version, int):
+            lineage["schema_version"] = schema_version
+            lineage["schema_drift_detected"] = (
+                getattr(latest, "previous_snapshot_id", None) is not None
+            )
+        return {TRUSTED_SCHEMA_LINEAGE_METADATA_KEY: lineage}
 
-    if enable_default_ui_route:
+    def _feedback_service() -> Any:
+        service = config.get("feedback_service")
+        if service is None:
+            raise ServiceNotConfiguredError()
+        return service
+
+    async def _verify_feedback_conversation(
+        conversation_id: str,
+        request_id: str,
+        user: User,
+    ) -> None:
+        try:
+            conversation = await chat_handler.agent.conversation_store.get_conversation(
+                conversation_id,
+                user,
+            )
+        except ConversationAccessDeniedError as exc:
+            raise RouteAccessDeniedError() from exc
+        if conversation is None or not any(
+            message.role == "user"
+            and message.metadata.get(REQUEST_ID_METADATA_KEY) == request_id
+            for message in conversation.messages
+        ):
+            raise RouteAccessDeniedError()
+
+    def _raise_feedback_error(operation: str, error: Exception) -> None:
+        if isinstance(error, (SqlPolicyViolation, ValueError)):
+            raise InvalidRequestError() from error
+        if isinstance(error, PermissionError):
+            raise RouteAccessDeniedError() from error
+        if isinstance(error, FeedbackStateError):
+            raise RequestConflictError() from error
+        raise _internal_error(operation) from error
+
+    def _http_context(
+        http_request: Request, metadata: Optional[Dict[str, Any]] = None
+    ) -> RequestContext:
+        return RequestContext(
+            cookies=dict(http_request.cookies),
+            headers=dict(http_request.headers),
+            remote_addr=http_request.client.host if http_request.client else None,
+            query_params=dict(http_request.query_params),
+            metadata=dict(metadata or {}),
+        )
+
+    def _websocket_context(
+        websocket: WebSocket, metadata: Optional[Dict[str, Any]] = None
+    ) -> RequestContext:
+        return RequestContext(
+            cookies=dict(websocket.cookies),
+            headers=dict(websocket.headers),
+            remote_addr=websocket.client.host if websocket.client else None,
+            query_params=dict(websocket.query_params),
+            metadata=dict(metadata or {}),
+        )
+
+    async def _claim_conversation(
+        conversation_id: Optional[str],
+        user: User,
+    ) -> None:
+        if conversation_id is None:
+            return
+        try:
+            await chat_handler.agent.conversation_store.claim_conversation(
+                conversation_id,
+                user,
+            )
+        except ConversationAccessDeniedError as exc:
+            raise ConversationRouteAccessDeniedError() from exc
+
+    async def _prepare_chat_request(
+        chat_request: ChatRequest,
+        http_request: Request,
+        *,
+        v3: bool = False,
+    ) -> None:
+        if v3:
+            try:
+                prepare_v3_request(chat_request)
+            except ValueError as exc:
+                raise InvalidRequestError() from exc
+        request_context = _http_context(http_request, chat_request.metadata)
+        chat_request.request_context = request_context
+        user = await _authorize(CHAT_EXECUTE, request_context, chat_request)
+        await _claim_conversation(chat_request.conversation_id, user)
+        tool_context = await _build_tool_context(
+            user,
+            chat_request.conversation_id,
+            chat_request.request_id,
+        )
+        schema_metadata = await _load_schema_metadata(tool_context)
+        if schema_metadata:
+            chat_request.metadata = {**chat_request.metadata, **schema_metadata}
+            request_context.metadata.update(schema_metadata)
+
+    if ui_enabled:
+        index_html = get_index_html(
+            dev_mode=bool(config.get("dev_mode", False)),
+            static_path=config.get("static_url_path", "/static"),
+            cdn_url=config.get("cdn_url"),
+            component_script_path=config.get("component_script_path"),
+            api_base_url=config.get("api_base_url", ""),
+            api_v2_prefix=v2_prefix,
+        )
 
         @app.get("/", response_class=HTMLResponse)
-        async def index() -> str:
-            """Serve the main chat interface."""
-            dev_mode = config.get("dev_mode", False)
-            cdn_url = config.get("cdn_url", "https://img.vanna.ai/vanna-components.js")
-            api_base_url = config.get("api_base_url", "")
+        async def index(http_request: Request) -> HTMLResponse:
+            """Serve the configured bundled chat interface."""
 
-            return get_index_html(
-                dev_mode=dev_mode,
-                cdn_url=cdn_url,
-                api_base_url=api_base_url,
-                api_v2_prefix=v2_prefix,
+            request_context = _http_context(http_request)
+            await _authorize(UI_READ, request_context)
+            return HTMLResponse(
+                content=index_html,
+                headers=bundled_ui_security_headers(),
             )
 
     @app.post(f"{v2_prefix}/chat_sse")
     async def chat_sse(
         chat_request: ChatRequest, http_request: Request
     ) -> StreamingResponse:
-        """Server-Sent Events endpoint for streaming chat."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        # Extract request context for user resolution
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        """V2 Server-Sent Events chat endpoint."""
+
+        await _prepare_chat_request(chat_request, http_request)
 
         async def generate() -> AsyncGenerator[str, None]:
-            """Generate SSE stream."""
             try:
                 async for chunk in chat_handler.handle_stream(chat_request):
-                    chunk_json = chunk.model_dump_json()
-                    yield f"data: {chunk_json}\n\n"
+                    yield f"data: {chunk.model_dump_json()}\n\n"
                 yield "data: [DONE]\n\n"
-            except Exception as e:
-                traceback.print_stack()
-                traceback.print_exc()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                error = _internal_error("fastapi.v2.chat_sse")
                 error_data = {
                     "type": "error",
-                    "data": {"message": str(e)},
+                    "data": {"message": error.public_message},
                     "conversation_id": chat_request.conversation_id or "",
                     "request_id": chat_request.request_id or "",
                 }
                 yield f"data: {json.dumps(error_data)}\n\n"
 
-        return StreamingResponse(
-            generate(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",  # Disable nginx buffering
-            },
-        )
+        return _sse_response(generate())
 
     @app.post(f"{v3_prefix}/chat/events")
     async def chat_events_v3(
         chat_request: ChatRequest, http_request: Request
     ) -> StreamingResponse:
-        """Versioned v3 SSE endpoint with typed events."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        """Versioned V3 SSE endpoint with typed events."""
+
+        await _prepare_chat_request(chat_request, http_request, v3=True)
 
         async def generate() -> AsyncGenerator[str, None]:
-            last_conversation_id = chat_request.conversation_id or ""
-            last_request_id = chat_request.request_id or ""
-            try:
-                async for chunk in chat_handler.handle_stream(chat_request):
-                    last_conversation_id = chunk.conversation_id
-                    last_request_id = chunk.request_id
-                    event = ChatEvent.from_chunk(chunk)
-                    event_json = event.model_dump_json()
-                    yield f"event: {event.event_type}\n"
-                    yield f"data: {event_json}\n\n"
+            conversation_id = cast(str, chat_request.conversation_id)
+            request_id = cast(str, chat_request.request_id)
+            events = iter_v3_events(
+                chat_handler.handle_stream(chat_request),
+                conversation_id=conversation_id,
+                request_id=request_id,
+                internal_error_factory=lambda: _internal_error(
+                    "fastapi.v3.chat_events"
+                ),
+            )
+            async for event in events:
+                yield format_sse_event(event)
 
-                done_event = ChatEvent.done(last_conversation_id, last_request_id)
-                yield "event: done\n"
-                yield f"data: {done_event.model_dump_json()}\n\n"
-            except Exception as e:
-                error_event = ChatEvent(
-                    event_type="error",
-                    conversation_id=last_conversation_id,
-                    request_id=last_request_id,
-                    payload={"message": str(e)},
-                )
-                yield "event: error\n"
-                yield f"data: {error_event.model_dump_json()}\n\n"
-
-        return StreamingResponse(
-            generate(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",
-            },
-        )
+        return _sse_response(generate())
 
     @app.post(f"{v3_prefix}/chat/poll")
     async def chat_poll_v3(
         chat_request: ChatRequest, http_request: Request
     ) -> Dict[str, Any]:
-        """Versioned v3 polling endpoint returning typed events."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
+        """Versioned V3 polling endpoint returning typed events."""
+
+        await _prepare_chat_request(chat_request, http_request, v3=True)
+        conversation_id = cast(str, chat_request.conversation_id)
+        request_id = cast(str, chat_request.request_id)
+        response = await collect_v3_poll(
+            chat_handler.handle_stream(chat_request),
+            conversation_id=conversation_id,
+            request_id=request_id,
+            internal_error_factory=lambda: _internal_error("fastapi.v3.chat_poll"),
         )
-        await _run_request_guard(chat_request, chat_request.request_context)
-
-        events = []
-        async for chunk in chat_handler.handle_stream(chat_request):
-            events.append(ChatEvent.from_chunk(chunk).model_dump())
-
-        if events:
-            conversation_id = events[0]["conversation_id"]
-            request_id = events[0]["request_id"]
-            events.append(ChatEvent.done(conversation_id, request_id).model_dump())
-
-        return {"event_version": "v3", "events": events}
+        return response.model_dump(mode="json")
 
     @app.post(f"{v3_prefix}/schema/sync")
     async def schema_sync(http_request: Request) -> Dict[str, Any]:
-        """Trigger on-demand schema sync and drift detection."""
+        """Trigger authorized on-demand schema synchronization."""
+
+        request_context = _http_context(http_request)
+        dummy_request = ChatRequest(message="", request_context=request_context)
+        user = await _authorize(SCHEMA_SYNC, request_context, dummy_request)
         service = config.get("schema_sync_service")
         if service is None:
-            raise HTTPException(
-                status_code=501, detail="Schema sync service is not configured."
-            )
-
-        request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata={},
-        )
-        dummy_request = ChatRequest(message="", request_context=request_context)
-        await _run_request_guard(dummy_request, request_context)
-        tool_context = await _build_tool_context(request_context)
-        result = await service.sync(tool_context)
-        return result.model_dump(mode="json")
+            raise ServiceNotConfiguredError()
+        tool_context = await _build_tool_context(user)
+        try:
+            result = await service.sync(tool_context)
+            return cast(Dict[str, Any], result.model_dump(mode="json"))
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            raise _internal_error("fastapi.schema_sync") from exc
 
     @app.get(f"{v3_prefix}/schema/status")
-    async def schema_status() -> Dict[str, Any]:
-        """Return latest known schema snapshot metadata."""
+    async def schema_status(http_request: Request) -> Dict[str, Any]:
+        """Return authorized schema snapshot metadata."""
+
+        request_context = _http_context(http_request)
+        user = await _authorize(SCHEMA_READ, request_context)
         service = config.get("schema_sync_service")
         if service is None:
-            raise HTTPException(
-                status_code=501, detail="Schema sync service is not configured."
-            )
-        latest = await service.get_latest_snapshot()
-        if latest is None:
-            return {"status": "empty", "snapshot": None}
-        return {"status": "ok", "snapshot": latest.model_dump(mode="json")}
+            raise ServiceNotConfiguredError()
+        tool_context = await _build_tool_context(user)
+        try:
+            latest = await service.get_latest_snapshot(tool_context)
+            if latest is None:
+                return {"status": "empty", "snapshot": None}
+            return {"status": "ok", "snapshot": latest.model_dump(mode="json")}
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            raise _internal_error("fastapi.schema_status") from exc
 
     @app.post(f"{v3_prefix}/feedback")
     async def feedback(
         feedback_request: FeedbackRequest, http_request: Request
     ) -> Dict[str, Any]:
-        """Capture feedback and apply immediate memory patches."""
-        feedback_service = config.get("feedback_service")
-        if feedback_service is None:
-            raise HTTPException(
-                status_code=501, detail="Feedback service is not configured."
-            )
+        """Capture feedback after authentication and authorization."""
 
-        request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata={},
-        )
+        request_context = _http_context(http_request)
         dummy_request = ChatRequest(message="", request_context=request_context)
-        await _run_request_guard(dummy_request, request_context)
-
+        user = await _authorize(FEEDBACK_CREATE, request_context, dummy_request)
+        await _verify_feedback_conversation(
+            feedback_request.conversation_id,
+            feedback_request.request_id,
+            user,
+        )
+        feedback_service = _feedback_service()
         tool_context = await _build_tool_context(
-            request_context=request_context,
+            user,
             conversation_id=feedback_request.conversation_id,
             request_id=feedback_request.request_id,
         )
-        result = await feedback_service.process_feedback(feedback_request, tool_context)
-        return result.model_dump(mode="json")
+        try:
+            result = await feedback_service.process_feedback(
+                feedback_request, tool_context
+            )
+            return cast(Dict[str, Any], result.model_dump(mode="json"))
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            _raise_feedback_error("fastapi.feedback", exc)
+            raise AssertionError("unreachable")
+
+    @app.get(f"{v3_prefix}/feedback/review")
+    async def feedback_review_queue(
+        http_request: Request,
+        status: str = "pending",
+        limit: int = 100,
+    ) -> Dict[str, Any]:
+        """List tenant-scoped feedback for authenticated admins."""
+
+        if status not in {"pending", "approved", "rejected"} or not 1 <= limit <= 1000:
+            raise InvalidRequestError()
+        request_context = _http_context(http_request)
+        user = await _authorize(FEEDBACK_REVIEW, request_context)
+        tool_context = await _build_tool_context(user)
+        try:
+            result = await _feedback_service().list_review_queue(
+                tool_context,
+                status=status,
+                limit=limit,
+            )
+            return cast(Dict[str, Any], result.model_dump(mode="json"))
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            _raise_feedback_error("fastapi.feedback_review_list", exc)
+            raise AssertionError("unreachable")
+
+    @app.post(f"{v3_prefix}/feedback/{{feedback_id}}/review")
+    async def review_feedback(
+        feedback_id: str,
+        review_request: FeedbackReviewRequest,
+        http_request: Request,
+    ) -> Dict[str, Any]:
+        """Atomically approve or reject a pending tenant feedback record."""
+
+        if not 1 <= len(feedback_id) <= 160:
+            raise InvalidRequestError()
+        request_context = _http_context(http_request)
+        user = await _authorize(FEEDBACK_REVIEW, request_context)
+        tool_context = await _build_tool_context(user)
+        try:
+            result = await _feedback_service().review_feedback(
+                feedback_id,
+                review_request,
+                tool_context,
+            )
+            return cast(Dict[str, Any], result.model_dump(mode="json"))
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            _raise_feedback_error("fastapi.feedback_review", exc)
+            raise AssertionError("unreachable")
+
+    @app.get(f"{v3_prefix}/feedback/export")
+    async def export_feedback(http_request: Request) -> Dict[str, Any]:
+        """Export only approved records for this admin's tenant."""
+
+        request_context = _http_context(http_request)
+        user = await _authorize(FEEDBACK_EXPORT, request_context)
+        tool_context = await _build_tool_context(user)
+        try:
+            result = await _feedback_service().approved_export(tool_context)
+            return cast(Dict[str, Any], result.model_dump(mode="json"))
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            _raise_feedback_error("fastapi.feedback_export", exc)
+            raise AssertionError("unreachable")
 
     @app.websocket(f"{v2_prefix}/chat_websocket")
     async def chat_websocket(websocket: WebSocket) -> None:
-        """WebSocket endpoint for real-time chat."""
-        await websocket.accept()
+        """V2 WebSocket with authentication before protocol acceptance."""
 
+        handshake_context = _websocket_context(websocket)
+        try:
+            user = await _authorize(
+                CHAT_EXECUTE, handshake_context, apply_rate_limit=False
+            )
+        except PublicServerError as public_error:
+            await websocket.close(
+                code=_websocket_close_code(public_error), reason=public_error.code
+            )
+            return
+        except Exception:
+            await websocket.close(code=1011, reason="internal_error")
+            return
+
+        await websocket.accept()
         try:
             while True:
-                # Receive message
                 try:
                     data = await websocket.receive_json()
-
-                    # Extract request context for user resolution
+                    if not isinstance(data, dict):
+                        raise ValueError("WebSocket request must be an object")
                     metadata = data.get("metadata", {})
-                    metadata = {**metadata, **(await _load_schema_metadata())}
-                    data["request_context"] = RequestContext(
-                        cookies=dict(websocket.cookies),
-                        headers=dict(websocket.headers),
-                        remote_addr=websocket.client.host if websocket.client else None,
-                        query_params=dict(websocket.query_params),
-                        metadata=metadata,
+                    if not isinstance(metadata, dict):
+                        raise ValueError("WebSocket metadata must be an object")
+                    request_context = _websocket_context(websocket, metadata)
+                    request_data = dict(data)
+                    request_data["request_context"] = request_context
+                    chat_request = ChatRequest(**request_data)
+                    message_user = await _authorize(
+                        CHAT_EXECUTE,
+                        request_context,
+                        chat_request,
+                        expected_user=user,
                     )
-
-                    chat_request = ChatRequest(**data)
-                    await _run_request_guard(chat_request, chat_request.request_context)
-                except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
+                    await _claim_conversation(
+                        chat_request.conversation_id, message_user
+                    )
+                except WebSocketDisconnect:
+                    raise
+                except PublicServerError as public_error:
+                    await websocket.send_json(_v2_websocket_error(public_error))
+                    continue
+                except Exception:
                     await websocket.send_json(
-                        {
-                            "type": "error",
-                            "data": {"message": f"Invalid request: {str(e)}"},
-                        }
+                        _v2_websocket_error(_internal_error("fastapi.websocket.parse"))
                     )
                     continue
 
-                # Stream response
                 try:
-                    async for chunk in chat_handler.handle_stream(chat_request):
-                        await websocket.send_json(chunk.model_dump())
+                    tool_context = await _build_tool_context(
+                        message_user,
+                        chat_request.conversation_id,
+                        chat_request.request_id,
+                    )
+                    schema_metadata = await _load_schema_metadata(tool_context)
+                    if schema_metadata:
+                        chat_request.metadata = {
+                            **chat_request.metadata,
+                            **schema_metadata,
+                        }
+                        request_context.metadata.update(schema_metadata)
 
-                    # Send completion signal
+                    last_conversation_id = ""
+                    last_request_id = ""
+                    async for chunk in chat_handler.handle_stream(chat_request):
+                        last_conversation_id = chunk.conversation_id
+                        last_request_id = chunk.request_id
+                        await websocket.send_json(chunk.model_dump())
                     await websocket.send_json(
                         {
                             "type": "completion",
                             "data": {"status": "done"},
-                            "conversation_id": chunk.conversation_id
-                            if "chunk" in locals()
-                            else "",
-                            "request_id": chunk.request_id
-                            if "chunk" in locals()
-                            else "",
+                            "conversation_id": last_conversation_id,
+                            "request_id": last_request_id,
                         }
                     )
-
-                except Exception as e:
-                    traceback.print_stack()
-                    traceback.print_exc()
+                except WebSocketDisconnect:
+                    raise
+                except Exception:
+                    internal_error = _internal_error("fastapi.websocket.chat")
                     await websocket.send_json(
-                        {
-                            "type": "error",
-                            "data": {"message": str(e)},
-                            "conversation_id": chat_request.conversation_id or "",
-                            "request_id": chat_request.request_id or "",
-                        }
+                        _v2_websocket_error(
+                            internal_error,
+                            conversation_id=chat_request.conversation_id or "",
+                            request_id=chat_request.request_id or "",
+                        )
                     )
-
         except WebSocketDisconnect:
-            pass
-        except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
+            return
+        except Exception:
+            internal_error = _internal_error("fastapi.websocket.connection")
             try:
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "data": {"message": f"WebSocket error: {str(e)}"},
-                    }
-                )
+                await websocket.send_json(_v2_websocket_error(internal_error))
             except Exception:
                 pass
-            finally:
-                await websocket.close()
+            try:
+                await websocket.close(code=1011, reason=internal_error.code)
+            except Exception:
+                pass
 
     @app.post(f"{v2_prefix}/chat_poll")
     async def chat_poll(
         chat_request: ChatRequest, http_request: Request
     ) -> ChatResponse:
-        """Polling endpoint for chat."""
-        merged_metadata = {**chat_request.metadata, **(await _load_schema_metadata())}
-        chat_request.metadata = merged_metadata
-        # Extract request context for user resolution
-        chat_request.request_context = RequestContext(
-            cookies=dict(http_request.cookies),
-            headers=dict(http_request.headers),
-            remote_addr=http_request.client.host if http_request.client else None,
-            query_params=dict(http_request.query_params),
-            metadata=merged_metadata,
-        )
-        await _run_request_guard(chat_request, chat_request.request_context)
+        """V2 polling endpoint with unchanged authorized response payload."""
 
+        await _prepare_chat_request(chat_request, http_request)
         try:
-            result = await chat_handler.handle_poll(chat_request)
-            return result
-        except Exception as e:
-            traceback.print_stack()
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")
+            return await chat_handler.handle_poll(chat_request)
+        except PublicServerError:
+            raise
+        except Exception as exc:
+            raise _internal_error("fastapi.v2.chat_poll") from exc
+
+
+def _sse_response(content: AsyncGenerator[str, None]) -> StreamingResponse:
+    return StreamingResponse(
+        content,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _internal_error(operation: str) -> InternalServerError:
+    error = InternalServerError()
+    logger.error(
+        "Server operation failed operation=%s correlation_id=%s",
+        operation,
+        error.correlation_id,
+    )
+    return error
+
+
+def _websocket_close_code(error: PublicServerError) -> int:
+    return {401: 4401, 403: 4403, 429: 4429}.get(error.status_code, 1011)
+
+
+def _v2_websocket_error(
+    error: PublicServerError,
+    *,
+    conversation_id: str = "",
+    request_id: str = "",
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "type": "error",
+        "data": {"message": error.public_message},
+    }
+    if conversation_id or request_id:
+        payload["conversation_id"] = conversation_id
+        payload["request_id"] = request_id
+    return payload

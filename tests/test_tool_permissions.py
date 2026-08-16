@@ -51,6 +51,113 @@ class MockTool(Tool[SimpleToolArgs]):
         )
 
 
+@pytest.mark.asyncio
+async def test_per_turn_tool_allowlist_is_enforced_during_execution():
+    registry = ToolRegistry()
+    registry.register_local_tool(MockTool("run_sql"), access_groups=[])
+    context = ToolContext(
+        user=User(id="semantic-user"),
+        conversation_id="semantic-conversation",
+        request_id="semantic-request",
+        agent_memory=DemoAgentMemory(),
+        metadata={"allowed_tool_names": ("semantic_query",)},
+    )
+
+    result = await registry.execute(
+        ToolCall(
+            id="sql-bypass",
+            name="run_sql",
+            arguments={"message": "SELECT secret FROM protected"},
+        ),
+        context,
+    )
+
+    assert result.success is False
+    assert result.error == "Tool 'run_sql' is not permitted for this turn"
+
+
+@pytest.mark.asyncio
+async def test_malformed_per_turn_tool_allowlist_fails_closed():
+    registry = ToolRegistry()
+    registry.register_local_tool(MockTool("run_sql"), access_groups=[])
+    context = ToolContext(
+        user=User(id="semantic-user"),
+        conversation_id="semantic-conversation",
+        request_id="semantic-request",
+        agent_memory=DemoAgentMemory(),
+        metadata={"allowed_tool_names": "run_sql"},
+    )
+
+    result = await registry.execute(
+        ToolCall(
+            id="malformed-policy",
+            name="run_sql",
+            arguments={"message": "SELECT 1"},
+        ),
+        context,
+    )
+    assert result.success is False
+    assert "policy is invalid" in (result.error or "")
+
+
+class ExplodingTool(MockTool):
+    async def execute(self, context: ToolContext, args: SimpleToolArgs) -> ToolResult:
+        raise RuntimeError("postgresql://admin:secret-password@internal/database")
+
+
+@pytest.mark.asyncio
+async def test_uncaught_tool_exception_is_correlation_coded_and_redacted():
+    secret = "secret-password"
+    registry = ToolRegistry()
+    registry.register_local_tool(ExplodingTool("exploding"), access_groups=[])
+    context = ToolContext(
+        user=User(id="user"),
+        conversation_id="conversation",
+        request_id="request",
+        agent_memory=DemoAgentMemory(),
+    )
+
+    result = await registry.execute(
+        ToolCall(
+            id="exploding-call",
+            name="exploding",
+            arguments={"message": "run"},
+        ),
+        context,
+    )
+    serialized = result.model_dump_json()
+
+    assert result.success is False
+    assert "Correlation ID: tool_" in result.result_for_llm
+    assert secret not in serialized
+    assert result.metadata["error_type"] == "tool_execution_failed"
+
+
+@pytest.mark.asyncio
+async def test_invalid_tool_arguments_do_not_echo_rejected_values():
+    registry = ToolRegistry()
+    registry.register_local_tool(MockTool(), access_groups=[])
+    context = ToolContext(
+        user=User(id="user"),
+        conversation_id="conversation",
+        request_id="request",
+        agent_memory=DemoAgentMemory(),
+    )
+
+    result = await registry.execute(
+        ToolCall(
+            id="invalid-call",
+            name="mock_tool",
+            arguments={"message": ["secret-password"]},
+        ),
+        context,
+    )
+
+    assert result.success is False
+    assert "Invalid arguments:" in result.result_for_llm
+    assert "secret-password" not in result.model_dump_json()
+
+
 @pytest.fixture
 def agent_memory():
     """Agent memory for testing."""

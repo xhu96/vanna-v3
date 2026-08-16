@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class HiveRunner(SqlRunner):
     """Hive implementation of the SqlRunner interface."""
 
+    dialect = "hive"
+
     def __init__(
         self,
         host: str,

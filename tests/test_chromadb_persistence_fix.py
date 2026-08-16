@@ -5,11 +5,19 @@ This test verifies that ChromaDB collections can be retrieved without triggering
 unnecessary embedding function initialization/model downloads.
 """
 
-import pytest
-import tempfile
-import shutil
 import asyncio
+import shutil
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
+import pytest
+
+from vanna.capabilities.agent_memory import (
+    memory_scope_for_context,
+    principal_memory_scope_for_context,
+)
+from vanna.integrations.chromadb.agent_memory import CHROMADB_AVAILABLE
 from vanna.integrations.chromadb import ChromaAgentMemory
 from vanna.core.user import User
 from vanna.core.tool import ToolContext
@@ -64,6 +72,8 @@ async def test_chromadb_collection_retrieval_without_embedding_function(test_use
         )
 
         context = create_test_context(test_user, memory1)
+        tenant_scope = memory_scope_for_context(context)
+        principal_scope = principal_memory_scope_for_context(context)
 
         # Save some memories (this will create the collection)
         # We need to add explicit embeddings to avoid model download in test environment
@@ -79,6 +89,10 @@ async def test_chromadb_collection_retrieval_without_embedding_function(test_use
                     "args_json": "{}",
                     "timestamp": "2024-01-01T00:00:00",
                     "success": True,
+                    "memory_kind": "tool",
+                    "tenant_scope": tenant_scope,
+                    "principal_scope": principal_scope,
+                    "user_id": test_user.id,
                     "metadata_json": "{}",
                 },
                 {
@@ -87,6 +101,10 @@ async def test_chromadb_collection_retrieval_without_embedding_function(test_use
                     "args_json": "{}",
                     "timestamp": "2024-01-01T00:01:00",
                     "success": True,
+                    "memory_kind": "tool",
+                    "tenant_scope": tenant_scope,
+                    "principal_scope": principal_scope,
+                    "user_id": test_user.id,
                     "metadata_json": "{}",
                 },
             ],
@@ -133,14 +151,225 @@ async def test_chromadb_collection_retrieval_without_embedding_function(test_use
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+class FakeCollection:
+    """Small dependency-free Chroma contract used for scope regression tests."""
+
+    def __init__(self) -> None:
+        self.records: dict[str, tuple[str, dict[str, Any]]] = {}
+
+    @classmethod
+    def _matches(cls, metadata: dict[str, Any], where: Any) -> bool:
+        if not where:
+            return True
+        if "$and" in where:
+            return all(cls._matches(metadata, item) for item in where["$and"])
+        if "$or" in where:
+            return any(cls._matches(metadata, item) for item in where["$or"])
+        return all(metadata.get(key) == value for key, value in where.items())
+
+    def upsert(self, *, ids, documents, metadatas) -> None:
+        for memory_id, document, metadata in zip(ids, documents, metadatas):
+            self.records[memory_id] = (document, dict(metadata))
+
+    def count(self) -> int:
+        return len(self.records)
+
+    def query(self, *, query_texts, n_results, where) -> dict[str, Any]:
+        del query_texts
+        records = [
+            (memory_id, metadata)
+            for memory_id, (_, metadata) in self.records.items()
+            if self._matches(metadata, where)
+        ][:n_results]
+        return {
+            "ids": [[memory_id for memory_id, _ in records]],
+            "distances": [[0.0 for _ in records]],
+            "metadatas": [[metadata for _, metadata in records]],
+        }
+
+    def get(self, *, ids=None, where=None) -> dict[str, Any]:
+        selected = [
+            (memory_id, metadata)
+            for memory_id, (_, metadata) in self.records.items()
+            if (ids is None or memory_id in ids) and self._matches(metadata, where)
+        ]
+        return {
+            "ids": [memory_id for memory_id, _ in selected],
+            "metadatas": [metadata for _, metadata in selected],
+        }
+
+    def delete(self, *, ids) -> None:
+        for memory_id in ids:
+            self.records.pop(memory_id, None)
+
+
+def _fake_chroma_memory() -> ChromaAgentMemory:
+    memory = object.__new__(ChromaAgentMemory)
+    memory._collection = FakeCollection()
+    memory._client = None
+    memory._executor = ThreadPoolExecutor(max_workers=1)
+    memory._embedding_function = None
+    return memory
+
+
+@pytest.mark.asyncio
+async def test_chroma_tool_and_text_memory_are_tenant_scoped() -> None:
+    memory = _fake_chroma_memory()
+    tenant_a_user = User(
+        id="shared-subject", metadata={"tenant_id": "tenant-a"}, authenticated=True
+    )
+    tenant_b_user = User(
+        id="shared-subject", metadata={"tenant_id": "tenant-b"}, authenticated=True
+    )
+    tenant_a_other_user = User(
+        id="other-subject", metadata={"tenant_id": "tenant-a"}, authenticated=True
+    )
+    context_a = create_test_context(tenant_a_user, memory)
+    context_b = create_test_context(tenant_b_user, memory)
+    context_a_other = create_test_context(tenant_a_other_user, memory)
+
+    try:
+        await memory.save_tool_usage(
+            "Revenue correction",
+            "run_sql",
+            {"sql": "SELECT 7 AS revenue"},
+            context_a,
+            metadata={"patch_type": "corrective", "weight": 5.0},
+        )
+        text = await memory.save_text_memory("tenant-a schema secret", context_a)
+
+        assert await memory.search_similar_usage(
+            "Revenue correction", context_a, similarity_threshold=0.0
+        )
+        assert await memory.search_text_memories(
+            "schema", context_a, similarity_threshold=0.0
+        )
+        assert (
+            await memory.search_similar_usage(
+                "Revenue correction", context_b, similarity_threshold=0.0
+            )
+            == []
+        )
+        assert (
+            await memory.search_text_memories(
+                "schema", context_b, similarity_threshold=0.0
+            )
+            == []
+        )
+        assert (
+            await memory.search_similar_usage(
+                "Revenue correction", context_a_other, similarity_threshold=0.0
+            )
+            == []
+        )
+        assert await memory.search_text_memories(
+            "schema", context_a_other, similarity_threshold=0.0
+        )
+        assert (
+            await memory.delete_by_id(context_b, next(iter(memory._collection.records)))
+            is False
+        )
+        assert await memory.delete_text_memory(context_b, text.memory_id or "") is False
+        assert await memory.clear_memories(context_b) == 0
+    finally:
+        memory._executor.shutdown(wait=True)
+
+
+@pytest.mark.asyncio
+async def test_chroma_feedback_suppresses_rejected_sql_and_prioritizes_correction() -> (
+    None
+):
+    memory = _fake_chroma_memory()
+    user = User(id="alice", metadata={"tenant_id": "tenant-a"}, authenticated=True)
+    context = create_test_context(user, memory)
+
+    try:
+        await memory.save_tool_usage(
+            "Show revenue",
+            "run_sql",
+            {"sql": "SELECT wrong FROM revenue"},
+            context,
+        )
+        await memory.save_tool_usage(
+            "Show revenue",
+            "run_sql",
+            {"sql": "SELECT wrong FROM revenue"},
+            context,
+            success=False,
+            metadata={
+                "patch_type": "negative",
+                "normalized_sql": "select wrong from revenue",
+            },
+        )
+        await memory.save_tool_usage(
+            "Monthly revenue",
+            "run_sql",
+            {"sql": "SELECT amount FROM revenue"},
+            context,
+            metadata={"patch_type": "corrective", "weight": 5.0},
+        )
+
+        results = await memory.search_similar_usage(
+            "Show revenue", context, similarity_threshold=0.0
+        )
+
+        assert [item.memory.args["sql"] for item in results] == [
+            "SELECT amount FROM revenue"
+        ]
+    finally:
+        memory._executor.shutdown(wait=True)
+
+
+@pytest.mark.asyncio
+async def test_chroma_keyed_text_memory_replaces_stale_entity_per_tenant() -> None:
+    memory = _fake_chroma_memory()
+    context_a = create_test_context(
+        User(id="alice", metadata={"tenant_id": "tenant-a"}, authenticated=True),
+        memory,
+    )
+    context_b = create_test_context(
+        User(id="alice", metadata={"tenant_id": "tenant-b"}, authenticated=True),
+        memory,
+    )
+
+    try:
+        first = await memory.upsert_text_memory(
+            '{"action":"upsert","entity_id":"public.orders.id"}',
+            context_a,
+            memory_key="schema:public.orders.id",
+        )
+        replacement = await memory.upsert_text_memory(
+            '{"action":"tombstone","entity_id":"public.orders.id"}',
+            context_a,
+            memory_key="schema:public.orders.id",
+        )
+        other_tenant = await memory.upsert_text_memory(
+            '{"action":"upsert","entity_id":"public.orders.id"}',
+            context_b,
+            memory_key="schema:public.orders.id",
+        )
+
+        assert first.memory_id == replacement.memory_id
+        assert other_tenant.memory_id != replacement.memory_id
+        tenant_a_memories = await memory.get_recent_text_memories(context_a, limit=10)
+        assert [item.content for item in tenant_a_memories] == [
+            '{"action":"tombstone","entity_id":"public.orders.id"}'
+        ]
+        assert tenant_a_memories[0].metadata == {
+            "tenant_scope": memory_scope_for_context(context_a),
+            "user_id": "alice",
+            "memory_key": "schema:public.orders.id",
+        }
+    finally:
+        memory._executor.shutdown(wait=True)
+
+
 @pytest.mark.asyncio
 async def test_chromadb_collection_creation_with_embedding_function():
     """
     Test that NEW ChromaDB collections are created WITH the embedding function.
     """
-    try:
-        from vanna.integrations.chromadb import ChromaAgentMemory
-    except ImportError:
+    if not CHROMADB_AVAILABLE:
         pytest.skip("ChromaDB not installed")
 
     temp_dir = tempfile.mkdtemp()

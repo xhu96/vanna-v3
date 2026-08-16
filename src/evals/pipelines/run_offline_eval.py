@@ -1,11 +1,4 @@
-"""Run the deterministic offline eval and emit candidate metrics JSON.
-
-This mirrors the construction in ``src/evals/benchmarks/llm_comparison.py`` (an
-``AgentVariant`` evaluated by an ``EvaluationRunner`` via ``compare_agents``),
-but injects a deterministic ``ScriptedLlmService`` so the real Agent +
-evaluators run end-to-end and produce reproducible metrics. It is an honest
-offline regression gate, not a model-quality benchmark.
-"""
+"""Execute a supplied candidate agent stack against a fixed offline dataset."""
 
 from __future__ import annotations
 
@@ -14,81 +7,60 @@ import asyncio
 import json
 from pathlib import Path
 
-from vanna import Agent, AgentConfig
-from vanna.core.evaluation import (
-    AgentVariant,
-    EfficiencyEvaluator,
-    EvaluationDataset,
-    EvaluationRunner,
-    OutputEvaluator,
+from vanna.evals.offline import (
+    DEFAULT_DATASET,
+    _EvalUserResolver,
+    build_reference_variant,
+    load_candidate_factory,
+    load_training_manifest,
+    run_offline_eval,
 )
-from vanna.core.registry import ToolRegistry
-from vanna.core.user import User
-from vanna.core.user.request_context import RequestContext
-from vanna.core.user.resolver import UserResolver
-from vanna.integrations.local.agent_memory import DemoAgentMemory
-from vanna.integrations.mock.scripted_llm import ScriptedLlmService
+from vanna.evals.training_data import load_training_export
 
-DEFAULT_DATASET = "src/evals/datasets/sql_generation/offline_smoke.yaml"
-
-# Scripted answers keyed to substrings of the dataset messages.
-SCRIPTED = {
-    "total sales by region": "SELECT region, SUM(amount) AS total FROM sales GROUP BY region",
-    "revenue by month": "SELECT month, SUM(amount) AS revenue FROM sales GROUP BY month",
-    "orders per day": "SELECT day, COUNT(*) AS orders FROM orders_tbl GROUP BY day",
-}
-
-
-class _EvalUserResolver(UserResolver):
-    """Always resolves the deterministic evaluation user."""
-
-    async def resolve_user(self, request_context: RequestContext) -> User:
-        return User(
-            id="eval_user",
-            username="evaluator",
-            email="eval@example.com",
-            group_memberships=["user", "analyst"],
-        )
-
-
-def build_variant() -> AgentVariant:
-    """Build the scripted agent variant (mirrors llm_comparison.py shape)."""
-    agent = Agent(
-        llm_service=ScriptedLlmService(SCRIPTED),
-        tool_registry=ToolRegistry(),
-        user_resolver=_EvalUserResolver(),
-        agent_memory=DemoAgentMemory(),
-        config=AgentConfig(),
-    )
-    return AgentVariant(
-        name="scripted-offline",
-        agent=agent,
-        metadata={"provider": "scripted", "mode": "offline"},
-    )
-
-
-async def run_offline_eval(dataset_path: str = DEFAULT_DATASET) -> dict:
-    dataset = EvaluationDataset.from_yaml(dataset_path)
-    runner = EvaluationRunner(
-        evaluators=[OutputEvaluator(), EfficiencyEvaluator()],
-        max_concurrency=2,
-    )
-    report = await runner.compare_agents([build_variant()], dataset.test_cases)
-    variant_report = list(report.reports.values())[0]
-    return {
-        "pass_rate": variant_report.pass_rate(),
-        "average_score": variant_report.average_score(),
-    }
+# These names remain importable for existing local evaluation integrations.
+__all__ = [
+    "DEFAULT_DATASET",
+    "_EvalUserResolver",
+    "build_reference_variant",
+    "load_candidate_factory",
+    "load_training_export",
+    "load_training_manifest",
+    "run_offline_eval",
+]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default=DEFAULT_DATASET)
+    parser.add_argument("--candidate-factory", required=True)
+    parser.add_argument("--approved-feedback-manifest", type=Path)
+    parser.add_argument("--approved-feedback", type=Path)
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
-    metrics = asyncio.run(run_offline_eval(args.dataset))
-    args.out.write_text(json.dumps(metrics), encoding="utf-8")
-    print(json.dumps(metrics))
+    candidate = load_candidate_factory(args.candidate_factory)
+    if bool(args.approved_feedback_manifest) != bool(args.approved_feedback):
+        parser.error(
+            "--approved-feedback-manifest and --approved-feedback must be supplied together"
+        )
+    training_manifest = None
+    if args.approved_feedback_manifest and args.approved_feedback:
+        training_manifest = load_training_export(
+            args.approved_feedback_manifest,
+            args.approved_feedback,
+        )
+    metrics = asyncio.run(
+        run_offline_eval(
+            args.dataset,
+            candidate=candidate,
+            training_manifest=training_manifest,
+        )
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(
+        json.dumps(metrics, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(metrics, sort_keys=True))
     return 0
 
 

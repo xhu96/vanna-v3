@@ -55,6 +55,8 @@ class MockSemanticAdapter(SemanticAdapter):
     async def execute(
         self, request: SemanticQueryRequest, context: ToolContext
     ) -> SemanticQueryResult:
+        if len(request.metrics) != 1:
+            raise ValueError("MockSemanticAdapter supports exactly one metric.")
         rows = self.catalog.get(request.metric, [])
         return SemanticQueryResult(
             rows=rows,

@@ -91,15 +91,20 @@ class ExampleAgentLoader:
 @click.option(
     "--dev",
     is_flag=True,
-    help="Enable development mode (load components from local assets)",
+    help="Enable development mode and mount configured local assets",
 )
 @click.option(
     "--static-folder", default=None, help="Static folder path for development mode"
 )
 @click.option(
+    "--component-script-path",
+    default=None,
+    help="Same-origin absolute path to the self-hosted web component",
+)
+@click.option(
     "--cdn-url",
-    default="https://img.vanna.ai/vanna-components.js",
-    help="CDN URL for web components",
+    default=None,
+    help="Deprecated alias; only same-origin absolute paths are accepted",
 )
 def main(
     framework: str,
@@ -111,7 +116,8 @@ def main(
     debug: bool,
     dev: bool,
     static_folder: Optional[str],
-    cdn_url: str,
+    component_script_path: Optional[str],
+    cdn_url: Optional[str],
 ) -> None:
     """Run Vanna Agents server with optional example agent."""
 
@@ -129,17 +135,20 @@ def main(
 
     # Set default static folder based on dev mode
     if static_folder is None:
-        static_folder = "frontend/webcomponent/static" if dev else "static"
+        static_folder = "frontends/webcomponent/dist" if dev else "static"
 
     # Add CLI options to config
     server_config.update(
         {
             "dev_mode": dev,
             "static_folder": static_folder,
-            "cdn_url": cdn_url,
             "api_base_url": "",  # Can be overridden in config file
         }
     )
+    if component_script_path is not None:
+        server_config["component_script_path"] = component_script_path
+    elif cdn_url is not None:
+        server_config["cdn_url"] = cdn_url
 
     # Create agent
     if example:
@@ -179,7 +188,7 @@ def main(
                 f"📦 Development mode: loading web components from ./{static_folder}/"
             )
         else:
-            click.echo(f"🌍 Production mode: loading web components from CDN")
+            click.echo("Bundled UI assets must be served from the application origin")
         try:
             server.run(host=host, port=port, debug=debug)
         except KeyboardInterrupt:
@@ -193,7 +202,7 @@ def main(
                 f"📦 Development mode: loading web components from ./{static_folder}/"
             )
         else:
-            click.echo(f"🌍 Production mode: loading web components from CDN")
+            click.echo("Bundled UI assets must be served from the application origin")
         try:
             server.run(host=host, port=port)
         except KeyboardInterrupt:

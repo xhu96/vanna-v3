@@ -68,7 +68,11 @@ class AnthropicLlmService(LlmService):
 
         resp = self._client.messages.create(**payload)
 
-        logger.info(f"Anthropic response: {resp}")
+        logger.debug(
+            "Anthropic response received model=%s stop_reason=%s",
+            self.model,
+            getattr(resp, "stop_reason", None),
+        )
 
         text_content, tool_calls = self._parse_message_content(resp)
 
@@ -99,7 +103,12 @@ class AnthropicLlmService(LlmService):
         """
         payload = self._build_payload(request)
 
-        logger.info(f"Anthropic streaming payload: {payload}")
+        logger.debug(
+            "Anthropic streaming request model=%s message_count=%d tool_count=%d",
+            self.model,
+            len(payload.get("messages") or []),
+            len(payload.get("tools") or []),
+        )
 
         # SDK provides a streaming context manager with a text_stream iterator.
         with self._client.messages.stream(**payload) as stream:
@@ -108,7 +117,11 @@ class AnthropicLlmService(LlmService):
                     yield LlmStreamChunk(content=text)
 
             final = stream.get_final_message()
-            logger.info(f"Anthropic stream response: {final}")
+            logger.debug(
+                "Anthropic stream completed model=%s stop_reason=%s",
+                self.model,
+                getattr(final, "stop_reason", None),
+            )
             _, tool_calls = self._parse_message_content(final)
             if tool_calls:
                 yield LlmStreamChunk(

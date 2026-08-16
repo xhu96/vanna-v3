@@ -1,6 +1,17 @@
-/**
- * API client for communicating with Vanna Agents backend
- */
+/** API client for V2 compatibility and the typed V3 event contract. */
+
+import { SseParser, type ParsedSseEvent } from './sse-parser';
+import {
+  normalizeV3Event,
+  parseV3Event,
+  parseV3PollResponse,
+  V3EventSequenceValidator,
+  V3ProtocolError,
+  type V3ChatEvent,
+  type V3PollResponse,
+} from '../types/events-v3';
+
+export type ApiProtocol = 'v2' | 'v3';
 
 export interface ChatMessage {
   id: string;
@@ -14,7 +25,7 @@ export interface ChatRequest {
   conversation_id?: string;
   user_id?: string;
   request_id?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ChatStreamChunk {
@@ -33,6 +44,7 @@ export interface ChatResponse {
 }
 
 export interface ApiClientConfig {
+  protocol?: ApiProtocol;
   baseUrl?: string;
   sseEndpoint?: string;
   wsEndpoint?: string;
@@ -41,256 +53,478 @@ export interface ApiClientConfig {
   customHeaders?: Record<string, string>;
 }
 
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
+interface LocationLike {
+  protocol: string;
+  host: string;
+}
+
+interface LinkedAbort {
+  signal: AbortSignal;
+  abort: (reason?: unknown) => void;
+  cleanup: () => void;
+}
+
+const ENDPOINTS = {
+  v2: {
+    sse: '/api/vanna/v2/chat_sse',
+    websocket: '/api/vanna/v2/chat_websocket',
+    poll: '/api/vanna/v2/chat_poll',
+  },
+  v3: {
+    sse: '/api/vanna/v3/chat/events',
+    websocket: '',
+    poll: '/api/vanna/v3/chat/poll',
+  },
+} as const;
+
+export class VannaHttpError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly correlationId?: string;
+  readonly retryable: boolean;
+
+  constructor(
+    status: number,
+    message: string,
+    code = 'http_error',
+    correlationId?: string,
+    retryable = false,
+  ) {
+    super(message);
+    this.name = 'VannaHttpError';
+    this.status = status;
+    this.code = code;
+    this.correlationId = correlationId;
+    this.retryable = retryable;
+  }
+}
+
+export function resolveHttpUrl(baseUrl: string, endpoint: string): string {
+  return endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+}
+
+export function resolveWebSocketUrl(
+  baseUrl: string,
+  endpoint: string,
+  location?: LocationLike,
+): string {
+  if (endpoint.startsWith('ws://') || endpoint.startsWith('wss://')) {
+    return endpoint;
+  }
+
+  if (baseUrl) {
+    const baseUrlObject = new URL(baseUrl);
+    const protocol = baseUrlObject.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${baseUrlObject.host}${endpoint}`;
+  }
+
+  const currentLocation = location ?? window.location;
+  const protocol = currentLocation.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${currentLocation.host}${endpoint}`;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function publicControlError(value: Record<string, unknown>): Error {
+  const data = isObject(value.data) ? value.data : {};
+  const message =
+    typeof data.message === 'string' && data.message.length <= 2000
+      ? data.message
+      : 'The server could not complete the request.';
+  return new Error(message);
+}
+
+function isChatChunk(value: unknown): value is ChatStreamChunk {
+  if (!isObject(value) || !isObject(value.rich)) return false;
+  return (
+    typeof value.conversation_id === 'string' &&
+    typeof value.request_id === 'string' &&
+    typeof value.timestamp === 'number' &&
+    Number.isFinite(value.timestamp)
+  );
+}
+
+async function responseError(response: Response): Promise<VannaHttpError> {
+  let code = 'http_error';
+  let message = `Request failed with HTTP ${response.status}.`;
+  let correlationId: string | undefined;
+  let retryable = response.status >= 500;
+  try {
+    const body: unknown = await response.json();
+    if (isObject(body) && isObject(body.error)) {
+      const error = body.error;
+      if (typeof error.code === 'string' && /^[a-z][a-z0-9_]{0,127}$/.test(error.code)) {
+        code = error.code;
+      }
+      if (typeof error.message === 'string' && error.message.length <= 2000) {
+        message = error.message;
+      }
+      if (typeof error.correlation_id === 'string' && error.correlation_id.length <= 160) {
+        correlationId = error.correlation_id;
+      }
+      if (typeof error.retryable === 'boolean') retryable = error.retryable;
+    }
+  } catch {
+    // Never expose or log a malformed response body.
+  }
+  return new VannaHttpError(response.status, message, code, correlationId, retryable);
+}
+
+function linkedAbort(signal: AbortSignal | undefined, timeoutMs: number): LinkedAbort {
+  const controller = new AbortController();
+  const abort = () => controller.abort(signal?.reason);
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  if (timeoutMs > 0) {
+    timer = setTimeout(() => {
+      controller.abort(new DOMException('Connection timed out', 'TimeoutError'));
+    }, timeoutMs);
+  }
+
+  return {
+    signal: controller.signal,
+    abort: (reason?: unknown) => controller.abort(reason),
+    cleanup: () => {
+      if (timer !== undefined) clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+    },
+  };
+}
+
 export class VannaApiClient {
   public readonly baseUrl: string;
-  private sseEndpoint: string;
-  private wsEndpoint: string;
-  private pollEndpoint: string;
-  private timeout: number;
+  public readonly protocol: ApiProtocol;
+  private readonly sseEndpoint: string;
+  private readonly wsEndpoint: string;
+  private readonly pollEndpoint: string;
+  private readonly timeout: number;
   private customHeaders: Record<string, string>;
 
   constructor(config: ApiClientConfig = {}) {
-    this.baseUrl = config.baseUrl || '';
-    this.sseEndpoint = config.sseEndpoint || '/api/vanna/v2/chat_sse';
-    this.wsEndpoint = config.wsEndpoint || '/api/vanna/v2/chat_websocket';
-    this.pollEndpoint = config.pollEndpoint || '/api/vanna/v2/chat_poll';
-    this.timeout = config.timeout || 30000;
-    this.customHeaders = config.customHeaders || {};
-
-    console.log('[VannaApiClient] Constructor called with config:', config);
-    console.log('[VannaApiClient] Endpoint configuration:');
-    console.log('  - SSE endpoint:', this.sseEndpoint, config.sseEndpoint ? '(custom)' : '(default)');
-    console.log('  - WS endpoint:', this.wsEndpoint, config.wsEndpoint ? '(custom)' : '(default)');
-    console.log('  - Poll endpoint:', this.pollEndpoint, config.pollEndpoint ? '(custom)' : '(default)');
-    console.log('  - Base URL:', this.baseUrl || '(empty)');
+    this.protocol = config.protocol ?? 'v2';
+    if (this.protocol !== 'v2' && this.protocol !== 'v3') {
+      throw new Error('Unsupported Vanna API protocol');
+    }
+    this.baseUrl = config.baseUrl ?? '';
+    this.sseEndpoint = config.sseEndpoint ?? ENDPOINTS[this.protocol].sse;
+    this.wsEndpoint = config.wsEndpoint ?? ENDPOINTS[this.protocol].websocket;
+    this.pollEndpoint = config.pollEndpoint ?? ENDPOINTS[this.protocol].poll;
+    const timeout = config.timeout ?? (this.protocol === 'v3' ? 30_000 : 0);
+    if (!Number.isFinite(timeout) || timeout < 0) {
+      throw new Error('timeout must be a finite non-negative number');
+    }
+    this.timeout = timeout;
+    this.customHeaders = config.customHeaders ?? {};
   }
 
-  /**
-   * Update custom headers (e.g., for authentication)
-   */
-  setCustomHeaders(headers: Record<string, string>) {
-    this.customHeaders = headers;
+  setCustomHeaders(headers: Record<string, string>): void {
+    this.customHeaders = { ...headers };
   }
 
-  /**
-   * Get current custom headers
-   */
   getCustomHeaders(): Record<string, string> {
     return { ...this.customHeaders };
   }
 
-  /**
-   * Send message using Server-Sent Events (SSE) streaming
-   */
-  async *streamChat(request: ChatRequest): AsyncGenerator<ChatStreamChunk, void, unknown> {
-    const url = this.sseEndpoint.startsWith('http')
-      ? this.sseEndpoint
-      : `${this.baseUrl}${this.sseEndpoint}`;
+  getEndpoints(): { sse: string; websocket: string; poll: string } {
+    return {
+      sse: this.sseEndpoint,
+      websocket: this.wsEndpoint,
+      poll: this.pollEndpoint,
+    };
+  }
 
-    console.log('[VannaApiClient] SSE streaming to URL:', url);
-    console.log('[VannaApiClient] SSE endpoint config:', {
-      baseUrl: this.baseUrl,
-      sseEndpoint: this.sseEndpoint,
-      constructedUrl: url
-    });
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        ...this.customHeaders,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  async *streamChat(
+    request: ChatRequest,
+    options: RequestOptions = {},
+  ): AsyncGenerator<ChatStreamChunk, void, unknown> {
+    if (this.protocol === 'v2') {
+      yield* this.streamV2Chat(request, options);
+      return;
     }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No response body');
+    for await (const event of this.streamV3Events(request, options)) {
+      const chunk = normalizeV3Event(event);
+      if (chunk) yield chunk;
     }
+  }
 
-    const decoder = new TextDecoder();
-    let buffer = '';
+  async *streamV3Events(
+    request: ChatRequest,
+    options: RequestOptions = {},
+  ): AsyncGenerator<V3ChatEvent, void, unknown> {
+    if (this.protocol !== 'v3') {
+      throw new V3ProtocolError('Typed V3 events require protocol="v3".');
+    }
+    const sequence = new V3EventSequenceValidator();
+    for await (const frame of this.readSseFrames(request, options)) {
+      let decoded: unknown;
+      try {
+        decoded = JSON.parse(frame.data);
+      } catch {
+        throw new V3ProtocolError('The server returned malformed V3 event JSON.');
+      }
+      const event = parseV3Event(decoded);
+      if (frame.event !== event.event_type || frame.id !== event.event_id) {
+        throw new V3ProtocolError('The SSE frame metadata does not match its V3 event.');
+      }
+      sequence.accept(event);
+      yield event;
+    }
+    sequence.assertTerminal();
+  }
 
+  private async *streamV2Chat(
+    request: ChatRequest,
+    options: RequestOptions,
+  ): AsyncGenerator<ChatStreamChunk, void, unknown> {
+    for await (const frame of this.readSseFrames(request, options)) {
+      if (frame.data.trim() === '[DONE]') return;
+      let decoded: unknown;
+      try {
+        decoded = JSON.parse(frame.data);
+      } catch {
+        // Preserve V2's historical tolerance for malformed non-terminal frames.
+        continue;
+      }
+      if (isObject(decoded) && decoded.type === 'error') {
+        throw publicControlError(decoded);
+      }
+      if (isChatChunk(decoded)) yield decoded;
+    }
+  }
+
+  private async *readSseFrames(
+    request: ChatRequest,
+    options: RequestOptions,
+  ): AsyncGenerator<ParsedSseEvent, void, unknown> {
+    const url = resolveHttpUrl(this.baseUrl, this.sseEndpoint);
+    const abort = linkedAbort(options.signal, this.timeout);
+    let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    let bodyComplete = false;
     try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...this.customHeaders,
+        },
+        body: JSON.stringify(request),
+        signal: abort.signal,
+      });
+      if (!response.ok) throw await responseError(response);
+      reader = response.body?.getReader();
+      if (!reader) throw new Error('The server returned no response body.');
+
+      const parser = new SseParser();
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') {
-              return;
-            }
-
-            try {
-              const chunk = JSON.parse(data) as ChatStreamChunk;
-              yield chunk;
-            } catch (e) {
-              console.warn('Failed to parse SSE chunk:', data, e);
-            }
-          }
+        if (done) {
+          bodyComplete = true;
+          break;
+        }
+        for (const frame of parser.push(value)) yield frame;
+      }
+      for (const frame of parser.finish()) yield frame;
+    } finally {
+      if (reader && !bodyComplete) {
+        abort.abort(new DOMException('Stream consumer cancelled', 'AbortError'));
+        try {
+          await reader.cancel('stream_consumer_cancelled');
+        } catch {
+          // The linked abort can reject the reader before cancel() settles.
         }
       }
-    } finally {
-      reader.releaseLock();
+      reader?.releaseLock();
+      abort.cleanup();
     }
   }
 
-  /**
-   * Send message using WebSocket
-   */
-  createWebSocketConnection(): Promise<WebSocket> {
+  createWebSocketConnection(options: RequestOptions = {}): Promise<WebSocket> {
+    if (this.protocol !== 'v2') {
+      return Promise.reject(new Error('V3 does not define a WebSocket transport.'));
+    }
     return new Promise((resolve, reject) => {
-      let wsUrl: string;
-
-      if (this.wsEndpoint.startsWith('ws://') || this.wsEndpoint.startsWith('wss://')) {
-        // Absolute WebSocket URL provided
-        wsUrl = this.wsEndpoint;
-      } else {
-        // Relative path - construct from baseUrl
-        if (this.baseUrl) {
-          // Parse baseUrl to extract host and convert http(s) to ws(s)
-          const baseUrlObj = new URL(this.baseUrl);
-          const wsProtocol = baseUrlObj.protocol === 'https:' ? 'wss:' : 'ws:';
-          wsUrl = `${wsProtocol}//${baseUrlObj.host}${this.wsEndpoint}`;
-        } else {
-          // Fallback to window.location
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          wsUrl = `${protocol}//${window.location.host}${this.wsEndpoint}`;
-        }
-      }
-
+      const wsUrl = resolveWebSocketUrl(this.baseUrl, this.wsEndpoint);
       const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => resolve(ws);
-      ws.onerror = (error) => reject(error);
-
-      // Set timeout
-      setTimeout(() => {
-        if (ws.readyState === WebSocket.CONNECTING) {
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        if (timer !== undefined) clearTimeout(timer);
+        options.signal?.removeEventListener('abort', onAbort);
+        callback();
+      };
+      const onAbort = () => finish(() => {
+        ws.close(1000, 'client_cancelled');
+        reject(options.signal?.reason ?? new DOMException('Request cancelled', 'AbortError'));
+      });
+      if (this.timeout > 0) {
+        timer = setTimeout(() => finish(() => {
           ws.close();
           reject(new Error('WebSocket connection timeout'));
-        }
-      }, this.timeout);
+        }), this.timeout);
+      }
+
+      ws.onopen = () => finish(() => resolve(ws));
+      ws.onerror = () => finish(() => reject(new Error('WebSocket connection failed')));
+      if (options.signal?.aborted) onAbort();
+      else options.signal?.addEventListener('abort', onAbort, { once: true });
     });
   }
 
-  /**
-   * Send message via WebSocket
-   */
   async sendWebSocketMessage(
     ws: WebSocket,
-    request: ChatRequest
+    request: ChatRequest,
   ): Promise<AsyncGenerator<ChatStreamChunk, void, unknown>> {
-    return new Promise((resolve, reject) => {
-      if (ws.readyState !== WebSocket.OPEN) {
-        reject(new Error('WebSocket not connected'));
+    if (this.protocol !== 'v2') throw new Error('V3 does not define a WebSocket transport.');
+    if (ws.readyState !== WebSocket.OPEN) throw new Error('WebSocket not connected');
+
+    const queue: ChatStreamChunk[] = [];
+    let completed = false;
+    let failure: Error | undefined;
+    let wake: (() => void) | undefined;
+    const notify = () => {
+      wake?.();
+      wake = undefined;
+    };
+    const messageHandler = (event: MessageEvent) => {
+      if (typeof event.data !== 'string') return;
+      let decoded: unknown;
+      try {
+        decoded = JSON.parse(event.data);
+      } catch {
         return;
       }
+      if (isObject(decoded) && decoded.type === 'completion') {
+        completed = true;
+        notify();
+      } else if (isObject(decoded) && decoded.type === 'error') {
+        failure = publicControlError(decoded);
+        completed = true;
+        notify();
+      } else if (isChatChunk(decoded)) {
+        queue.push(decoded);
+        notify();
+      }
+    };
+    const closeHandler = () => {
+      if (!completed) failure = new Error('WebSocket closed before completion');
+      completed = true;
+      notify();
+    };
+    const errorHandler = () => {
+      failure = new Error('WebSocket transport failed');
+      completed = true;
+      notify();
+    };
+    ws.addEventListener('message', messageHandler);
+    ws.addEventListener('close', closeHandler);
+    ws.addEventListener('error', errorHandler);
 
-      async function* generator() {
-        let isCompleted = false;
-        const messageQueue: ChatStreamChunk[] = [];
-        let resolveNext: ((value: IteratorResult<ChatStreamChunk>) => void) | null = null;
+    try {
+      ws.send(JSON.stringify(request));
+    } catch (error) {
+      ws.removeEventListener('message', messageHandler);
+      ws.removeEventListener('close', closeHandler);
+      ws.removeEventListener('error', errorHandler);
+      throw error;
+    }
 
-        const messageHandler = (event: MessageEvent) => {
-          try {
-            const chunk = JSON.parse(event.data) as ChatStreamChunk;
-
-            if (chunk.rich?.type === 'completion') {
-              isCompleted = true;
-              if (resolveNext) {
-                resolveNext({ done: true, value: undefined });
-                resolveNext = null;
-              }
-              return;
-            }
-
-            if (chunk.rich?.type === 'error') {
-              ws.removeEventListener('message', messageHandler);
-              if (resolveNext) {
-                resolveNext({ done: true, value: undefined });
-              }
-              return;
-            }
-
-            if (resolveNext) {
-              resolveNext({ done: false, value: chunk });
-              resolveNext = null;
-            } else {
-              messageQueue.push(chunk);
-            }
-          } catch (e) {
-            console.warn('Failed to parse WebSocket message:', event.data, e);
-          }
-        };
-
-        ws.addEventListener('message', messageHandler);
-
-        while (!isCompleted) {
-          if (messageQueue.length > 0) {
-            yield messageQueue.shift()!;
+    async function* messages(): AsyncGenerator<ChatStreamChunk, void, unknown> {
+      try {
+        while (true) {
+          if (queue.length > 0) {
+            yield queue.shift() as ChatStreamChunk;
+          } else if (failure) {
+            throw failure;
+          } else if (completed) {
+            return;
           } else {
-            await new Promise<IteratorResult<ChatStreamChunk>>((resolve) => {
-              resolveNext = resolve;
+            await new Promise<void>((resolve) => {
+              wake = resolve;
             });
           }
         }
-
+      } finally {
         ws.removeEventListener('message', messageHandler);
+        ws.removeEventListener('close', closeHandler);
+        ws.removeEventListener('error', errorHandler);
+        if (!completed && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+          ws.close(1000, 'client_cancelled');
+        }
       }
-
-      try {
-        ws.send(JSON.stringify(request));
-        resolve(generator());
-      } catch (error) {
-        reject(error);
-      }
-    });
+    }
+    return messages();
   }
 
-  /**
-   * Send message using polling (fallback option)
-   */
-  async sendPollMessage(request: ChatRequest): Promise<ChatResponse> {
-    const url = this.pollEndpoint.startsWith('http')
-      ? this.pollEndpoint
-      : `${this.baseUrl}${this.pollEndpoint}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.customHeaders,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  async sendPollMessage(
+    request: ChatRequest,
+    options: RequestOptions = {},
+  ): Promise<ChatResponse> {
+    if (this.protocol === 'v2') {
+      const value = await this.sendPollRequest(request, options);
+      if (!isObject(value) || !Array.isArray(value.chunks)) {
+        throw new Error('The server returned an invalid V2 poll response.');
+      }
+      return value as unknown as ChatResponse;
     }
 
-    return response.json() as Promise<ChatResponse>;
+    const response = await this.sendV3Poll(request, options);
+    const chunks: ChatStreamChunk[] = [];
+    for (const event of [...response.events, response.terminal_event]) {
+      const chunk = normalizeV3Event(event);
+      if (chunk) chunks.push(chunk);
+    }
+    return {
+      chunks,
+      conversation_id: response.conversation_id,
+      request_id: response.request_id,
+      total_chunks: chunks.length,
+    };
   }
 
-  /**
-   * Generate unique IDs for conversations and requests
-   */
+  async sendV3Poll(
+    request: ChatRequest,
+    options: RequestOptions = {},
+  ): Promise<V3PollResponse> {
+    if (this.protocol !== 'v3') {
+      throw new V3ProtocolError('Typed V3 polling requires protocol="v3".');
+    }
+    return parseV3PollResponse(await this.sendPollRequest(request, options));
+  }
+
+  private async sendPollRequest(request: ChatRequest, options: RequestOptions): Promise<unknown> {
+    const url = resolveHttpUrl(this.baseUrl, this.pollEndpoint);
+    const abort = linkedAbort(options.signal, this.timeout);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.customHeaders,
+        },
+        body: JSON.stringify(request),
+        signal: abort.signal,
+      });
+      if (!response.ok) throw await responseError(response);
+      return await response.json() as unknown;
+    } finally {
+      abort.cleanup();
+    }
+  }
+
   generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 
-/**
- * Default API client instance
- */
 export const apiClient = new VannaApiClient();

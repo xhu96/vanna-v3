@@ -243,9 +243,9 @@ class TestMemoryToolDetailedResults:
 
     @pytest.mark.asyncio
     async def test_llm_result_same_for_admin_and_user(
-        self, search_tool, demo_agent_memory, admin_user, regular_user
+        self, search_tool, demo_agent_memory, admin_user
     ):
-        """Test that the LLM receives the same information regardless of UI feature access."""
+        """Test UI permissions do not alter LLM context for one principal."""
         # Save a memory
         admin_context = ToolContext(
             user=admin_user,
@@ -274,9 +274,12 @@ class TestMemoryToolDetailedResults:
         # Get admin result
         admin_result = await search_tool.execute(admin_context, search_params)
 
-        # Get regular user result
+        # Change UI permissions without crossing the principal's memory boundary.
+        regular_view_user = admin_user.model_copy(
+            update={"group_memberships": ["user"]}
+        )
         user_context = ToolContext(
-            user=regular_user,
+            user=regular_view_user,
             conversation_id=str(uuid.uuid4()),
             request_id=str(uuid.uuid4()),
             agent_memory=demo_agent_memory,

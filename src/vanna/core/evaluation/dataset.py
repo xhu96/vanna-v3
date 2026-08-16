@@ -124,6 +124,7 @@ class EvaluationDataset:
                 min_components=outcome_data.get("min_components"),
                 max_components=outcome_data.get("max_components"),
                 max_execution_time_ms=outcome_data.get("max_execution_time_ms"),
+                expected_result_rows=outcome_data.get("expected_result_rows"),
                 metadata=outcome_data.get("metadata", {}),
             )
 
@@ -211,6 +212,8 @@ class EvaluationDataset:
                 outcome_dict["max_components"] = outcome.max_components
             if outcome.max_execution_time_ms is not None:
                 outcome_dict["max_execution_time_ms"] = outcome.max_execution_time_ms
+            if outcome.expected_result_rows is not None:
+                outcome_dict["expected_result_rows"] = outcome.expected_result_rows
             if outcome.metadata:
                 outcome_dict["metadata"] = outcome.metadata
 

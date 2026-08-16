@@ -110,7 +110,7 @@ class UiFeatureAccessCheckEvent(AuditEvent):
 
 
 class AiResponseEvent(AuditEvent):
-    """Audit event for AI-generated responses."""
+    """Audit event for assistant responses."""
 
     event_type: AuditEventType = AuditEventType.AI_RESPONSE_GENERATED
 

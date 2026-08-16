@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class ClickHouseRunner(SqlRunner):
     """ClickHouse implementation of the SqlRunner interface."""
 
+    dialect = "clickhouse"
+
     def __init__(
         self,
         host: str,

@@ -14,9 +14,6 @@ from vanna.tools import (
     RunSqlTool,
     # Visualization
     VisualizeDataTool,
-    # Python execution
-    RunPythonFileTool,
-    PipInstallTool,
     # File system (for coding agents)
     SearchFilesTool,
     ListFilesTool,
@@ -51,11 +48,7 @@ def create_demo_agent() -> Agent:
     # 2. Add visualization - create charts from data
     tools.register(VisualizeDataTool(file_system=file_system))
 
-    # 3. Add Python execution - build dashboards with artifacts
-    # tools.register(RunPythonFileTool(file_system=file_system))
-    # tools.register(PipInstallTool(file_system=file_system))
-
-    # 4. Full coding agent - read, write, search files
+    # 3. Full coding agent - read, write, search files
     # tools.register(SearchFilesTool(file_system=file_system))
     # tools.register(ListFilesTool(file_system=file_system))
     # tools.register(ReadFileTool(file_system=file_system))

@@ -11,6 +11,7 @@ from typing import List, Optional
 
 from vanna.capabilities.file_system import CommandResult, FileSearchMatch, FileSystem
 from vanna.core.tool import ToolContext
+from vanna.core.user import principal_scope_for_user
 
 MAX_SEARCH_FILE_BYTES = 1_000_000
 
@@ -39,8 +40,9 @@ class LocalFileSystem(FileSystem):
         Returns:
             Path to the user-specific directory
         """
-        # Hash the user ID to create a directory name
-        user_hash = hashlib.sha256(context.user.id.encode()).hexdigest()[:16]
+        tenant_scope, subject = principal_scope_for_user(context.user)
+        principal = f"{tenant_scope}\0{subject}".encode("utf-8")
+        user_hash = hashlib.sha256(principal).hexdigest()[:16]
         user_dir = self.working_directory / user_hash
 
         # Create the directory if it doesn't exist

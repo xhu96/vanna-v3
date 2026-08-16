@@ -1,16 +1,19 @@
-build
-**.egg-info
-venn
+build/
+*.egg-info/
+venv/
+.venv
 .DS_Store
-tests/__pycache__
 __pycache__/
 .idea
 .coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 docs/*.html
 .ipynb_checkpoints/
 .tox/
 notebooks/chroma.sqlite3
-dist
+dist/
 .env
 *.sqlite
 htmlcov
@@ -24,8 +27,13 @@ milvus.db
 frontends/**/node_modules/
 frontends/**/static/
 frontends/**/.storybook-static/
-frontends/**/package-lock.json
 frontends/**/.mypy_cache/
+frontends/**/output/
+frontends/**/playwright-report/
+frontends/**/test-results/
+
+# Generated local reports and test artifacts
+output/
 
 # Generated query-result artifacts (written by RunSqlTool / LocalFileSystem)
 query_results_*.csv

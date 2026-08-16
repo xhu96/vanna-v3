@@ -1,333 +1,241 @@
-"""
-HTML templates for Vanna Agents servers.
-"""
+"""Static, same-origin HTML templates for Vanna servers."""
 
-from typing import Optional
+from __future__ import annotations
+
+import html
+import re
+from typing import Dict, Optional
+from urllib.parse import unquote, urlsplit
+
+BUNDLED_UI_CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'none'",
+        "base-uri 'none'",
+        "connect-src 'self'",
+        "font-src 'self'",
+        "form-action 'none'",
+        "frame-ancestors 'none'",
+        "frame-src 'self' about:",
+        "img-src 'self' data:",
+        "manifest-src 'none'",
+        "media-src 'none'",
+        "object-src 'none'",
+        "script-src 'self'",
+        "style-src 'unsafe-inline'",
+        "worker-src 'none'",
+    ]
+)
+
+BUNDLED_UI_SECURITY_HEADERS: Dict[str, str] = {
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": BUNDLED_UI_CONTENT_SECURITY_POLICY,
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Permissions-Policy": (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+        "microphone=(), payment=(), usb=()"
+    ),
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+}
+
+_UNSAFE_PATH_CHARACTERS = re.compile(r"[\\<>\"'`\x00-\x20\x7f]")
+
+
+def bundled_ui_security_headers() -> Dict[str, str]:
+    """Return a fresh response-header mapping for the bundled UI."""
+
+    return dict(BUNDLED_UI_SECURITY_HEADERS)
+
+
+def _same_origin_path(
+    value: str,
+    label: str,
+    *,
+    allow_empty: bool = False,
+    allow_query: bool = False,
+) -> str:
+    """Validate one absolute-path reference without browser-normalization tricks."""
+
+    if not isinstance(value, str) or len(value) > 2048 or value != value.strip():
+        raise ValueError(f"{label} must be a bounded same-origin absolute path")
+    if not value:
+        if allow_empty:
+            return value
+        raise ValueError(f"{label} must be a bounded same-origin absolute path")
+
+    decoded = unquote(value)
+    parsed = urlsplit(value)
+    decoded_parsed = urlsplit(decoded)
+    if (
+        _UNSAFE_PATH_CHARACTERS.search(decoded)
+        or parsed.scheme
+        or parsed.netloc
+        or parsed.fragment
+        or (parsed.query and not allow_query)
+        or decoded_parsed.scheme
+        or decoded_parsed.netloc
+        or (decoded_parsed.query and not allow_query)
+        or not parsed.path.startswith("/")
+        or parsed.path.startswith("//")
+        or not decoded_parsed.path.startswith("/")
+        or decoded_parsed.path.startswith("//")
+    ):
+        raise ValueError(f"{label} must be a bounded same-origin absolute path")
+
+    if any(segment in {".", ".."} for segment in decoded_parsed.path.split("/")):
+        raise ValueError(f"{label} cannot contain dot path segments")
+    return value
+
+
+def _component_path(
+    *,
+    static_path: str,
+    component_script_path: Optional[str],
+    cdn_url: Optional[str],
+) -> str:
+    """Resolve the self-hosted component path, accepting a safe legacy alias."""
+
+    candidate = component_script_path
+    if candidate is None and cdn_url is not None:
+        candidate = cdn_url
+    if candidate is None:
+        static_root = _same_origin_path(static_path, "static_path").rstrip("/")
+        candidate = f"{static_root}/vanna-components.js"
+    return _same_origin_path(candidate, "component_script_path", allow_query=True)
 
 
 def get_vanna_component_script(
     dev_mode: bool = False,
     static_path: str = "/static",
-    cdn_url: str = "https://img.vanna.ai/vanna-components.js",
+    cdn_url: Optional[str] = None,
+    component_script_path: Optional[str] = None,
 ) -> str:
-    """Get the script tag for loading Vanna web components.
+    """Return the sole executable tag, restricted to a same-origin module."""
 
-    Args:
-        dev_mode: If True, load from local static files
-        static_path: Path to static assets in dev mode
-        cdn_url: CDN URL for production
-
-    Returns:
-        HTML script tag for loading components
-    """
-    if dev_mode:
-        return (
-            f'<script type="module" src="{static_path}/vanna-components.js"></script>'
-        )
-    else:
-        return f'<script type="module" src="{cdn_url}"></script>'
+    del dev_mode
+    source = _component_path(
+        static_path=static_path,
+        component_script_path=component_script_path,
+        cdn_url=cdn_url,
+    )
+    return (
+        '<script type="module" referrerpolicy="no-referrer" '
+        f'src="{html.escape(source, quote=True)}"></script>'
+    )
 
 
 def get_index_html(
     dev_mode: bool = False,
     static_path: str = "/static",
-    cdn_url: str = "https://img.vanna.ai/vanna-components.js",
+    cdn_url: Optional[str] = None,
     api_base_url: str = "",
     api_v2_prefix: str = "/api/vanna/v2",
+    component_script_path: Optional[str] = None,
 ) -> str:
-    """Generate index HTML with configurable component loading.
+    """Generate the inert V2-default bundled UI shell.
 
-    Args:
-        dev_mode: If True, load components from local static files
-        static_path: Path to static assets in dev mode
-        cdn_url: CDN URL for production components
-        api_base_url: Base URL for API endpoints
-        api_v2_prefix: Route prefix for v2 API endpoints
-
-    Returns:
-        Complete HTML page as string
+    ``cdn_url`` remains as a migration alias, but only same-origin absolute paths
+    are accepted. Core V3 never loads a remote component or emits executable
+    artifact helpers.
     """
-    component_script = get_vanna_component_script(dev_mode, static_path, cdn_url)
 
-    return f"""<!DOCTYPE html>
+    base = _same_origin_path(api_base_url, "api_base_url", allow_empty=True)
+    prefix = _same_origin_path(api_v2_prefix, "api_v2_prefix")
+    endpoint_root = f"{base}{prefix}"
+    component_script = get_vanna_component_script(
+        dev_mode=dev_mode,
+        static_path=static_path,
+        cdn_url=cdn_url,
+        component_script_path=component_script_path,
+    )
+
+    escaped_base = html.escape(base, quote=True)
+    escaped_sse = html.escape(f"{endpoint_root}/chat_sse", quote=True)
+    escaped_ws = html.escape(f"{endpoint_root}/chat_websocket", quote=True)
+    escaped_poll = html.escape(f"{endpoint_root}/chat_poll", quote=True)
+
+    return f"""<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vanna Agents Chat</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {{
-            theme: {{
-                extend: {{
-                    colors: {{
-                        'vanna-navy': '#023d60',
-                        'vanna-cream': '#e7e1cf',
-                        'vanna-teal': '#15a8a8',
-                        'vanna-orange': '#fe5d26',
-                        'vanna-magenta': '#bf1363',
-                    }},
-                    fontFamily: {{
-                        'sans': ['Space Grotesk', 'ui-sans-serif', 'system-ui'],
-                        'serif': ['Roboto Slab', 'ui-serif', 'Georgia'],
-                        'mono': ['Space Mono', 'ui-monospace', 'monospace'],
-                    }}
-                }}
-            }}
-        }}
-    </script>
-    <style>
-        body {{
-            background: linear-gradient(to bottom, #e7e1cf, #ffffff, #e7e1cf);
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }}
-
-        /* Background decorations matching landing page */
-        body::before {{
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            /* Radial gradients with brand colors */
-            background:
-                radial-gradient(circle at top left, rgba(21, 168, 168, 0.12), transparent 60%),
-                radial-gradient(circle at bottom right, rgba(254, 93, 38, 0.08), transparent 65%);
-        }}
-
-        body::after {{
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            /* Dot pattern with retro computing aesthetic */
-            background-image: radial-gradient(circle at 2px 2px, rgba(2, 61, 96, 0.3) 1px, transparent 0);
-            background-size: 32px 32px;
-            /* Grid overlay */
-            background-image:
-                radial-gradient(circle at 2px 2px, rgba(2, 61, 96, 0.3) 1px, transparent 0),
-                linear-gradient(rgba(2, 61, 96, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(2, 61, 96, 0.1) 1px, transparent 1px);
-            background-size: 32px 32px, 100px 100px, 100px 100px;
-        }}
-
-        /* Ensure content is above background */
-        body > * {{
-            position: relative;
-            z-index: 1;
-        }}
-
-        vanna-chat {{
-            width: 100%;
-            height: 100%;
-            display: block;
-        }}
-    </style>
-    {component_script}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Vanna Agents</title>
+  <style>
+    :root {{
+      --ink: #062f3e;
+      --paper: #f4efe2;
+      --panel: #fffdf7;
+      --line: #9eb9b4;
+      --signal: #d84a1b;
+      --teal: #087f78;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(8, 127, 120, .17), transparent 28rem),
+        linear-gradient(rgba(6, 47, 62, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 47, 62, .055) 1px, transparent 1px),
+        var(--paper);
+      background-size: auto, 32px 32px, 32px 32px, auto;
+      font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    }}
+    main {{ width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0; }}
+    header {{
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: end;
+      margin-bottom: 1rem;
+      border-bottom: 3px solid var(--ink);
+      padding-bottom: .8rem;
+    }}
+    h1 {{ margin: 0; font: 700 clamp(2rem, 5vw, 4.8rem)/.9 Georgia, serif; letter-spacing: -.045em; }}
+    .eyebrow {{ margin: 0 0 .35rem; color: var(--signal); font: 700 .76rem/1.2 ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }}
+    .protocol {{ border: 1px solid var(--ink); padding: .45rem .65rem; background: var(--panel); font: 700 .75rem/1 ui-monospace, monospace; }}
+    .shell {{ min-height: 640px; overflow: hidden; border: 1px solid var(--ink); border-radius: 18px; background: var(--panel); box-shadow: 9px 9px 0 rgba(6, 47, 62, .16); }}
+    vanna-chat {{ display: block; width: 100%; height: 640px; }}
+    .note {{ margin: 1.2rem 0 0; color: #395d67; font-size: .85rem; }}
+    code {{ color: var(--teal); font: 700 .82rem/1.4 ui-monospace, monospace; }}
+    @media (max-width: 640px) {{
+      main {{ width: min(100% - 1rem, 1180px); padding-top: 1rem; }}
+      header {{ grid-template-columns: 1fr; align-items: start; }}
+      .protocol {{ justify-self: start; }}
+      .shell, vanna-chat {{ min-height: 72vh; height: 72vh; }}
+    }}
+  </style>
+  {component_script}
 </head>
 <body>
-    <div class="max-w-6xl mx-auto p-5">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-vanna-navy mb-2 font-serif">Vanna Agents</h1>
-            <p class="text-lg font-mono font-bold text-vanna-teal mb-4">DATA-FIRST AGENTS</p>
-            <p class="text-slate-600 mb-4">Interactive AI Assistant powered by Vanna Agents Framework</p>
-            <a href="javascript:window.location='view-source:'+window.location.href" class="inline-flex items-center gap-2 px-4 py-2 bg-vanna-teal text-white text-sm font-medium rounded-lg hover:bg-vanna-navy transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                </svg>
-                View Page Source
-            </a>
-        </div>
-
-        {('    <div class="bg-vanna-orange/10 border border-vanna-orange/30 rounded-lg p-3 mb-5 text-vanna-orange text-sm font-medium">📦 Development Mode: Loading components from local assets</div>' if dev_mode else "")}
-
-        <!-- Login Form -->
-        <div id="loginContainer" class="max-w-md mx-auto mb-10 bg-white p-8 rounded-xl shadow-lg border border-vanna-teal/30">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-semibold text-vanna-navy mb-2 font-serif">Login to Continue</h2>
-                <p class="text-sm text-slate-600">Select your email to access the chat</p>
-            </div>
-
-            <div class="mb-5">
-                <label for="emailInput" class="block mb-2 text-sm font-medium text-vanna-navy">Email Address</label>
-                <select
-                    id="emailInput"
-                    class="w-full px-4 py-3 text-sm border border-vanna-teal/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-vanna-teal focus:border-transparent bg-white"
-                >
-                    <option value="">Select an email...</option>
-                    <option value="admin@example.com">admin@example.com</option>
-                    <option value="user@example.com">user@example.com</option>
-                </select>
-            </div>
-
-            <button id="loginButton" class="w-full px-4 py-3 bg-vanna-teal text-white text-sm font-medium rounded-lg hover:bg-vanna-navy focus:outline-none focus:ring-2 focus:ring-vanna-teal focus:ring-offset-2 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
-                Continue
-            </button>
-
-            <div class="mt-5 p-3 bg-vanna-teal/10 border-l-4 border-vanna-teal rounded text-xs text-vanna-navy leading-relaxed">
-                <strong>Demo Mode:</strong> This is a frontend-only authentication demo.
-                Your email will be stored as a cookie and automatically sent with all API requests.
-            </div>
-        </div>
-
-        <!-- Logged In Status (hidden by default) -->
-        <div id="loggedInStatus" class="hidden text-center p-4 bg-vanna-teal/10 border border-vanna-teal/30 rounded-lg mb-5">
-            Logged in as <span id="loggedInEmail" class="font-semibold text-vanna-navy"></span>
-            <br>
-            <button id="logoutButton" class="mt-2 px-3 py-1.5 bg-vanna-navy text-white text-xs rounded hover:bg-vanna-teal transition">
-                Logout
-            </button>
-        </div>
-
-        <!-- Chat Container (hidden by default) -->
-        <div id="chatSections" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg h-[600px] overflow-hidden border border-vanna-teal/30">
-                <vanna-chat
-                    api-base="{api_base_url}"
-                    sse-endpoint="{api_base_url}{api_v2_prefix}/chat_sse"
-                    ws-endpoint="{api_base_url}{api_v2_prefix}/chat_websocket"
-                    poll-endpoint="{api_base_url}{api_v2_prefix}/chat_poll">
-                </vanna-chat>
-            </div>
-
-            <div class="mt-8 p-5 bg-white rounded-lg shadow border border-vanna-teal/30">
-                <h3 class="text-lg font-semibold text-vanna-navy mb-3 font-serif">API Endpoints</h3>
-                <ul class="space-y-2">
-                    <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}{api_v2_prefix}/chat_sse - Server-Sent Events streaming
-                    </li>
-                    <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">WS</span>{api_base_url}{api_v2_prefix}/chat_websocket - WebSocket real-time chat
-                    </li>
-                    <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">POST</span>{api_base_url}{api_v2_prefix}/chat_poll - Request/response polling
-                    </li>
-                    <li class="p-2 bg-vanna-cream/50 rounded font-mono text-sm">
-                        <span class="font-bold text-vanna-teal mr-2">GET</span>{api_base_url}/health - Health check
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Cookie helpers
-        const getCookie = (name) => {{
-            const value = `; ${{document.cookie}}`;
-            const parts = value.split(`; ${{name}}=`);
-            return parts.length === 2 ? parts.pop().split(';').shift() : null;
-        }};
-
-        const setCookie = (name, value) => {{
-            const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
-            document.cookie = `${{name}}=${{value}}; expires=${{expires}}; path=/; SameSite=Lax`;
-        }};
-
-        const deleteCookie = (name) => {{
-            document.cookie = `${{name}}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        }};
-
-        // Login/Logout
-        document.addEventListener('DOMContentLoaded', () => {{
-            const email = getCookie('vanna_email');
-
-            // Check if already logged in
-            if (email) {{
-                loginContainer.classList.add('hidden');
-                loggedInStatus.classList.remove('hidden');
-                chatSections.classList.remove('hidden');
-                loggedInEmail.textContent = email;
-            }}
-
-            // Login button
-            loginButton.addEventListener('click', () => {{
-                const email = emailInput.value.trim();
-                if (!email) {{
-                    alert('Please select an email address');
-                    return;
-                }}
-                setCookie('vanna_email', email);
-                loginContainer.classList.add('hidden');
-                loggedInStatus.classList.remove('hidden');
-                chatSections.classList.remove('hidden');
-                loggedInEmail.textContent = email;
-            }});
-
-            // Logout button
-            logoutButton.addEventListener('click', () => {{
-                deleteCookie('vanna_email');
-                loginContainer.classList.remove('hidden');
-                loggedInStatus.classList.add('hidden');
-                chatSections.classList.add('hidden');
-                emailInput.value = '';
-            }});
-
-            // Enter key
-            emailInput.addEventListener('keypress', (e) => {{
-                if (e.key === 'Enter') loginButton.click();
-            }});
-        }});
-    </script>
-
-    <script>
-        // Artifact demo event listener
-        document.addEventListener('DOMContentLoaded', () => {{
-            const vannaChat = document.querySelector('vanna-chat');
-
-            if (vannaChat) {{
-                // Add artifact event listener to demonstrate external rendering
-                vannaChat.addEventListener('artifact-opened', (event) => {{
-                    const {{ artifactId, type, title, trigger }} = event.detail;
-
-                    console.log('🎨 Artifact Event:', {{ artifactId, type, title, trigger }});
-
-                    // For demo: open all artifacts externally
-                    setTimeout(() => {{
-                        const newWindow = window.open('', '_blank', 'width=900,height=700');
-                        if (newWindow) {{
-                            newWindow.document.write(event.detail.getStandaloneHTML());
-                            newWindow.document.close();
-                            newWindow.document.title = title || 'Vanna Artifact';
-                            console.log(`📱 Opened ${{title}} in new window`);
-                        }}
-                    }}, 100);
-
-                    // Prevent default in-chat rendering
-                    event.detail.preventDefault();
-                    console.log('✋ Showing placeholder in chat instead of full artifact');
-                }});
-
-                console.log('🎯 Artifact demo mode: All artifacts will open externally');
-            }}
-        }});
-
-        // Fallback if web component doesn't load
-        if (!customElements.get('vanna-chat')) {{
-            setTimeout(() => {{
-                if (!customElements.get('vanna-chat')) {{
-                    document.querySelector('vanna-chat').innerHTML = `
-                        <div class="p-10 text-center text-gray-600">
-                            <h3 class="text-xl font-semibold mb-2">Vanna Chat Component</h3>
-                            <p class="mb-2">Web component failed to load. Please check your connection.</p>
-                            <p class="text-sm text-gray-400">
-                                {("Loading from: local static assets" if dev_mode else f"Loading from: {cdn_url}")}
-                            </p>
-                        </div>
-                    `;
-                }}
-            }}, 2000);
-        }}
-    </script>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">Data-first agent interface</p>
+        <h1>Vanna</h1>
+      </div>
+      <div class="protocol">V2 transport default</div>
+    </header>
+    <section class="shell" aria-label="Vanna chat">
+      <vanna-chat
+        api-version="v2"
+        protocol="v2"
+        api-base="{escaped_base}"
+        sse-endpoint="{escaped_sse}"
+        ws-endpoint="{escaped_ws}"
+        poll-endpoint="{escaped_poll}">
+      </vanna-chat>
+      <noscript>This interface requires the self-hosted Vanna web component.</noscript>
+    </section>
+    <p class="note">Authentication is enforced by server middleware. Client integrations may use the namespaced API directly without this route.</p>
+  </main>
 </body>
 </html>"""
 
 
-# Backward compatibility - default production HTML
+# Backward compatibility for applications importing the static default template.
 INDEX_HTML = get_index_html()

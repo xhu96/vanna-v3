@@ -1,5 +1,5 @@
 """Planner helpers."""
 
-from .semantic_first import SemanticFirstPlanner, PlannerDecision
+from .semantic_first import PlannerDecision, SemanticFirstPlanner, SemanticPlanningError
 
-__all__ = ["SemanticFirstPlanner", "PlannerDecision"]
+__all__ = ["SemanticFirstPlanner", "PlannerDecision", "SemanticPlanningError"]

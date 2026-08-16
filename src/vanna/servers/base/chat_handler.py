@@ -37,6 +37,9 @@ class ChatHandler:
         conversation_id = request.conversation_id or self._generate_conversation_id()
         # Use request_id from client for tracking, or use the one generated internally
         request_id = request.request_id or str(uuid.uuid4())
+        # This reserved key is server-owned. It aligns agent lineage with the
+        # IDs used by V2 chunks and V3 envelopes.
+        request.request_context.metadata["_vanna_request_id"] = request_id
 
         async for component in self.agent.send_message(
             request_context=request.request_context,

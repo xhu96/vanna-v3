@@ -85,7 +85,11 @@ class GeminiLlmService(LlmService):
                 config=config,
             )
 
-            logger.info(f"Gemini response: {response}")
+            logger.debug(
+                "Gemini response received model=%s candidate_count=%d",
+                self.model_name,
+                len(getattr(response, "candidates", None) or []),
+            )
 
             # Parse response
             text_content, tool_calls = self._parse_response(response)
@@ -118,8 +122,12 @@ class GeminiLlmService(LlmService):
                 usage=usage or None,
             )
 
-        except Exception as e:
-            logger.error(f"Error calling Gemini API: {e}")
+        except Exception as error:
+            logger.error(
+                "Gemini API call failed model=%s error_type=%s",
+                self.model_name,
+                type(error).__name__,
+            )
             raise
 
     async def stream_request(
@@ -168,8 +176,12 @@ class GeminiLlmService(LlmService):
                 else:
                     yield LlmStreamChunk(finish_reason=finish_reason or "stop")
 
-        except Exception as e:
-            logger.error(f"Error streaming from Gemini API: {e}")
+        except Exception as error:
+            logger.error(
+                "Gemini stream failed model=%s error_type=%s",
+                self.model_name,
+                type(error).__name__,
+            )
             raise
 
     async def validate_tools(self, tools: List[ToolSchema]) -> List[str]:

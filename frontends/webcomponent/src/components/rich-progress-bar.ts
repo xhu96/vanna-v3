@@ -17,13 +17,7 @@ export class RichProgressBar extends LitElement {
         padding: var(--vanna-space-4);
         border: 1px solid var(--vanna-outline-default);
         border-radius: var(--vanna-border-radius-lg);
-        background: var(--vanna-background-default);
-        box-shadow: var(--vanna-shadow-sm);
-        transition: box-shadow var(--vanna-duration-200) ease;
-      }
-
-      .progress-container:hover {
-        box-shadow: var(--vanna-shadow-md);
+        background: var(--vanna-background-root);
       }
 
       .progress-header {
@@ -57,7 +51,6 @@ export class RichProgressBar extends LitElement {
         height: 100%;
         background: var(--vanna-accent-primary-default);
         border-radius: 6px;
-        transition: width var(--vanna-duration-300) ease;
         position: relative;
         overflow: hidden;
       }
@@ -66,30 +59,9 @@ export class RichProgressBar extends LitElement {
         animation: progressPulse 2s ease-in-out infinite;
       }
 
-      .progress-fill.animated::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
-        animation: progressShimmer 1.5s infinite;
-      }
-
       @keyframes progressPulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.8; }
-      }
-
-      @keyframes progressShimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
       }
 
       .progress-fill.status-success {
@@ -110,20 +82,14 @@ export class RichProgressBar extends LitElement {
 
       /* Indeterminate progress animation */
       .progress-fill.indeterminate {
-        background: linear-gradient(
-          90deg,
-          transparent 0%,
-          var(--vanna-accent-primary-default) 50%,
-          transparent 100%
-        );
-        background-size: 200% 100%;
-        animation: indeterminateProgress 2s linear infinite;
-        width: 100% !important;
+        width: 32% !important;
+        background: var(--vanna-accent-primary-default);
+        animation: indeterminateProgress 1.2s ease-in-out infinite;
       }
 
       @keyframes indeterminateProgress {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(315%); }
       }
 
       /* Text content for description */

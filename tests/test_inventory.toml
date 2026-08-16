@@ -1,0 +1,242 @@
+version = 1
+
+[[modules]]
+path = "frontends/webcomponent/test_backend.py"
+lane = "manual-harness"
+owners = ["manual:frontend-component-demo"]
+reason = "FastAPI component demo named like a test; automated transport/rendering coverage lives in the frontend Vitest/Playwright suite."
+
+[[modules]]
+path = "tests/integration/test_postgres_v3_pipeline.py"
+lane = "postgres"
+owners = ["workflow:v3-postgres-integration"]
+reason = "Requires a temporary PostgreSQL 15 service and a read-only test role."
+
+[[modules]]
+path = "tests/test_agent_memory.py"
+lane = "optional-package"
+owners = ["tox:py311-chromadb", "tox:py311-qdrant", "tox:py311-faiss"]
+reason = "Parameterized local-memory contracts require backend-specific packages."
+
+[[modules]]
+path = "tests/test_agent_memory_sanity.py"
+lane = "optional-package"
+owners = ["tox:py311-agent-memory-sanity"]
+reason = "Import contracts span optional vector-store packages."
+
+[[modules]]
+path = "tests/test_agents.py"
+lane = "external-service"
+owners = ["tox:py311-anthropic", "tox:py311-openai", "manual:azure-ollama-gemini"]
+reason = "End-to-end provider tests require credentials or a local model service."
+
+[[modules]]
+path = "tests/test_azureopenai_llm.py"
+lane = "optional-package"
+owners = ["tox:py311-azureopenai"]
+reason = "Offline mocked contract requires the Azure OpenAI optional dependencies."
+
+[[modules]]
+path = "tests/test_chart_spec_validation.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic ChartSpec validation."
+
+[[modules]]
+path = "tests/test_chromadb_persistence_fix.py"
+lane = "offline"
+owners = ["tox:py311-offline", "tox:py311-chromadb"]
+reason = "Dependency-free scope contract always runs; persistence cases skip when ChromaDB is absent."
+
+[[modules]]
+path = "tests/test_conversation_ownership.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic ownership and local persistence security contracts."
+
+[[modules]]
+path = "tests/test_database_sanity.py"
+lane = "optional-package"
+owners = [
+  "tox:py311-database-core",
+  "tox:py311-postgres-sanity",
+  "tox:py311-sqlite-sanity",
+  "tox:py311-snowflake-sanity",
+  "tox:py311-mysql-sanity",
+  "tox:py311-clickhouse-sanity",
+  "tox:py311-oracle-sanity",
+  "tox:py311-bigquery-sanity",
+  "tox:py311-duckdb-sanity",
+  "tox:py311-mssql-sanity",
+  "tox:py311-presto-sanity",
+  "tox:py311-hive-sanity"
+]
+reason = "Core/SQLite/Postgres selectors are hermetic; other classes require their driver extras."
+
+[[modules]]
+path = "tests/test_dbt_semantic_adapter.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic dbt Semantic Layer GraphQL contract using mocked HTTP."
+
+[[modules]]
+path = "tests/test_feedback_memory_patching.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic feedback memory behavior."
+
+[[modules]]
+path = "tests/test_file_semantic_adapter.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic file semantic adapter with a fake runner."
+
+[[modules]]
+path = "tests/test_flask_async_bridge.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic Flask bridge behavior."
+
+[[modules]]
+path = "tests/test_gemini_integration.py"
+lane = "external-service"
+owners = ["manual:gemini"]
+reason = "Requires the Gemini optional package and credentials for live calls."
+
+[[modules]]
+path = "tests/test_lineage_capture.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic lineage and confidence behavior."
+
+[[modules]]
+path = "tests/test_llm_context_enhancer.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic context-enhancer behavior."
+
+[[modules]]
+path = "tests/test_memory_tools.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic memory-tool behavior."
+
+[[modules]]
+path = "tests/test_memory_weighting.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic memory ranking behavior."
+
+[[modules]]
+path = "tests/test_offline_eval.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic scripted eval behavior."
+
+[[modules]]
+path = "tests/test_package_metadata.py"
+lane = "offline"
+owners = ["tox:py311-offline", "workflow:python-package-matrix"]
+reason = "Hermetic package identity, extras, license, and no-publish workflow policy."
+
+[[modules]]
+path = "tests/test_ollama_direct.py"
+lane = "external-service"
+owners = ["manual:ollama"]
+reason = "Requires the Ollama package and a local or controlled model service."
+
+[[modules]]
+path = "tests/test_rls_filter.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic SQL AST row-filter behavior."
+
+[[modules]]
+path = "tests/test_schema_catalog_adapters.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic INFORMATION_SCHEMA and SQLite catalog ingestion behavior."
+
+[[modules]]
+path = "tests/test_schema_diff.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic schema snapshot and diff behavior."
+
+[[modules]]
+path = "tests/test_schema_sync_service.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic tenant/version/history/schema scheduler behavior."
+
+[[modules]]
+path = "tests/test_semantic_planner.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic semantic planner behavior."
+
+[[modules]]
+path = "tests/test_server_security_defaults.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic FastAPI and Flask production security contracts."
+
+[[modules]]
+path = "tests/test_sql_runner_read_only.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Uses only a temporary SQLite database."
+
+[[modules]]
+path = "tests/test_sql_security.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic SQL policy behavior with a fake runner."
+
+[[modules]]
+path = "tests/test_test_inventory.py"
+lane = "offline"
+owners = ["tox:py311-offline", "tox:py311-test-inventory"]
+reason = "Guards this classification against new unowned test modules."
+
+[[modules]]
+path = "tests/test_tool_permissions.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic tool-registry permissions."
+
+[[modules]]
+path = "tests/test_v3_api_contract.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic FastAPI/Flask V3 SSE and poll contract parity."
+
+[[modules]]
+path = "tests/test_v3_byo_ui_example.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic framing tests for the documented BYO V3 SSE client."
+
+[[modules]]
+path = "tests/test_v3_examples.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic security checks for JWT, gateway, tenant, and example wiring."
+
+[[modules]]
+path = "tests/test_v3_stream_events.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic V3 event conversion behavior."
+
+[[modules]]
+path = "tests/test_visualization_tool.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic declarative visualization behavior."
+
+[[modules]]
+path = "tests/test_workflow.py"
+lane = "offline"
+owners = ["tox:py311-offline"]
+reason = "Hermetic workflow and agent behavior."

@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xhu96/vanna-v3/blob/main/docs/v3/schemas/chat-events-v3.schema.json",
+  "title": "Vanna V3 Chat Event",
+  "type": "object",
+  "required": [
+    "event_version",
+    "event_type",
+    "event_id",
+    "sequence",
+    "conversation_id",
+    "request_id",
+    "timestamp",
+    "payload"
+  ],
+  "properties": {
+    "event_version": {"const": "v3"},
+    "event_type": {
+      "enum": [
+        "status",
+        "assistant_text",
+        "table_result",
+        "chart_spec",
+        "component",
+        "warning",
+        "lineage",
+        "error",
+        "done"
+      ]
+    },
+    "event_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "sequence": {"type": "integer", "minimum": 0},
+    "conversation_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "request_id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "payload": {"type": "object"}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"event_type": {"const": "status"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/statusPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "assistant_text"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/assistantTextPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "table_result"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/tableResultPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "chart_spec"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/chartSpecPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "component"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/componentPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "warning"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/warningPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "lineage"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/lineagePayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "error"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/errorPayload"}}}
+    },
+    {
+      "if": {"properties": {"event_type": {"const": "done"}}},
+      "then": {"properties": {"payload": {"$ref": "#/$defs/donePayload"}}}
+    }
+  ],
+  "$defs": {
+    "jsonScalar": {
+      "type": ["string", "number", "integer", "boolean", "null"]
+    },
+    "statusPayload": {
+      "type": "object",
+      "required": ["stage", "message"],
+      "properties": {
+        "stage": {
+          "enum": ["accepted", "planning", "semantic", "sql", "validating", "rendering"]
+        },
+        "message": {"type": "string", "maxLength": 2000}
+      },
+      "additionalProperties": false
+    },
+    "assistantTextPayload": {
+      "type": "object",
+      "required": ["text", "delta"],
+      "properties": {
+        "text": {"type": "string", "maxLength": 1000000},
+        "delta": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "tableResultPayload": {
+      "type": "object",
+      "required": ["columns", "rows", "row_count", "truncated"],
+      "properties": {
+        "columns": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {"type": "string", "maxLength": 512}
+        },
+        "rows": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "maxProperties": 100,
+            "additionalProperties": {"$ref": "#/$defs/jsonScalar"}
+          }
+        },
+        "row_count": {"type": "integer", "minimum": 0},
+        "truncated": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "chartSpecPayload": {
+      "type": "object",
+      "required": ["chart_spec"],
+      "properties": {
+        "chart_spec": {"$ref": "chart-spec-v1.schema.json"}
+      },
+      "additionalProperties": false
+    },
+    "cardData": {
+      "type": "object",
+      "required": ["title", "body"],
+      "properties": {
+        "title": {"type": "string", "maxLength": 500},
+        "body": {"type": "string", "maxLength": 100000}
+      },
+      "additionalProperties": false
+    },
+    "codeData": {
+      "type": "object",
+      "required": ["language", "text"],
+      "properties": {
+        "language": {"type": "string", "maxLength": 64},
+        "text": {"type": "string", "maxLength": 1000000}
+      },
+      "additionalProperties": false
+    },
+    "artifactData": {
+      "type": "object",
+      "required": ["representation", "content"],
+      "properties": {
+        "title": {"type": "string", "maxLength": 500},
+        "representation": {"enum": ["text", "sanitized_html"]},
+        "content": {"type": "string", "maxLength": 1000000}
+      },
+      "additionalProperties": false
+    },
+    "componentPayload": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["component_kind", "data"],
+          "properties": {
+            "component_kind": {"const": "card"},
+            "data": {"$ref": "#/$defs/cardData"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["component_kind", "data"],
+          "properties": {
+            "component_kind": {"const": "code"},
+            "data": {"$ref": "#/$defs/codeData"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["component_kind", "data"],
+          "properties": {
+            "component_kind": {"const": "artifact"},
+            "data": {"$ref": "#/$defs/artifactData"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "warningPayload": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,127}$"},
+        "message": {"type": "string", "maxLength": 2000},
+        "fallback": {"enum": ["sql", "none"]}
+      },
+      "additionalProperties": false
+    },
+    "retrievedSource": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {"type": "string", "maxLength": 160},
+        "kind": {"enum": ["memory", "document"]},
+        "score": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "toolCall": {
+      "type": "object",
+      "required": ["name", "success"],
+      "properties": {
+        "name": {"type": "string", "maxLength": 160},
+        "success": {"type": "boolean"},
+        "runtime_ms": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "sqlExecution": {
+      "type": "object",
+      "required": ["row_count"],
+      "properties": {
+        "sql": {"type": "string", "maxLength": 100000},
+        "dialect": {"type": "string", "maxLength": 64},
+        "row_count": {"type": "integer", "minimum": 0},
+        "runtime_ms": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "validationCheck": {
+      "type": "object",
+      "required": ["name", "passed"],
+      "properties": {
+        "name": {"type": "string", "maxLength": 160},
+        "passed": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "lineageEvidence": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "schema_snapshot_id",
+        "schema_hash",
+        "schema_drifted",
+        "semantic",
+        "retrieved_sources",
+        "tool_calls",
+        "sql_executions",
+        "validation_checks",
+        "confidence"
+      ],
+      "properties": {
+        "schema_version": {"type": ["integer", "null"], "minimum": 1},
+        "schema_snapshot_id": {"type": ["string", "null"], "maxLength": 160},
+        "schema_hash": {"type": ["string", "null"], "maxLength": 160},
+        "schema_drifted": {"type": "boolean"},
+        "semantic": {
+          "type": "object",
+          "required": ["coverage", "metric_names"],
+          "properties": {
+            "coverage": {"enum": ["full", "partial", "missing", "not_applicable"]},
+            "metric_names": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {"type": "string", "maxLength": 256}
+            },
+            "fallback_reason": {"type": "string", "maxLength": 2000}
+          },
+          "additionalProperties": false
+        },
+        "retrieved_sources": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {"$ref": "#/$defs/retrievedSource"}
+        },
+        "tool_calls": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {"$ref": "#/$defs/toolCall"}
+        },
+        "sql_executions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/sqlExecution"}
+        },
+        "validation_checks": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {"$ref": "#/$defs/validationCheck"}
+        },
+        "confidence": {
+          "type": "object",
+          "required": ["tier", "signals"],
+          "properties": {
+            "tier": {"enum": ["High", "Medium", "Low"]},
+            "signals": {
+              "type": "array",
+              "maxItems": 100,
+              "uniqueItems": true,
+              "items": {"type": "string", "maxLength": 160}
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "lineagePayload": {
+      "type": "object",
+      "required": ["evidence"],
+      "properties": {
+        "evidence": {"$ref": "#/$defs/lineageEvidence"}
+      },
+      "additionalProperties": false
+    },
+    "errorPayload": {
+      "type": "object",
+      "required": ["code", "message", "correlation_id", "retryable"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,127}$"},
+        "message": {"type": "string", "maxLength": 2000},
+        "correlation_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "retryable": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "donePayload": {
+      "type": "object",
+      "required": ["status", "event_count"],
+      "properties": {
+        "status": {"const": "completed"},
+        "event_count": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    }
+  }
+}

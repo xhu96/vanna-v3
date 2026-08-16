@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 from vanna.core.tool import Tool, ToolContext, ToolResult
+from vanna.core.tool.errors import public_tool_failure
 from vanna.core.agent.config import UiFeature
 from vanna.capabilities.agent_memory import AgentMemory
 from vanna.components import (
@@ -102,18 +103,25 @@ class SaveQuestionToolArgsTool(Tool[SaveQuestionToolArgsParams]):
                 ),
             )
 
-        except Exception as e:
-            error_message = f"Failed to save memory: {str(e)}"
+        except Exception as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Memory write",
+                code="memory_write_failed",
+                error=error,
+            )
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
                 ui_component=UiComponent(
                     rich_component=StatusBarUpdateComponent(
-                        status="error", message="Failed to save memory", detail=str(e)
+                        status="error",
+                        message="Failed to save memory",
+                        detail=error_message,
                     ),
                     simple_component=None,
                 ),
-                error=str(e),
+                error=error_message,
+                metadata=failure_metadata,
             )
 
 
@@ -199,7 +207,7 @@ class SearchSavedCorrectToolUsesTool(Tool[SearchSavedCorrectToolUsesParams]):
                 results_text += f"   Question: {memory.question}\n"
                 results_text += f"   Args: {memory.args}\n\n"
 
-            logger.info(f"Agent memory search results: {results_text.strip()}")
+            logger.info("Agent memory search returned %d result(s)", len(results))
 
             # Check if user has access to detailed memory results
             ui_features_available = context.metadata.get("ui_features_available", [])
@@ -262,18 +270,25 @@ class SearchSavedCorrectToolUsesTool(Tool[SearchSavedCorrectToolUsesParams]):
                 },
             )
 
-        except Exception as e:
-            error_message = f"Failed to search memories: {str(e)}"
+        except Exception as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Memory search",
+                code="memory_search_failed",
+                error=error,
+            )
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
                 ui_component=UiComponent(
                     rich_component=StatusBarUpdateComponent(
-                        status="error", message="Failed to search memory", detail=str(e)
+                        status="error",
+                        message="Failed to search memory",
+                        detail=error_message,
                     ),
                     simple_component=None,
                 ),
-                error=str(e),
+                error=error_message,
+                metadata=failure_metadata,
             )
 
 
@@ -316,8 +331,12 @@ class SaveTextMemoryTool(Tool[SaveTextMemoryParams]):
                 ),
             )
 
-        except Exception as e:
-            error_message = f"Failed to save text memory: {str(e)}"
+        except Exception as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Text memory write",
+                code="text_memory_write_failed",
+                error=error,
+            )
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
@@ -325,9 +344,10 @@ class SaveTextMemoryTool(Tool[SaveTextMemoryParams]):
                     rich_component=StatusBarUpdateComponent(
                         status="error",
                         message="Failed to save text memory",
-                        detail=str(e),
+                        detail=error_message,
                     ),
                     simple_component=None,
                 ),
-                error=str(e),
+                error=error_message,
+                metadata=failure_metadata,
             )

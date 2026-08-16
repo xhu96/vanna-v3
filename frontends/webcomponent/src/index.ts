@@ -1,27 +1,41 @@
-// Log build information when the module loads
-console.log(
-  '%c🎨 Vanna Web Components',
-  'color: #4CAF50; font-weight: bold; font-size: 14px;'
-);
-console.log(
-  `%c📦 Version: ${__BUILD_VERSION__}`,
-  'color: #2196F3; font-weight: bold;'
-);
-console.log(
-  `%c🕐 Built: ${__BUILD_TIME__}`,
-  'color: #FF9800; font-weight: bold;'
-);
-console.log(
-  '%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  'color: #9E9E9E;'
-);
-
 export { VannaChat } from './components/vanna-chat';
 export { VannaMessage } from './components/vanna-message';
 export { VannaStatusBar } from './components/vanna-status-bar';
 export { VannaProgressTracker } from './components/vanna-progress-tracker';
 export { PlotlyChart } from './components/plotly-chart';
 export { VegaLiteChart } from './components/vega-lite-chart';
+export {
+  VannaApiClient,
+  VannaHttpError,
+  apiClient,
+  resolveHttpUrl,
+  resolveWebSocketUrl,
+} from './services/api-client';
+export {
+  V3EventSequenceValidator,
+  V3ProtocolError,
+  V3RemoteError,
+  normalizeV3Event,
+  parseV3Event,
+  parseV3PollResponse,
+  validateChartSpec,
+} from './types/events-v3';
+export type {
+  ApiClientConfig,
+  ApiProtocol,
+  ChatRequest,
+  ChatResponse,
+  ChatStreamChunk,
+  RequestOptions,
+} from './services/api-client';
+export type {
+  ChartSpec,
+  V3ChatEvent,
+  V3EventEnvelope,
+  V3EventType,
+  V3PayloadByType,
+  V3PollResponse,
+} from './types/events-v3';
 
 // Rich component system
 export {

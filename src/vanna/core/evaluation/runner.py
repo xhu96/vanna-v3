@@ -250,6 +250,7 @@ class EvaluationRunner:
             start_time = asyncio.get_event_loop().time()
             agent_result = await self._execute_agent(agent, test_case)
             execution_time = asyncio.get_event_loop().time() - start_time
+            agent_result.execution_time_ms = execution_time * 1000
 
             # Run evaluators
             eval_results = []
@@ -279,7 +280,6 @@ class EvaluationRunner:
             AgentResult with all captured data
         """
         components: List[UiComponent] = []
-        tool_calls: List[Dict[str, Any]] = []
         error: Optional[str] = None
 
         try:
@@ -298,11 +298,12 @@ class EvaluationRunner:
             ):
                 components.append(component)
 
-        except Exception as e:
-            error = str(e)
+        except Exception as error_value:
+            # Evaluation artifacts are routinely uploaded by CI. Do not copy an
+            # exception value that may contain SQL, credentials, or upstream bodies.
+            error = f"agent_execution_failed:{type(error_value).__name__}"
 
-        # TODO: Extract tool calls and LLM requests from observability
-        # For now, these will be empty unless we hook into observability
+        tool_calls = self._extract_tool_calls_from_lineage(components)
 
         return AgentResult(
             test_case_id=test_case.id,
@@ -311,3 +312,50 @@ class EvaluationRunner:
             llm_requests=[],
             error=error,
         )
+
+    @staticmethod
+    def _extract_tool_calls_from_lineage(
+        components: List[UiComponent],
+    ) -> List[Dict[str, Any]]:
+        """Read the agent's typed lineage marker instead of trusting UI text."""
+
+        calls: List[Dict[str, Any]] = []
+        for component in components:
+            rich_component = getattr(component, "rich_component", None)
+            data = getattr(rich_component, "data", None)
+            if not isinstance(data, dict):
+                continue
+            marker = data.get("v3_lineage")
+            if not isinstance(marker, dict):
+                continue
+            evidence = marker.get("evidence")
+            if not isinstance(evidence, dict):
+                continue
+            raw_calls = evidence.get("tool_calls")
+            if not isinstance(raw_calls, list):
+                continue
+            for raw_call in raw_calls:
+                if not isinstance(raw_call, dict):
+                    continue
+                name = raw_call.get("name")
+                success = raw_call.get("success")
+                if (
+                    not isinstance(name, str)
+                    or not name
+                    or name == "restricted"
+                    or not isinstance(success, bool)
+                ):
+                    continue
+                calls.append(
+                    {
+                        "tool_name": name,
+                        "success": success,
+                        **(
+                            {"runtime_ms": raw_call["runtime_ms"]}
+                            if isinstance(raw_call.get("runtime_ms"), (int, float))
+                            and not isinstance(raw_call.get("runtime_ms"), bool)
+                            else {}
+                        ),
+                    }
+                )
+        return calls

@@ -4,16 +4,21 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "vanna"
-version = "3.0.0"
+version = "3.3.0"
 authors = [
   { name="Zain Hoda", email="zain@vanna.ai" },
 ]
 
 description = "Generate SQL queries from natural language"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
@@ -35,13 +40,16 @@ dependencies = [
 vanna = "vanna.servers.cli.server_runner:main"
 
 [project.urls]
-"Homepage" = "https://github.com/vanna-ai/vanna"
-"Bug Tracker" = "https://github.com/vanna-ai/vanna/issues"
+"Homepage" = "https://github.com/xhu96/vanna-v3"
+"Repository" = "https://github.com/xhu96/vanna-v3"
+"Bug Tracker" = "https://github.com/xhu96/vanna-v3/issues"
+"Upstream" = "https://github.com/vanna-ai/vanna"
 
 [project.optional-dependencies]
 flask = ["flask>=2.0.0", "flask-cors>=4.0.0", "asgiref>=3.7"]
 fastapi = ["fastapi>=0.68.0", "uvicorn>=0.15.0", "asgiref>=3.7"]
-servers = ["vanna[flask,fastapi]"]
+jwt = ["PyJWT[crypto]>=2.8.0"]
+servers = ["flask>=2.0.0", "flask-cors>=4.0.0", "fastapi>=0.68.0", "uvicorn>=0.15.0", "asgiref>=3.7"]
 
 postgres = ["psycopg2-binary", "db-dtypes"]
 mysql = ["PyMySQL"]
@@ -50,7 +58,7 @@ bigquery = ["google-cloud-bigquery"]
 snowflake = ["snowflake-connector-python"]
 duckdb = ["duckdb"]
 google = ["google-generativeai", "google-cloud-aiplatform"]
-all = ["psycopg2-binary", "db-dtypes", "PyMySQL", "google-cloud-bigquery", "snowflake-connector-python", "duckdb", "openai", "qianfan", "mistralai>=1.0.0", "chromadb>=1.1.0", "anthropic", "zhipuai", "marqo", "google-generativeai", "google-cloud-aiplatform", "qdrant-client>=1.0.0", "fastembed", "ollama", "httpx", "opensearch-py", "opensearch-dsl", "transformers", "pinecone", "pymilvus[model]","weaviate-client", "azure-search-documents", "azure-identity", "azure-common", "faiss-cpu", "boto", "boto3", "botocore", "langchain_core", "langchain_postgres", "langchain-community", "langchain-huggingface", "xinference-client"]
+all = ["flask>=2.0.0", "flask-cors>=4.0.0", "fastapi>=0.68.0", "uvicorn>=0.15.0", "asgiref>=3.7", "PyJWT[crypto]>=2.8.0", "psycopg2-binary", "db-dtypes", "PyMySQL", "clickhouse_connect", "google-cloud-bigquery", "snowflake-connector-python", "duckdb", "openai", "mistralai>=1.0.0", "chromadb>=1.1.0", "anthropic", "zhipuai", "marqo", "google-genai", "qdrant-client>=1.0.0", "fastembed", "ollama", "opensearch-py", "opensearch-dsl", "transformers", "pinecone", "pymilvus[model]", "weaviate-client", "azure-search-documents", "azure-identity", "azure-common", "faiss-cpu", "boto3", "botocore", "langchain-core", "langchain-postgres>=0.0.12", "langchain-community", "langchain-huggingface", "xinference-client"]
 test = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "pytest-mock>=3.10.0", "pytest-cov>=4.0.0", "tox>=4.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "pytest-mock>=3.10.0", "pytest-cov>=4.0.0", "tox>=4.0.0", "mypy", "ruff", "pandas-stubs", "plotly-stubs", "types-PyYAML", "types-requests", "types-tabulate"]
 chromadb = ["chromadb>=1.1.0"]

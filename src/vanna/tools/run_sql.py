@@ -1,10 +1,15 @@
 """Generic SQL query execution tool with dependency injection."""
 
-from typing import Any, Dict, List, Optional, Type, cast, Set
 import uuid
-import sqlglot
-from sqlglot import expressions as exp
-from vanna.core.tool import Tool, ToolContext, ToolResult
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Type, cast
+
+from vanna.core.tool import (
+    PRIVILEGED_SQL_WRITE_CAPABILITY,
+    Tool,
+    ToolContext,
+    ToolResult,
+)
+from vanna.core.tool.errors import public_tool_failure
 from vanna.components import (
     UiComponent,
     DataFrameComponent,
@@ -12,26 +17,23 @@ from vanna.components import (
     ComponentType,
     SimpleTextComponent,
 )
-from vanna.capabilities.sql_runner import SqlRunner, RunSqlToolArgs
+from vanna.capabilities.sql_runner import (
+    DEFAULT_MAX_RESULT_BYTES,
+    DEFAULT_MAX_RESULT_ROWS,
+    DEFAULT_QUERY_TIMEOUT_SECONDS,
+    RunSqlToolArgs,
+    SqlRunner,
+)
+from vanna.capabilities.sql_runner.limits import (
+    enforce_dataframe_limits,
+    validate_execution_limits,
+)
 from vanna.capabilities.file_system import FileSystem
 from vanna.integrations.local import LocalFileSystem
-
-
-# Any of these appearing anywhere in the parsed tree means the statement
-# mutates data/schema — including inside CTEs — and must be blocked.
-# `exp.Into` covers `SELECT ... INTO new_table` (a DDL/write in Postgres/MSSQL)
-# which otherwise parses as an exp.Select with an exp.Into child and would slip
-# past a write-expression scan.
-_WRITE_EXPRESSIONS = (
-    exp.Insert,
-    exp.Update,
-    exp.Delete,
-    exp.Merge,
-    exp.Drop,
-    exp.Create,
-    exp.Alter,
-    exp.TruncateTable,
-    exp.Into,
+from vanna.security.sql_policy import (
+    SqlPolicyViolation,
+    SqlQueryPolicy,
+    normalize_sql_dialect,
 )
 
 
@@ -46,7 +48,12 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
         custom_tool_description: Optional[str] = None,
         read_only: bool = True,
         allowed_statement_types: Optional[Set[str]] = None,
-    ):
+        dialect: Optional[str] = None,
+        query_policy: Optional[SqlQueryPolicy] = None,
+        require_native_read_only: bool = True,
+        max_result_rows: int = DEFAULT_MAX_RESULT_ROWS,
+        max_result_bytes: int = DEFAULT_MAX_RESULT_BYTES,
+    ) -> None:
         """Initialize the tool with a SqlRunner implementation.
 
         Args:
@@ -54,23 +61,71 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             file_system: FileSystem implementation for saving results (defaults to LocalFileSystem)
             custom_tool_name: Optional custom name for the tool (overrides default "run_sql")
             custom_tool_description: Optional custom description for the tool (overrides default description)
-            read_only: Whether to enforce read-only SQL statements (secure default)
-            allowed_statement_types: Allowed first SQL keywords when read_only=True
+            read_only: Whether to enforce read-only SQL statements (secure
+                default). ``False`` exposes the runner's privileged writable
+                path and must not be used for a default agent tool.
+            allowed_statement_types: Legacy compatibility option that can only
+                narrow the shared read-only policy.
+            dialect: Explicit sqlglot dialect. When omitted, a known runner
+                dialect is derived; legacy runners reporting ``unknown`` must
+                inject this value before read-only SQL can execute.
+            require_native_read_only: Require a runner-declared native read-only
+                boundary. Set ``False`` only for an explicit legacy migration
+                backed by an externally enforced least-privilege DB credential.
         """
         self.sql_runner = sql_runner
         self.file_system = file_system or LocalFileSystem()
         self._custom_name = custom_tool_name
         self._custom_description = custom_tool_description
         self.read_only = read_only
-        self.allowed_statement_types = allowed_statement_types or {
-            "SELECT",
-            "WITH",
-            "SHOW",
-            "DESCRIBE",
-            "DESC",
-            "EXPLAIN",
-            "PRAGMA",
-        }
+        self.allowed_statement_types = allowed_statement_types
+        self.require_native_read_only = require_native_read_only
+        self.max_result_rows, self.max_result_bytes, _ = validate_execution_limits(
+            max_result_rows,
+            max_result_bytes,
+            DEFAULT_QUERY_TIMEOUT_SECONDS,
+        )
+
+        reported_dialect = getattr(sql_runner, "dialect", "unknown")
+        runner_dialect = normalize_sql_dialect(
+            reported_dialect if isinstance(reported_dialect, str) else "unknown"
+        )
+        explicit_dialect = (
+            normalize_sql_dialect(dialect) if dialect is not None else None
+        )
+        if (
+            explicit_dialect is not None
+            and runner_dialect != "unknown"
+            and explicit_dialect != runner_dialect
+        ):
+            raise ValueError(
+                "RunSqlTool dialect does not match the injected runner dialect: "
+                f"{explicit_dialect!r} != {runner_dialect!r}."
+            )
+
+        self.dialect = explicit_dialect or (
+            query_policy.dialect
+            if query_policy is not None and runner_dialect == "unknown"
+            else runner_dialect
+        )
+        if query_policy is not None and query_policy.dialect != self.dialect:
+            raise ValueError(
+                "RunSqlTool query policy dialect does not match the runner dialect: "
+                f"{query_policy.dialect!r} != {self.dialect!r}."
+            )
+        self.query_policy = (
+            None
+            if not self.read_only or self.dialect == "unknown"
+            else query_policy
+            or SqlQueryPolicy(
+                self.dialect,
+                require_row_policies=True,
+                allowed_statement_types=allowed_statement_types,
+            )
+        )
+        self.read_only_policy = (
+            self.query_policy.read_only if self.query_policy is not None else None
+        )
 
     @property
     def name(self) -> str:
@@ -84,6 +139,13 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
             else "Execute SQL queries against the configured database"
         )
 
+    @property
+    def capabilities(self) -> FrozenSet[str]:
+        capabilities = {"sql"}
+        if not self.read_only:
+            capabilities.add(PRIVILEGED_SQL_WRITE_CAPABILITY)
+        return frozenset(capabilities)
+
     def get_args_schema(self) -> Type[RunSqlToolArgs]:
         return RunSqlToolArgs
 
@@ -91,7 +153,30 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
         """Execute a SQL query using the injected SqlRunner."""
         try:
             if self.read_only:
-                validation_error = self._validate_read_only_sql(args.sql)
+                if self.require_native_read_only and (
+                    getattr(self.sql_runner, "native_read_only", False) is not True
+                ):
+                    validation_error = (
+                        "Blocked by read-only SQL policy: the runner does not "
+                        "declare a native read-only execution boundary. Configure "
+                        "a read-only runner/DB role or explicitly opt into the "
+                        "legacy compatibility override."
+                    )
+                    prepared_sql = None
+                elif self.query_policy is None:
+                    validation_error = (
+                        "Blocked by read-only SQL policy: the runner dialect is "
+                        "unknown. Configure RunSqlTool(dialect=...) or expose "
+                        "SqlRunner.dialect."
+                    )
+                    prepared_sql = None
+                else:
+                    try:
+                        prepared_sql = self.query_policy.prepare(args.sql, context)
+                        validation_error = None
+                    except SqlPolicyViolation as exc:
+                        prepared_sql = None
+                        validation_error = str(exc)
                 if validation_error:
                     return ToolResult(
                         success=False,
@@ -108,19 +193,27 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                         metadata={
                             "error_type": "sql_security_violation",
                             "executed_sql": args.sql,
+                            "dialect": self.dialect,
+                            "row_count": 0,
                             "validation_checks": ["read_only_policy_failed"],
                         },
                     )
+                if prepared_sql is None:
+                    raise ValueError("Read-only SQL query was not prepared")
+                args = args.model_copy(update={"sql": prepared_sql})
 
             # Use the injected SqlRunner to execute the query
             df = await self.sql_runner.run_sql(args, context)
+            enforce_dataframe_limits(
+                df,
+                max_result_rows=self.max_result_rows,
+                max_result_bytes=self.max_result_bytes,
+            )
 
             query_type = args.sql.strip().upper().split()[0]
 
-            # Read-only statements (SELECT/WITH/SHOW/DESCRIBE/EXPLAIN/PRAGMA) all return
-            # result sets. Treat any returned DataFrame as results; only when running in
-            # write mode (read_only=False) and the runner reports an affected-row count
-            # do we render the write acknowledgement.
+            # SELECT/WITH and approved PRAGMAs return result sets. Only an explicitly
+            # writable tool may render a runner-reported affected-row count.
             is_write_result = (
                 not self.read_only
                 and not df.empty
@@ -136,7 +229,7 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     "rows_affected": rows_affected,
                     "query_type": query_type,
                     "executed_sql": args.sql,
-                    "validation_checks": ["read_only_policy_passed"],
+                    "validation_checks": ["privileged_write_mode"],
                 }
                 ui_component = UiComponent(
                     rich_component=NotificationComponent(
@@ -160,6 +253,9 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     "columns": [],
                     "query_type": query_type,
                     "results": [],
+                    "executed_sql": args.sql,
+                    "dialect": self.dialect,
+                    "validation_checks": ["read_only_policy_passed"],
                 }
             else:
                 results_data = df.to_dict("records")
@@ -197,6 +293,7 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     "results": results_data,
                     "output_file": filename,
                     "executed_sql": args.sql,
+                    "dialect": self.dialect,
                     "validation_checks": ["read_only_policy_passed"],
                 }
 
@@ -207,8 +304,12 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                 metadata=metadata,
             )
 
-        except Exception as e:
-            error_message = f"Error executing query: {str(e)}"
+        except Exception as error:
+            error_message, failure_metadata = public_tool_failure(
+                operation="Query execution",
+                code="query_execution_failed",
+                error=error,
+            )
             return ToolResult(
                 success=False,
                 result_for_llm=error_message,
@@ -220,104 +321,31 @@ class RunSqlTool(Tool[RunSqlToolArgs]):
                     ),
                     simple_component=SimpleTextComponent(text=error_message),
                 ),
-                error=str(e),
-                metadata={"error_type": "sql_error", "executed_sql": args.sql},
+                error=error_message,
+                metadata={
+                    "executed_sql": args.sql,
+                    "dialect": self.dialect,
+                    "row_count": 0,
+                    "validation_checks": ["query_execution_failed"],
+                    **failure_metadata,
+                },
             )
 
-    def _validate_read_only_sql(self, sql: str) -> Optional[str]:
-        """Validate SQL against the read-only policy using AST parsing.
+    def _validate_read_only_sql(
+        self, sql: str, context: Optional[ToolContext] = None
+    ) -> Optional[str]:
+        """Return the shared policy error for ``sql``, if any."""
 
-        Defense in depth: parse the statement, reject multiple statements,
-        reject anything that mutates data/schema anywhere in the tree
-        (covers data-modifying CTEs), and require the top-level keyword to be
-        in the read-only allowlist. Fails closed on parse errors.
-        """
-        if not sql or not sql.strip():
-            return "SQL query cannot be empty."
-
-        try:
-            statements = [
-                s for s in sqlglot.parse(sql) if isinstance(s, exp.Expression)
-            ]
-        except Exception:
-            return "SQL could not be parsed and is blocked by the read-only policy."
-
-        if not statements:
-            return "SQL query cannot be empty."
-        if len(statements) > 1:
-            return "Multiple SQL statements are blocked by default."
-
-        statement = statements[0]
-        if statement.find(*_WRITE_EXPRESSIONS) is not None:
-            return "Blocked by read-only SQL policy: a data-modifying statement was detected."
-
-        # sqlglot falls back to an opaque exp.Command node for syntax it cannot
-        # model (e.g. `EXPLAIN ANALYZE ...`), stashing the remainder as a string
-        # literal. A write buried in that literal escapes the AST scan above, and
-        # EXPLAIN ANALYZE actually executes the statement in Postgres. Re-parse
-        # the trailing payload and fail closed on anything that is not a plain
-        # read.
-        command_block = self._validate_command_payload(statement)
-        if command_block is not None:
-            return command_block
-
-        first_keyword = sql.strip().split(None, 1)[0].upper()
-        if first_keyword not in self.allowed_statement_types:
-            allowed_list = ", ".join(sorted(self.allowed_statement_types))
+        if self.query_policy is None:
             return (
-                f"Blocked by read-only SQL policy. "
-                f"Allowed statement types: {allowed_list}."
+                "Blocked by read-only SQL policy: the runner dialect is unknown. "
+                "Configure RunSqlTool(dialect=...) or expose SqlRunner.dialect."
             )
-        return None
-
-    def _validate_command_payload(self, statement: exp.Expression) -> Optional[str]:
-        """Inspect opaque exp.Command nodes for hidden writes.
-
-        sqlglot models statements it cannot fully parse as an exp.Command whose
-        keyword is in `this` and whose remainder is stuffed into a string literal
-        (e.g. `EXPLAIN ANALYZE DELETE FROM users` -> Command(this='EXPLAIN',
-        expression='ANALYZE DELETE FROM users')). A data-modifying statement
-        hidden in that literal is invisible to the AST write scan, so re-parse
-        the payload and fail closed on anything that is not a plain read.
-        Returns an error string when the command must be blocked, else None.
-        """
-        if not isinstance(statement, exp.Command):
-            return None
-
-        keyword = (statement.this or "").strip().upper()
-        expression = statement.args.get("expression")
-        payload = expression.this if isinstance(expression, exp.Literal) else ""
-        payload = (payload or "").strip()
-
-        # EXPLAIN ANALYZE actually executes the statement in Postgres, so it is a
-        # write vector regardless of the wrapped query. Block it outright.
-        if keyword == "EXPLAIN" and payload.upper().startswith("ANALYZE"):
+        if self.require_native_read_only and (
+            getattr(self.sql_runner, "native_read_only", False) is not True
+        ):
             return (
-                "Blocked by read-only SQL policy: EXPLAIN ANALYZE executes the "
-                "statement and is not read-only."
+                "Blocked by read-only SQL policy: the runner does not declare a "
+                "native read-only execution boundary."
             )
-
-        # For EXPLAIN/DESCRIBE-style commands, re-parse the wrapped statement and
-        # reject it if it mutates data/schema. Fail closed if the payload cannot
-        # be parsed.
-        if keyword in {"EXPLAIN", "DESCRIBE", "DESC"} and payload:
-            try:
-                inner = [s for s in sqlglot.parse(payload) if s is not None]
-            except Exception:
-                return (
-                    "Blocked by read-only SQL policy: the wrapped statement could "
-                    "not be parsed."
-                )
-            for inner_stmt in inner:
-                if isinstance(inner_stmt, exp.Command):
-                    nested = self._validate_command_payload(inner_stmt)
-                    if nested is not None:
-                        return nested
-                if inner_stmt.find(*_WRITE_EXPRESSIONS) is not None or isinstance(
-                    inner_stmt, _WRITE_EXPRESSIONS
-                ):
-                    return (
-                        "Blocked by read-only SQL policy: a data-modifying "
-                        "statement was detected."
-                    )
-        return None
+        return self.query_policy.validation_error(sql, context)

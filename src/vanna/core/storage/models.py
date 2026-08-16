@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from ..tool.models import ToolCall
 from ..user.models import User
 
+REQUEST_ID_METADATA_KEY = "_vanna_request_id"
+
 
 class Message(BaseModel):
     """Single message in a conversation."""
@@ -39,8 +41,12 @@ class Conversation(BaseModel):
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional conversation metadata"
     )
+    base_message_count: int = Field(default=0, ge=0, exclude=True, repr=False)
 
     def add_message(self, message: Message) -> None:
         """Add a message to the conversation."""
         self.messages.append(message)
         self.updated_at = datetime.utcnow()
+
+
+__all__ = ["Conversation", "Message", "REQUEST_ID_METADATA_KEY"]

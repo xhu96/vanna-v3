@@ -1,0 +1,8 @@
+{
+  "schema_version": "vanna-feedback-export-v1",
+  "tenant_scope": "tenant:ci",
+  "generated_at": "2026-08-12T00:02:00Z",
+  "record_count": 1,
+  "content_sha256": "065fa16399b1c8357efc747b1f412fc1e4fdcda682ade1d384baef521080caee",
+  "feedback_ids": ["fb_ci_approved"]
+}

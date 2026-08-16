@@ -34,6 +34,7 @@ class ExpectedOutcome(BaseModel):
     min_components: Optional[int] = None
     max_components: Optional[int] = None
     max_execution_time_ms: Optional[float] = None
+    expected_result_rows: Optional[List[Dict[str, Any]]] = None
     metadata: Dict[str, Any] = {}
 
 
@@ -92,6 +93,15 @@ class AgentResult:
     def get_tool_names_called(self) -> List[str]:
         """Get list of tool names that were called."""
         return [call.get("tool_name", "") for call in self.tool_calls]
+
+    def get_successful_tool_names_called(self) -> List[str]:
+        """Get called tools that did not report a failed execution."""
+
+        return [
+            call.get("tool_name", "")
+            for call in self.tool_calls
+            if call.get("success", True) is not False
+        ]
 
 
 class EvaluationResult(BaseModel):

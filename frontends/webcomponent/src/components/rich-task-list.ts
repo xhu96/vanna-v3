@@ -1,17 +1,17 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
+import { LitElement, html, css } from "lit";
+import { customElement, property } from "lit/decorators.js";
+import { vannaDesignTokens } from "../styles/vanna-design-tokens.js";
 
 export interface TaskItem {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   progress?: number;
   timestamp?: string;
 }
 
-@customElement('rich-task-list')
+@customElement("rich-task-list")
 export class RichTaskList extends LitElement {
   static styles = [
     vannaDesignTokens,
@@ -80,8 +80,13 @@ export class RichTaskList extends LitElement {
       }
 
       @keyframes progressPulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
       }
 
       .progress-fill.status-success {
@@ -122,8 +127,39 @@ export class RichTaskList extends LitElement {
       }
 
       .task-icon {
-        font-size: 1rem;
-        margin-top: 0.125rem;
+        display: grid;
+        width: 21px;
+        height: 21px;
+        flex: 0 0 auto;
+        margin-top: 1px;
+        place-items: center;
+        color: var(--vanna-foreground-dimmest);
+        background: var(--vanna-background-root);
+        border: 1px solid var(--vanna-outline-default);
+        border-radius: 50%;
+      }
+
+      .task-icon svg {
+        width: 11px;
+        height: 11px;
+      }
+
+      .task-item.status-running .task-icon {
+        color: white;
+        background: var(--vanna-navy);
+        border-color: var(--vanna-navy);
+      }
+
+      .task-item.status-completed .task-icon {
+        color: white;
+        background: var(--vanna-teal);
+        border-color: var(--vanna-teal);
+      }
+
+      .task-item.status-failed .task-icon {
+        color: white;
+        background: var(--vanna-accent-negative-default);
+        border-color: var(--vanna-accent-negative-default);
       }
 
       .task-content {
@@ -189,31 +225,60 @@ export class RichTaskList extends LitElement {
           gap: var(--vanna-space-2);
         }
       }
-    `
+    `,
   ];
 
-  @property() title = '';
+  @property() title = "";
   @property({ type: Array }) tasks: TaskItem[] = [];
   @property({ type: Boolean }) showProgress = true;
   @property({ type: Boolean }) showTimestamps = false;
-  @property() theme: 'light' | 'dark' = 'dark';
+  @property() theme: "light" | "dark" = "dark";
 
   private get completedTasks(): number {
-    return this.tasks.filter(task => task.status === 'completed').length;
+    return this.tasks.filter((task) => task.status === "completed").length;
   }
 
   private get progressPercentage(): number {
-    return this.tasks.length > 0 ? (this.completedTasks / this.tasks.length) * 100 : 0;
+    return this.tasks.length > 0
+      ? (this.completedTasks / this.tasks.length) * 100
+      : 0;
   }
 
-  private getStatusIcon(status: string): string {
-    const icons = {
-      'pending': '⏳',
-      'running': '🔄',
-      'completed': '✅',
-      'failed': '❌'
-    };
-    return icons[status as keyof typeof icons] || '⏳';
+  private getStatusIcon(status: string) {
+    if (status === "completed") {
+      return html`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M3 8.2l3 3L13 4.8"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>`;
+    }
+    if (status === "failed") {
+      return html`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M4.5 4.5l7 7m0-7l-7 7"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>`;
+    }
+    if (status === "running") {
+      return html`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M8 2.5a5.5 5.5 0 105.2 3.7"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>`;
+    }
+    return html`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="2" fill="currentColor" />
+    </svg>`;
   }
 
   private renderTask(task: TaskItem) {
@@ -221,23 +286,30 @@ export class RichTaskList extends LitElement {
 
     return html`
       <div class="task-item status-${task.status}" data-task-id="${task.id}">
-        <div class="task-icon">${statusIcon}</div>
+        <div class="task-icon" aria-label=${task.status}>${statusIcon}</div>
         <div class="task-content">
           <div class="task-title">${task.title}</div>
-          ${task.description ? html`
-            <div class="task-description">${task.description}</div>
-          ` : ''}
-          ${task.progress !== null && task.progress !== undefined ? html`
-            <div class="task-progress">
-              <div class="task-progress-bar">
-                <div class="task-progress-fill" style="width: ${task.progress * 100}%"></div>
-              </div>
-              <span class="task-progress-text">${Math.round(task.progress * 100)}%</span>
-            </div>
-          ` : ''}
-          ${this.showTimestamps && task.timestamp ? html`
-            <div class="task-timestamp">${task.timestamp}</div>
-          ` : ''}
+          ${task.description
+            ? html` <div class="task-description">${task.description}</div> `
+            : ""}
+          ${task.progress !== null && task.progress !== undefined
+            ? html`
+                <div class="task-progress">
+                  <div class="task-progress-bar">
+                    <div
+                      class="task-progress-fill"
+                      style="width: ${task.progress * 100}%"
+                    ></div>
+                  </div>
+                  <span class="task-progress-text"
+                    >${Math.round(task.progress * 100)}%</span
+                  >
+                </div>
+              `
+            : ""}
+          ${this.showTimestamps && task.timestamp
+            ? html` <div class="task-timestamp">${task.timestamp}</div> `
+            : ""}
         </div>
       </div>
     `;
@@ -248,17 +320,24 @@ export class RichTaskList extends LitElement {
       <div class="task-list">
         <div class="task-list-header">
           <h3 class="task-list-title">${this.title}</h3>
-          ${this.showProgress ? html`
-            <div class="task-list-progress">
-              <span class="progress-text">${this.completedTasks}/${this.tasks.length} completed</span>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${this.progressPercentage}%"></div>
-              </div>
-            </div>
-          ` : ''}
+          ${this.showProgress
+            ? html`
+                <div class="task-list-progress">
+                  <span class="progress-text"
+                    >${this.completedTasks}/${this.tasks.length} completed</span
+                  >
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      style="width: ${this.progressPercentage}%"
+                    ></div>
+                  </div>
+                </div>
+              `
+            : ""}
         </div>
         <div class="task-list-items">
-          ${this.tasks.map(task => this.renderTask(task))}
+          ${this.tasks.map((task) => this.renderTask(task))}
         </div>
       </div>
     `;
@@ -267,6 +346,6 @@ export class RichTaskList extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'rich-task-list': RichTaskList;
+    "rich-task-list": RichTaskList;
   }
 }

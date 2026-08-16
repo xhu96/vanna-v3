@@ -1,136 +1,89 @@
-# Vanna v3.0 Implementation Plan
+# Vanna 3.3.0 Implementation Plan
 
-## Delivery Strategy
-- Incremental rollout via v3 modules + feature flags.
-- Preserve v2 behavior behind compatibility adapters/routes.
-- Every phase lands with tests and docs updates.
+Status date: 2026-08-12
 
-## Milestones and Commit Groups
+This release incrementally extends the V2 agent architecture. V2 routes and
+frontend behavior remain the default; V3 capabilities use explicit, versioned
+contracts. Each feature has direct regression coverage and release-facing
+operational documentation.
 
-### M1: v3 Contract + Security Baseline
-Deliverables:
-- Typed v3 streaming event envelope.
-- Safe CORS defaults + auth/rate-limit middleware hook points.
-- Read-only SQL enforcement default.
-- Disable legacy Python-chart execution by default.
+## Milestones
 
-Planned file-level changes:
-- `src/vanna/servers/base/models.py` (v3 event models + compatibility mapping)
-- `src/vanna/servers/fastapi/routes.py` (v3 event endpoint)
-- `src/vanna/servers/flask/routes.py` (v3 event endpoint)
-- `src/vanna/servers/fastapi/app.py` (safe defaults + middleware hooks)
-- `src/vanna/servers/flask/app.py` (safe defaults + middleware hooks)
-- `src/vanna/tools/run_sql.py` (read-only query validator)
-- `src/vanna/legacy/base/base.py` (secure chart default + explicit opt-in)
-- `tests/test_tool_permissions.py`, `tests/test_database_sanity.py` (+ security tests)
+| Milestone | Status | Primary modules |
+|---|---|---|
+| Architecture and contracts | Complete | `docs/v3/`, event and ChartSpec JSON schemas |
+| Reproducible test harness | Complete offline | `tests/test_inventory.toml`, `tox.ini`, CI workflows, frontend Vitest/Playwright |
+| Secure execution boundaries | Complete offline | `src/vanna/security/`, SQL tools/runners, server security, static renderers |
+| Typed API and frontend transport | Complete offline | V3 event models, FastAPI/Flask routes, SSE parser, web component protocol adapter |
+| Schema drift | Complete offline | catalog adapters, transactional snapshot store, sync service/CLI |
+| Semantic-first routing | Complete offline | semantic planner, dbt GraphQL adapter, file adapter policy executor |
+| Lineage and confidence | Complete offline | lineage models/collector, agent finalization, permission filtering |
+| Feedback and evaluation | Complete offline | feedback service/store, memory ranking, approved export, eval promotion gate |
+| Packaging and release | Implemented; external gates pending | Python/npm metadata, build-only workflow, release readiness report |
 
-### M2: Declarative Visualization Protocol
-Deliverables:
-- ChartSpec schema (`vega-lite` preferred, `plotly-json` optional).
-- Visualization tool emits ChartSpec + dataset payload.
-- Frontend renders declarative specs.
+## File-Level Mapping
 
-Planned file-level changes:
-- `src/vanna/components/rich/data/chart.py` (chart spec payload fields)
-- `src/vanna/tools/visualize_data.py` (emit validated ChartSpec)
-- `src/vanna/core/validation.py` (ChartSpec validators)
-- `frontends/webcomponent/src/components/rich-component-system.ts` (ChartSpec rendering path)
-- `frontends/webcomponent/src/components/plotly-chart.ts` (plotly-json compatibility path)
-- `tests/test_chart_spec_validation.py` (new)
-- `tests/test_visualization_tool.py` (new)
+### API and Security
 
-### M3: Schema Catalog + Drift Sync
-Deliverables:
-- Cross-DB snapshot ingestion via catalog queries.
-- Schema hash/version + diffing.
-- Scheduler (cron-compatible) + on-demand sync endpoint.
-- Drift metadata surfaced to lineage.
+- `src/vanna/servers/base/events_v3.py`: discriminated events, sequence and
+  terminal state machine, poll response validation.
+- `src/vanna/servers/base/security.py`: production startup requirements and
+  prohibited capability checks.
+- `src/vanna/servers/fastapi/` and `src/vanna/servers/flask/`: namespaced routes,
+  authentication, authorization, rate limiting, error redaction, and parity.
+- `src/vanna/security/sql_policy.py` and `src/vanna/security/rls.py`: AST
+  read-only validation and recursive tenant policy.
+- `src/vanna/tools/run_sql.py`: model-facing SQL policy and result limits.
 
-Planned file-level changes:
-- `src/vanna/capabilities/schema_catalog/base.py` (new interface)
-- `src/vanna/capabilities/schema_catalog/models.py` (snapshot/diff models)
-- `src/vanna/integrations/schema_catalog/sql_catalog.py` (portable SQL-based snapshotter)
-- `src/vanna/services/schema_sync.py` (sync service + scheduler)
-- `src/vanna/servers/fastapi/routes.py` / `src/vanna/servers/flask/routes.py` (sync endpoints)
-- `tests/test_schema_diff.py` (new)
-- `tests/test_schema_sync_service.py` (new)
+### Visualization and Frontend
 
-### M4: Semantic-First Planning + Adapter
-Deliverables:
-- `SemanticTool` interface + query model.
-- Golden adapter (MetricFlow/dbt-compatible HTTP adapter or mockable adapter).
-- Planner prefers semantic path and warns on SQL fallback.
+- `src/vanna/core/chart_spec.py`: closed safe profiles and dataset limits.
+- `src/vanna/tools/visualize_data.py`: declarative chart generation only.
+- `frontends/webcomponent/src/services/api-client.ts`: V2/V3 SSE and poll.
+- `frontends/webcomponent/src/types/events-v3.ts`: typed envelope validation.
+- `frontends/webcomponent/src/security/`: sanitized rendering boundaries.
 
-Planned file-level changes:
-- `src/vanna/capabilities/semantic/base.py` (new)
-- `src/vanna/capabilities/semantic/models.py` (new)
-- `src/vanna/tools/semantic_query.py` (new)
-- `src/vanna/core/planner/semantic_first.py` (new)
-- `src/vanna/core/agent/agent.py` (planner integration and warning emission)
-- `tests/test_semantic_planner.py` (new)
+### Schema and Semantics
 
-### M5: Explainability + Lineage
-Deliverables:
-- Lineage capture for every answer.
-- Evidence includes schema hash, memories, tool calls, SQL, runtime, checks.
-- Tiered confidence derived from explicit rules/signals.
+- `src/vanna/integrations/schema_catalog/`: SQLite and Information Schema
+  discovery with trusted source scopes.
+- `src/vanna/capabilities/schema_catalog/store.py`: tenant-scoped immutable
+  snapshots and durable scheduling state.
+- `src/vanna/services/schema_sync.py`: diffing, versioning, memory outbox, and
+  idempotent sync.
+- `src/vanna/integrations/semantic/dbt_adapter.py`: tenant-bound bounded dbt
+  GraphQL metadata/query execution.
+- `src/vanna/core/planner/semantic_first.py`: deterministic semantic coverage
+  and SQL fallback policy.
 
-Planned file-level changes:
-- `src/vanna/core/lineage/models.py` (new)
-- `src/vanna/core/lineage/collector.py` (new)
-- `src/vanna/core/lineage/confidence.py` (new)
-- `src/vanna/core/registry.py` (tool call lineage hooks)
-- `src/vanna/core/agent/agent.py` (emit lineage event/component at completion)
-- `tests/test_lineage_capture.py` (new)
+### Lineage, Feedback, and Evaluation
 
-### M6: Feedback Loop + Eval-Gated Offline Training
-Deliverables:
-- Feedback endpoint + corrected SQL/reason-code capture.
-- Immediate memory patching (positive/negative/corrective, weighted).
-- Optional review queue for golden memories.
-- Offline training pipeline gated by eval improvements.
+- `src/vanna/core/lineage/`: serializable evidence and signal-derived confidence.
+- `src/vanna/core/agent/agent.py`: lineage finalization on all accepted paths.
+- `src/vanna/services/feedback.py` and `feedback_store.py`: immediate memory
+  updates, ownership, durable review state, and approved records.
+- `src/evals/`: fixed datasets, candidate execution, approved-data provenance,
+  aggregate/slice regression checks, and promotion mode.
 
-Planned file-level changes:
-- `src/vanna/services/feedback/models.py` (new)
-- `src/vanna/services/feedback/store.py` (new)
-- `src/vanna/services/feedback/patcher.py` (new)
-- `src/vanna/servers/fastapi/routes.py` / `src/vanna/servers/flask/routes.py` (feedback endpoint)
-- `src/evals/pipelines/offline_training_gate.py` (new)
-- `tests/test_feedback_memory_patching.py` (new)
+## Verification Matrix
 
-### M7: CI Reliability Gates + Integration Coverage
-Deliverables:
-- Add integration suite with dockerized Postgres + mocked semantic adapter.
-- Add security tests for non-reachable Python exec-by-default and ChartSpec hard validation.
-- Eval regression check in CI.
+| Area | Required scenarios |
+|---|---|
+| SQL and tenant policy | Mutations, stacked statements, write CTEs, vendor commands, PRAGMAs, nested sources, joins, aliases, subqueries, unions, semantic execution, native read-only enforcement |
+| API | V2 fixtures, V3 schema and framing, empty/error streams, terminal ordering, poll parity, custom prefixes, auth failures, cancellation, WebSocket credential refresh and ownership |
+| Frontend | Fragmented SSE, protocol selection, no replay, V2 timeout compatibility, ChartSpec rejection, static artifacts, CSP/browser isolation |
+| Schema | SQLite/Information Schema discovery, stable hashes, versions, all diff types, atomic writes, tenant isolation, history, scheduler idempotency |
+| Semantic | Catalog pagination, filters, grains, ordering, redirects, response limits, timeouts, service errors, full/partial/missing coverage |
+| Lineage | Normal, zero-row, semantic, fallback, shortcut, tool-limit, and error paths; redaction and confidence rules |
+| Feedback/eval | Correction, suppression, tenant isolation, review ordering, approved-only export, immediate retrieval, candidate identity, malformed metrics, aggregate/slice regressions |
+| Packaging | Python 3.11-3.14, metadata equality, two builds, Twine, clean install, CLI/SQLite smoke, MIT contents, frontend build/test/Storybook |
+| Integration | PostgreSQL 15 read-only role, two tenants, drift, mocked dbt, table/chart/lineage, feedback correction on next request |
 
-Planned file-level changes:
-- `.github/workflows/tests.yml` (eval + integration jobs)
-- `tox.ini` (new envs: integration/eval/security)
-- `tests/integration/test_postgres_v3_pipeline.py` (new)
-- `tests/security/test_secure_defaults.py` (new)
-- `tests/security/test_chart_spec_security.py` (new)
+## Remaining Release Work
 
-### M8: Docs, Examples, Migration
-Deliverables:
-- Golden path examples:
-  - FastAPI + JWT + Postgres
-  - Multi-tenant groups + RLS
-  - Semantic layer example
-  - BYO UI event stream consumption
-- Migration guide v2 -> v3 + compatibility adapter guidance.
-
-Planned file-level changes:
-- `docs/v3/migration-v2-to-v3.md` (new)
-- `docs/v3/api-events-v3.md` (new)
-- `examples/v3/fastapi_jwt_postgres.py` (new)
-- `examples/v3/multi_tenant_rls.py` (new)
-- `examples/v3/semantic_adapter_demo.py` (new)
-- `examples/v3/byo_ui_event_stream.py` (new)
-
-## Quality Gates
-- Unit tests for each milestone’s new logic.
-- Integration tests include one real DB backend (dockerized Postgres).
-- Security tests required for secure defaults and visualization constraints.
-- CI fails on eval regression relative to baseline dataset.
-
+- Reconcile the divergent public `v3.2.0` line before publishing `v3.3.0`.
+- Run package artifacts and the supported Python matrix in CI.
+- Run PostgreSQL 15 with a least-privilege role and two tenants.
+- Validate one bounded query against the target dbt tenant.
+- Measure live proxy behavior and documented performance budgets.
+- Keep all publication steps disabled until release-owner approval.

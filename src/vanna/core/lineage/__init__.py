@@ -2,6 +2,24 @@
 
 from .collector import LineageCollector
 from .confidence import ConfidenceScorer
-from .models import LineageEvidence
+from .models import (
+    ConfidenceEvidence,
+    LineageEvidence,
+    RetrievedSourceEvidence,
+    SemanticEvidence,
+    SqlEvidence,
+    ToolLineageRecord,
+    ValidationCheck,
+)
 
-__all__ = ["LineageCollector", "ConfidenceScorer", "LineageEvidence"]
+__all__ = [
+    "ConfidenceEvidence",
+    "ConfidenceScorer",
+    "LineageCollector",
+    "LineageEvidence",
+    "RetrievedSourceEvidence",
+    "SemanticEvidence",
+    "SqlEvidence",
+    "ToolLineageRecord",
+    "ValidationCheck",
+]

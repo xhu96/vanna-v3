@@ -4,8 +4,9 @@ Local vector database implementation of AgentMemory.
 This implementation uses ChromaDB for local vector storage of tool usage patterns.
 """
 
-import json
 import hashlib
+import json
+import math
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import asyncio
@@ -35,6 +36,8 @@ from vanna.capabilities.agent_memory import (
     TextMemorySearchResult,
     ToolMemory,
     ToolMemorySearchResult,
+    memory_scope_for_context,
+    principal_memory_scope_for_context,
 )
 from vanna.core.tool import ToolContext
 
@@ -98,6 +101,11 @@ class ChromaAgentMemory(AgentMemory):
         collection is always accessed with a consistent embedding function, or to
         implement your own validation around collection creation and reuse.
     """
+
+    supports_tenant_isolation = True
+    supports_keyed_text_memory_upsert = True
+    supports_keyed_tool_memory_upsert = True
+    supports_tenant_keyed_tool_memory_upsert = True
 
     def __init__(
         self,
@@ -163,6 +171,20 @@ class ChromaAgentMemory(AgentMemory):
 
         return str(uuid.uuid4())
 
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return " ".join(value.lower().split()).rstrip(";")
+
+    @classmethod
+    def _normalized_sql(
+        cls, args: Dict[str, Any], metadata: Dict[str, Any]
+    ) -> Optional[str]:
+        normalized = metadata.get("normalized_sql")
+        if isinstance(normalized, str) and normalized:
+            return normalized
+        sql = args.get("sql")
+        return cls._normalize(sql) if isinstance(sql, str) else None
+
     async def save_tool_usage(
         self,
         question: str,
@@ -174,10 +196,58 @@ class ChromaAgentMemory(AgentMemory):
     ) -> None:
         """Save a tool usage pattern."""
 
+        await self._store_tool_usage(
+            question,
+            tool_name,
+            args,
+            context,
+            success=success,
+            metadata=metadata,
+            tenant_wide=False,
+        )
+
+    async def _store_tool_usage(
+        self,
+        question: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        context: ToolContext,
+        *,
+        success: bool,
+        metadata: Optional[Dict[str, Any]],
+        tenant_wide: bool,
+    ) -> None:
+        """Persist a principal or explicitly tenant-visible tool memory."""
+
+        tenant_scope = memory_scope_for_context(context)
+        principal_scope = principal_memory_scope_for_context(context)
+        visibility = "tenant" if tenant_wide else "principal"
+        scope_identity = tenant_scope if tenant_wide else principal_scope
+        scoped_metadata = dict(metadata or {})
+        scoped_metadata.update(
+            {
+                "tenant_scope": tenant_scope,
+                "principal_scope": principal_scope,
+                "memory_visibility": visibility,
+                "user_id": context.user.id,
+            }
+        )
+        idempotency_key = scoped_metadata.get("idempotency_key")
+        deterministic_id = None
+        if (
+            isinstance(idempotency_key, str)
+            and 0 < len(idempotency_key) <= 256
+            and not any(ord(character) < 32 for character in idempotency_key)
+        ):
+            encoded = (
+                f"vanna-tool-memory:{visibility}:{scope_identity}:{idempotency_key}"
+            ).encode("utf-8")
+            deterministic_id = f"tool_{hashlib.sha256(encoded).hexdigest()}"
+
         def _save():
             collection = self._get_collection()
 
-            memory_id = self._create_memory_id()
+            memory_id = deterministic_id or self._create_memory_id()
             timestamp = datetime.now().isoformat()
 
             # ChromaDB only accepts primitive types in metadata
@@ -188,7 +258,12 @@ class ChromaAgentMemory(AgentMemory):
                 "args_json": json.dumps(args),  # Serialize to JSON string
                 "timestamp": timestamp,
                 "success": success,
-                "metadata_json": json.dumps(metadata or {}),  # Serialize metadata too
+                "memory_kind": "tool",
+                "tenant_scope": tenant_scope,
+                "principal_scope": principal_scope,
+                "memory_visibility": visibility,
+                "user_id": context.user.id,
+                "metadata_json": json.dumps(scoped_metadata),
             }
 
             # Use question as document text for embedding
@@ -197,6 +272,63 @@ class ChromaAgentMemory(AgentMemory):
             )
 
         await asyncio.get_event_loop().run_in_executor(self._executor, _save)
+
+    async def upsert_tool_usage(
+        self,
+        question: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        context: ToolContext,
+        *,
+        memory_key: str,
+        success: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Idempotently replace one principal-scoped logical tool memory."""
+
+        if (
+            not memory_key
+            or len(memory_key) > 256
+            or any(ord(character) < 32 for character in memory_key)
+        ):
+            raise ValueError("memory_key must be a bounded printable string")
+        await self.save_tool_usage(
+            question,
+            tool_name,
+            args,
+            context,
+            success=success,
+            metadata={**(metadata or {}), "idempotency_key": memory_key},
+        )
+
+    async def upsert_tenant_tool_usage(
+        self,
+        question: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        context: ToolContext,
+        *,
+        memory_key: str,
+        success: bool = True,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Idempotently replace one tenant-visible feedback memory."""
+
+        if (
+            not memory_key
+            or len(memory_key) > 256
+            or any(ord(character) < 32 for character in memory_key)
+        ):
+            raise ValueError("memory_key must be a bounded printable string")
+        await self._store_tool_usage(
+            question,
+            tool_name,
+            args,
+            context,
+            success=success,
+            metadata={**(metadata or {}), "idempotency_key": memory_key},
+            tenant_wide=True,
+        )
 
     async def search_similar_usage(
         self,
@@ -209,58 +341,101 @@ class ChromaAgentMemory(AgentMemory):
     ) -> List[ToolMemorySearchResult]:
         """Search for similar tool usage patterns."""
 
+        tenant_scope = memory_scope_for_context(context)
+        principal_scope = principal_memory_scope_for_context(context)
+
         def _search():
             collection = self._get_collection()
 
-            # Prepare where filter - ChromaDB requires $and for multiple conditions
+            conditions = [
+                {"memory_kind": "tool"},
+                {"tenant_scope": tenant_scope},
+                {
+                    "$or": [
+                        {"principal_scope": principal_scope},
+                        {"memory_visibility": "tenant"},
+                    ]
+                },
+            ]
             if tool_name_filter:
-                where_filter = {
-                    "$and": [{"success": True}, {"tool_name": tool_name_filter}]
-                }
-            else:
-                where_filter = {"success": True}
+                conditions.append({"tool_name": tool_name_filter})
+            where_filter = {"$and": conditions}
 
+            count = collection.count()
+            if count == 0:
+                return []
             results = collection.query(
-                query_texts=[question], n_results=limit, where=where_filter
+                query_texts=[question],
+                n_results=min(count, max(limit * 4, 50)),
+                where=where_filter,
             )
 
-            search_results = []
-            if results["ids"] and len(results["ids"][0]) > 0:
-                for i, (id_, distance, metadata) in enumerate(
-                    zip(
-                        results["ids"][0],
-                        results["distances"][0],
-                        results["metadatas"][0],
-                    )
+            candidates: list[
+                tuple[ToolMemory, float, float, int, str, str, Optional[str]]
+            ] = []
+            rejected_sql: set[str] = set()
+            if not results["ids"] or not results["ids"][0]:
+                return []
+
+            for id_, distance, metadata in zip(
+                results["ids"][0],
+                results["distances"][0],
+                results["metadatas"][0],
+            ):
+                similarity = min(max(0.0, 1.0 - float(distance)), 1.0)
+                if similarity < similarity_threshold:
+                    continue
+                args = json.loads(metadata.get("args_json", "{}"))
+                memory_metadata = json.loads(metadata.get("metadata_json", "{}"))
+                if memory_metadata.get("active", True) is False:
+                    continue
+                normalized_sql = self._normalized_sql(args, memory_metadata)
+                if (
+                    not metadata.get("success", True)
+                    and memory_metadata.get("patch_type") == "negative"
                 ):
-                    # Convert distance to similarity score (ChromaDB uses L2 distance)
-                    similarity_score = max(0, 1 - distance)
+                    if normalized_sql:
+                        rejected_sql.add(normalized_sql)
+                    continue
+                if not metadata.get("success", True):
+                    continue
 
-                    if similarity_score >= similarity_threshold:
-                        # Deserialize JSON fields
-                        args = json.loads(metadata.get("args_json", "{}"))
-                        metadata_dict = json.loads(metadata.get("metadata_json", "{}"))
+                weight = memory_metadata.get("weight", 1.0)
+                if not isinstance(weight, (int, float)) or not math.isfinite(weight):
+                    weight = 1.0
+                effective = similarity * min(max(float(weight), 0.0), 10.0)
+                patch_priority = int(memory_metadata.get("patch_type") == "corrective")
+                memory = ToolMemory(
+                    memory_id=id_,
+                    question=metadata["question"],
+                    tool_name=metadata["tool_name"],
+                    args=args,
+                    timestamp=metadata.get("timestamp"),
+                    success=True,
+                    metadata=memory_metadata,
+                )
+                candidates.append(
+                    (
+                        memory,
+                        similarity,
+                        effective,
+                        patch_priority,
+                        memory.timestamp or "",
+                        memory.memory_id or "",
+                        normalized_sql,
+                    )
+                )
 
-                        # Use the ChromaDB document ID as the memory ID
-                        memory = ToolMemory(
-                            memory_id=id_,
-                            question=metadata["question"],
-                            tool_name=metadata["tool_name"],
-                            args=args,
-                            timestamp=metadata.get("timestamp"),
-                            success=metadata.get("success", True),
-                            metadata=metadata_dict,
-                        )
-
-                        search_results.append(
-                            ToolMemorySearchResult(
-                                memory=memory,
-                                similarity_score=similarity_score,
-                                rank=i + 1,
-                            )
-                        )
-
-            return search_results
+            candidates = [item for item in candidates if item[6] not in rejected_sql]
+            candidates.sort(
+                key=lambda item: (item[3], item[2], item[4], item[5]), reverse=True
+            )
+            return [
+                ToolMemorySearchResult(
+                    memory=item[0], similarity_score=item[1], rank=rank
+                )
+                for rank, item in enumerate(candidates[:limit], start=1)
+            ]
 
         return await asyncio.get_event_loop().run_in_executor(self._executor, _search)
 
@@ -269,11 +444,20 @@ class ChromaAgentMemory(AgentMemory):
     ) -> List[ToolMemory]:
         """Get recently added memories. Returns most recent memories first."""
 
+        principal_scope = principal_memory_scope_for_context(context)
+
         def _get_recent():
             collection = self._get_collection()
 
             # Get all memories and sort by timestamp
-            results = collection.get()
+            results = collection.get(
+                where={
+                    "$and": [
+                        {"memory_kind": "tool"},
+                        {"principal_scope": principal_scope},
+                    ]
+                }
+            )
 
             if not results["metadatas"] or not results["ids"]:
                 return []
@@ -315,13 +499,22 @@ class ChromaAgentMemory(AgentMemory):
     async def delete_by_id(self, context: ToolContext, memory_id: str) -> bool:
         """Delete a memory by its ID. Returns True if deleted, False if not found."""
 
+        principal_scope = principal_memory_scope_for_context(context)
+
         def _delete():
             collection = self._get_collection()
 
             # Check if the ID exists
             try:
                 results = collection.get(ids=[memory_id])
-                if results["ids"] and len(results["ids"]) > 0:
+                metadata = (results.get("metadatas") or [None])[0]
+                if (
+                    results["ids"]
+                    and len(results["ids"]) > 0
+                    and isinstance(metadata, dict)
+                    and metadata.get("memory_kind") == "tool"
+                    and metadata.get("principal_scope") == principal_scope
+                ):
                     collection.delete(ids=[memory_id])
                     return True
                 return False
@@ -333,23 +526,74 @@ class ChromaAgentMemory(AgentMemory):
     async def save_text_memory(self, content: str, context: ToolContext) -> TextMemory:
         """Save a text memory."""
 
+        return await self._save_text_memory(content, context)
+
+    async def upsert_text_memory(
+        self,
+        content: str,
+        context: ToolContext,
+        *,
+        memory_key: str,
+    ) -> TextMemory:
+        """Idempotently replace one tenant-scoped logical text memory."""
+
+        if (
+            not memory_key
+            or len(memory_key) > 1200
+            or any(ord(character) < 32 for character in memory_key)
+        ):
+            raise ValueError("memory_key must be a bounded printable string")
+        return await self._save_text_memory(
+            content,
+            context,
+            memory_key=memory_key,
+        )
+
+    async def _save_text_memory(
+        self,
+        content: str,
+        context: ToolContext,
+        *,
+        memory_key: Optional[str] = None,
+    ) -> TextMemory:
+        """Persist a random or deterministic tenant-scoped text memory."""
+
+        tenant_scope = memory_scope_for_context(context)
+
         def _save():
             collection = self._get_collection()
 
-            memory_id = self._create_memory_id()
+            memory_id = (
+                f"text_{hashlib.sha256(f'{tenant_scope}:{memory_key}'.encode()).hexdigest()}"
+                if memory_key is not None
+                else self._create_memory_id()
+            )
             timestamp = datetime.now().isoformat()
 
             memory_data = {
                 "content": content,
                 "timestamp": timestamp,
                 "is_text_memory": True,
+                "memory_kind": "text",
+                "tenant_scope": tenant_scope,
+                "user_id": context.user.id,
+                **({"memory_key": memory_key} if memory_key is not None else {}),
             }
 
             collection.upsert(
                 ids=[memory_id], documents=[content], metadatas=[memory_data]
             )
 
-            return TextMemory(memory_id=memory_id, content=content, timestamp=timestamp)
+            return TextMemory(
+                memory_id=memory_id,
+                content=content,
+                timestamp=timestamp,
+                metadata={
+                    "tenant_scope": tenant_scope,
+                    "user_id": context.user.id,
+                    **({"memory_key": memory_key} if memory_key is not None else {}),
+                },
+            )
 
         return await asyncio.get_event_loop().run_in_executor(self._executor, _save)
 
@@ -363,10 +607,17 @@ class ChromaAgentMemory(AgentMemory):
     ) -> List[TextMemorySearchResult]:
         """Search for similar text memories."""
 
+        tenant_scope = memory_scope_for_context(context)
+
         def _search():
             collection = self._get_collection()
 
-            where_filter = {"is_text_memory": True}
+            where_filter = {
+                "$and": [
+                    {"memory_kind": "text"},
+                    {"tenant_scope": tenant_scope},
+                ]
+            }
 
             results = collection.query(
                 query_texts=[query], n_results=limit, where=where_filter
@@ -388,6 +639,15 @@ class ChromaAgentMemory(AgentMemory):
                             memory_id=id_,
                             content=metadata.get("content", ""),
                             timestamp=metadata.get("timestamp"),
+                            metadata={
+                                "tenant_scope": metadata.get("tenant_scope"),
+                                "user_id": metadata.get("user_id"),
+                                **(
+                                    {"memory_key": metadata.get("memory_key")}
+                                    if metadata.get("memory_key") is not None
+                                    else {}
+                                ),
+                            },
                         )
 
                         search_results.append(
@@ -407,10 +667,19 @@ class ChromaAgentMemory(AgentMemory):
     ) -> List[TextMemory]:
         """Get recently added text memories."""
 
+        tenant_scope = memory_scope_for_context(context)
+
         def _get_recent():
             collection = self._get_collection()
 
-            results = collection.get(where={"is_text_memory": True})
+            results = collection.get(
+                where={
+                    "$and": [
+                        {"memory_kind": "text"},
+                        {"tenant_scope": tenant_scope},
+                    ]
+                }
+            )
 
             if not results["metadatas"] or not results["ids"]:
                 return []
@@ -421,6 +690,15 @@ class ChromaAgentMemory(AgentMemory):
                     memory_id=doc_id,
                     content=metadata.get("content", ""),
                     timestamp=metadata.get("timestamp"),
+                    metadata={
+                        "tenant_scope": metadata.get("tenant_scope"),
+                        "user_id": metadata.get("user_id"),
+                        **(
+                            {"memory_key": metadata.get("memory_key")}
+                            if metadata.get("memory_key") is not None
+                            else {}
+                        ),
+                    },
                 )
                 memories_with_time.append((memory, metadata.get("timestamp", "")))
 
@@ -435,12 +713,21 @@ class ChromaAgentMemory(AgentMemory):
     async def delete_text_memory(self, context: ToolContext, memory_id: str) -> bool:
         """Delete a text memory by its ID."""
 
+        tenant_scope = memory_scope_for_context(context)
+
         def _delete():
             collection = self._get_collection()
 
             try:
                 results = collection.get(ids=[memory_id])
-                if results["ids"] and len(results["ids"]) > 0:
+                metadata = (results.get("metadatas") or [None])[0]
+                if (
+                    results["ids"]
+                    and len(results["ids"]) > 0
+                    and isinstance(metadata, dict)
+                    and metadata.get("memory_kind") == "text"
+                    and metadata.get("tenant_scope") == tenant_scope
+                ):
                     collection.delete(ids=[memory_id])
                     return True
                 return False
@@ -457,16 +744,40 @@ class ChromaAgentMemory(AgentMemory):
     ) -> int:
         """Clear stored memories."""
 
+        tenant_scope = memory_scope_for_context(context)
+        principal_scope = principal_memory_scope_for_context(context)
+
         def _clear():
             collection = self._get_collection()
 
             # Build where filter
-            where_filter = {}
+            tool_filter: Dict[str, Any] = {
+                "$and": [
+                    {"memory_kind": "tool"},
+                    {"principal_scope": principal_scope},
+                ]
+            }
             if tool_name:
-                where_filter["tool_name"] = tool_name
+                tool_filter["$and"].append({"tool_name": tool_name})
+
+            where_filter: Dict[str, Any]
+            if tool_name:
+                where_filter = tool_filter
+            else:
+                where_filter = {
+                    "$or": [
+                        tool_filter,
+                        {
+                            "$and": [
+                                {"memory_kind": "text"},
+                                {"tenant_scope": tenant_scope},
+                            ]
+                        },
+                    ]
+                }
 
             # Get memories to delete
-            results = collection.get(where=where_filter if where_filter else None)
+            results = collection.get(where=where_filter)
 
             if not results["ids"]:
                 return 0

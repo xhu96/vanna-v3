@@ -5,6 +5,8 @@ These tests validate that the Agent properly calls the LlmContextEnhancer method
 to enhance system prompts and user messages.
 """
 
+import logging
+
 import pytest
 from typing import List
 from vanna.core.enhancer.base import LlmContextEnhancer
@@ -78,6 +80,17 @@ class MockAgentMemory(AgentMemory):
 
     async def clear_memories(self, context, tool_name=None, before_date=None):
         return 0
+
+
+class ExplodingSearchMemory(MockAgentMemory):
+    def __init__(self, secret: str) -> None:
+        super().__init__()
+        self.secret = secret
+
+    async def search_text_memories(
+        self, query, context, *, limit=10, similarity_threshold=0.7
+    ):
+        raise RuntimeError(self.secret)
 
 
 class MockLlmService(LlmService):
@@ -357,6 +370,20 @@ async def test_default_enhancer_without_agent_memory():
         assert "Relevant Context from Memory" not in first_request.system_prompt, (
             "Should not add memory context when enhancer has no agent_memory"
         )
+
+
+@pytest.mark.asyncio
+async def test_default_enhancer_redacts_memory_backend_failure(caplog):
+    secret = "postgresql://svc:TOP_SECRET@db.internal/app"
+    enhancer = DefaultLlmContextEnhancer(ExplodingSearchMemory(secret))
+    user = User(id="user", authenticated=True, metadata={"tenant_id": "tenant"})
+
+    with caplog.at_level(logging.WARNING):
+        prompt = await enhancer.enhance_system_prompt("BASE", "question", user)
+
+    assert prompt == "BASE"
+    assert secret not in caplog.text
+    assert "error_type=RuntimeError" in caplog.text
 
 
 @pytest.mark.asyncio

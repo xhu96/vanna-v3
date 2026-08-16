@@ -10,6 +10,8 @@ from vanna.core.tool import ToolContext
 class PrestoRunner(SqlRunner):
     """Presto implementation of the SqlRunner interface."""
 
+    dialect = "presto"
+
     def __init__(
         self,
         host: str,

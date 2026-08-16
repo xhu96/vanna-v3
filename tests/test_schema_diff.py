@@ -1,76 +1,147 @@
-"""Tests for schema snapshot diff and sync behavior."""
+"""Canonical schema hashing and diff regressions."""
 
-import pandas as pd
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
 import pytest
+from pydantic import ValidationError
 
-from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
-from vanna.core.tool import ToolContext
-from vanna.core.user import User
-from vanna.integrations.local.agent_memory import DemoAgentMemory
+from vanna.capabilities.schema_catalog import SchemaColumn, SchemaSnapshot
 from vanna.services.schema_sync import PortableSchemaCatalogService
 
 
-class EvolvingSqlRunner(SqlRunner):
-    def __init__(self):
-        self.version = 0
-
-    async def run_sql(self, args: RunSqlToolArgs, context: ToolContext) -> pd.DataFrame:
-        if "information_schema.columns" in args.sql:
-            if self.version == 0:
-                return pd.DataFrame(
-                    [
-                        {
-                            "schema_name": "public",
-                            "table_name": "orders",
-                            "column_name": "id",
-                            "data_type": "integer",
-                            "is_nullable": 0,
-                        }
-                    ]
-                )
-            return pd.DataFrame(
-                [
-                    {
-                        "schema_name": "public",
-                        "table_name": "orders",
-                        "column_name": "id",
-                        "data_type": "integer",
-                        "is_nullable": 0,
-                    },
-                    {
-                        "schema_name": "public",
-                        "table_name": "orders",
-                        "column_name": "status",
-                        "data_type": "text",
-                        "is_nullable": 1,
-                    },
-                ]
-            )
-        raise ValueError("Unexpected SQL")
-
-
-@pytest.mark.asyncio
-async def test_schema_sync_detects_drift_and_patches_memory(tmp_path):
-    runner = EvolvingSqlRunner()
-    service = PortableSchemaCatalogService(
-        runner, persist_path=str(tmp_path / "schema.json")
-    )
-    memory = DemoAgentMemory()
-    context = ToolContext(
-        user=User(id="u1", group_memberships=["admin"]),
-        conversation_id="c1",
-        request_id="r1",
-        agent_memory=memory,
+def column(
+    name: str,
+    data_type: str = "integer",
+    *,
+    nullable: bool = False,
+    ordinal: int = 1,
+) -> SchemaColumn:
+    return SchemaColumn(
+        schema_name="public",
+        table_name="orders",
+        column_name=name,
+        data_type=data_type,
+        is_nullable=nullable,
+        ordinal_position=ordinal,
     )
 
-    first = await service.sync(context)
-    assert first.diff.has_drift is True  # first snapshot compared with empty baseline
 
-    runner.version = 1
-    second = await service.sync(context)
-    assert second.diff.has_drift is True
-    assert len(second.diff.added_columns) == 1
-    assert second.diff.added_columns[0].column_name == "status"
+def snapshot(
+    snapshot_id: str,
+    version: int,
+    columns: list[SchemaColumn],
+    previous_snapshot_id: str | None = None,
+) -> SchemaSnapshot:
+    return SchemaSnapshot(
+        snapshot_id=snapshot_id,
+        tenant_id="tenant-a",
+        schema_version=version,
+        captured_at=datetime(2026, 8, version, tzinfo=timezone.utc),
+        dialect="postgres",
+        schema_hash=PortableSchemaCatalogService.compute_hash(columns),
+        previous_snapshot_id=previous_snapshot_id,
+        columns=columns,
+    )
 
-    recent_text = await memory.get_recent_text_memories(context, limit=5)
-    assert any("Schema drift detected" in m.content for m in recent_text)
+
+def test_canonical_hash_is_order_independent_and_sensitive_to_descriptors() -> None:
+    first = column("id", ordinal=1)
+    second = column("status", "text", nullable=True, ordinal=2)
+
+    ordered = PortableSchemaCatalogService.compute_hash([first, second])
+    reversed_hash = PortableSchemaCatalogService.compute_hash([second, first])
+    changed = PortableSchemaCatalogService.compute_hash(
+        [first, second.model_copy(update={"is_nullable": False})]
+    )
+
+    assert ordered == reversed_hash
+    assert ordered != changed
+    assert len(ordered) == 64
+
+
+def test_diff_tracks_added_removed_changed_entities_and_provenance() -> None:
+    previous = snapshot(
+        "snap_previous",
+        1,
+        [column("id"), column("amount", ordinal=2)],
+    )
+    current = snapshot(
+        "snap_current",
+        2,
+        [
+            column("id", "bigint"),
+            column("status", "text", nullable=True, ordinal=2),
+        ],
+        previous_snapshot_id=previous.snapshot_id,
+    )
+
+    diff = PortableSchemaCatalogService.diff_snapshots(previous, current)
+
+    assert diff.has_drift is True
+    assert diff.previous_schema_hash == previous.schema_hash
+    assert diff.current_schema_hash == current.schema_hash
+    assert diff.previous_schema_version == 1
+    assert diff.current_schema_version == 2
+    assert diff.added_entities == ["public.orders.status"]
+    assert diff.removed_entities == ["public.orders.amount"]
+    assert diff.changed_entities == ["public.orders.id"]
+
+
+def test_equal_snapshots_have_no_drift() -> None:
+    current = snapshot("snap_current", 1, [column("id")])
+    diff = PortableSchemaCatalogService.diff_snapshots(current, current)
+
+    assert diff.has_drift is False
+    assert diff.added_columns == []
+    assert diff.removed_columns == []
+    assert diff.changed_columns == []
+
+
+def test_snapshot_models_are_closed_canonical_and_reject_duplicate_columns() -> None:
+    first = column("id", ordinal=1)
+    second = column("status", "text", ordinal=2)
+    result = snapshot("snap_ordered", 1, [second, first])
+    assert [item.column_name for item in result.columns] == ["id", "status"]
+
+    with pytest.raises(ValidationError, match="duplicate columns"):
+        snapshot("snap_duplicate", 1, [first, first])
+
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        SchemaColumn.model_validate(
+            {
+                **first.model_dump(),
+                "unexpected": "active content",
+            }
+        )
+
+    with pytest.raises(ValidationError, match="hash does not match"):
+        SchemaSnapshot.model_validate(
+            {
+                **result.model_dump(),
+                "schema_hash": "0" * 64,
+            }
+        )
+
+
+def test_entity_ids_escape_dotted_components_without_changing_simple_names() -> None:
+    simple = column("id")
+    dotted_schema = SchemaColumn(
+        schema_name="a.b",
+        table_name="c",
+        column_name="d",
+        data_type="integer",
+    )
+    dotted_table = SchemaColumn(
+        schema_name="a",
+        table_name="b.c",
+        column_name="d",
+        data_type="integer",
+    )
+
+    assert simple.entity_id == "public.orders.id"
+    assert dotted_schema.entity_id == "a%2Eb.c.d"
+    assert dotted_table.entity_id == "a.b%2Ec.d"
+    assert dotted_schema.entity_id != dotted_table.entity_id
+    assert len({item.entity_id for item in (dotted_schema, dotted_table)}) == 2

@@ -2,6 +2,8 @@
 Tests for the default workflow handler, including memory display and deletion.
 """
 
+import logging
+
 import pytest
 import uuid
 from datetime import datetime
@@ -46,6 +48,18 @@ class MockConversation:
 
     def __init__(self, conversation_id=None):
         self.id = conversation_id or str(uuid.uuid4())
+
+
+class ExplodingMemory(DemoAgentMemory):
+    def __init__(self, secret: str) -> None:
+        super().__init__()
+        self.secret = secret
+
+    async def get_recent_memories(self, context, limit=10):
+        raise RuntimeError(self.secret)
+
+    async def delete_by_id(self, context, memory_id):
+        raise RuntimeError(self.secret)
 
 
 @pytest.fixture
@@ -186,6 +200,28 @@ class TestMemoriesView:
 
         content = result.components[0].rich_component.content
         assert "No recent memories found" in content
+
+    @pytest.mark.asyncio
+    async def test_memory_backend_failure_is_public_and_log_redacted(
+        self,
+        workflow_handler,
+        test_user,
+        test_conversation,
+        caplog,
+    ):
+        secret = "postgresql://reporter:TOP_SECRET@db.internal/warehouse"
+        agent = MockAgent(agent_memory=ExplodingMemory(secret))
+
+        with caplog.at_level(logging.ERROR):
+            result = await workflow_handler._get_recent_memories(
+                agent, test_user, test_conversation
+            )
+
+        rendered = str(result.components)
+        assert "Memory retrieval failed. Correlation ID: tool_" in rendered
+        assert secret not in rendered
+        assert secret not in caplog.text
+        assert "error_type=RuntimeError" in caplog.text
 
     @pytest.mark.asyncio
     async def test_memories_with_tool_memories(
@@ -415,6 +451,28 @@ class TestMemoryDeletion:
         assert result.should_skip_llm is True
         content = result.components[0].rich_component.content
         assert "Memory Not Found" in content
+
+    @pytest.mark.asyncio
+    async def test_delete_backend_failure_is_public_and_log_redacted(
+        self,
+        workflow_handler,
+        test_user,
+        test_conversation,
+        caplog,
+    ):
+        secret = "postgresql://reporter:TOP_SECRET@db.internal/warehouse"
+        agent = MockAgent(agent_memory=ExplodingMemory(secret))
+
+        with caplog.at_level(logging.ERROR):
+            result = await workflow_handler._delete_memory(
+                agent, test_user, test_conversation, "memory-id"
+            )
+
+        rendered = str(result.components)
+        assert "Memory deletion failed. Correlation ID: tool_" in rendered
+        assert secret not in rendered
+        assert secret not in caplog.text
+        assert "error_type=RuntimeError" in caplog.text
 
     @pytest.mark.asyncio
     async def test_delete_tool_memory_success(

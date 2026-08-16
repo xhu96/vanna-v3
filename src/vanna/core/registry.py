@@ -5,9 +5,30 @@ This module provides the ToolRegistry class for managing and executing tools.
 """
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    FrozenSet,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
-from .tool import Tool, ToolCall, ToolContext, ToolRejection, ToolResult, ToolSchema
+from pydantic import ValidationError as PydanticValidationError
+
+from .tool import (
+    ARBITRARY_CODE_EXECUTION_CAPABILITY,
+    Tool,
+    ToolCall,
+    ToolContext,
+    ToolRejection,
+    ToolResult,
+    ToolSchema,
+)
+from .tool.errors import public_tool_failure
 from .user import User
 
 if TYPE_CHECKING:
@@ -35,6 +56,10 @@ class _LocalToolWrapper(Tool[T]):
     @property
     def access_groups(self) -> List[str]:
         return self._access_groups
+
+    @property
+    def capabilities(self) -> FrozenSet[str]:
+        return self._wrapped_tool.capabilities
 
     def get_args_schema(self) -> Type[T]:
         return self._wrapped_tool.get_args_schema()
@@ -83,14 +108,80 @@ class ToolRegistry:
         """Get a tool by name."""
         return self._tools.get(name)
 
+    def get_registered_tools(self) -> tuple[Tool[Any], ...]:
+        """Return immutable tool instances for startup security validation."""
+        return tuple(self._tools.values())
+
+    @staticmethod
+    def _is_core_forbidden_tool(tool: Tool[Any]) -> bool:
+        """Fail closed for capabilities that core V3 never exposes to models."""
+
+        try:
+            return ARBITRARY_CODE_EXECUTION_CAPABILITY in tool.capabilities
+        except Exception:
+            return True
+
+    @staticmethod
+    def _turn_policy_error(tool_name: str, context: ToolContext) -> Optional[str]:
+        allowed_tool_names = context.metadata.get("allowed_tool_names")
+        if allowed_tool_names is None:
+            return None
+        if not isinstance(allowed_tool_names, (list, tuple, set, frozenset)) or not all(
+            isinstance(name, str) for name in allowed_tool_names
+        ):
+            return "Tool execution policy is invalid; execution is blocked"
+        if tool_name not in allowed_tool_names:
+            return f"Tool '{tool_name}' is not permitted for this turn"
+        return None
+
+    async def get_authorized_tool_for_hooks(
+        self,
+        tool_name: str,
+        context: ToolContext,
+    ) -> Optional[Tool[Any]]:
+        """Resolve a tool only after turn and group policy permit side effects."""
+
+        if self._turn_policy_error(tool_name, context) is not None:
+            return None
+        tool = await self.get_tool(tool_name)
+        if (
+            tool is None
+            or self._is_core_forbidden_tool(tool)
+            or not await self._validate_tool_permissions(tool, context.user)
+        ):
+            return None
+        return tool
+
     async def list_tools(self) -> List[str]:
-        """List all registered tool names."""
-        return list(self._tools.keys())
+        """List registered tools that core V3 can expose."""
+        return [
+            tool.name
+            for tool in self._tools.values()
+            if not self._is_core_forbidden_tool(tool)
+        ]
+
+    async def get_tool_names_by_capability(
+        self,
+        capability: str,
+        user: Optional[User] = None,
+    ) -> List[str]:
+        """List permission-visible tools in an execution capability category."""
+        names: List[str] = []
+        for tool in self._tools.values():
+            if self._is_core_forbidden_tool(tool):
+                continue
+            if capability not in tool.capabilities:
+                continue
+            if user is None or await self._validate_tool_permissions(tool, user):
+                names.append(tool.name)
+        return names
 
     async def get_schemas(self, user: Optional[User] = None) -> List[ToolSchema]:
         """Get schemas for all tools accessible to user."""
         schemas = []
         for tool in self._tools.values():
+            if self._is_core_forbidden_tool(tool):
+                continue
             if user is None or await self._validate_tool_permissions(tool, user):
                 schemas.append(tool.get_schema())
         return schemas
@@ -147,6 +238,15 @@ class ToolRegistry:
         context: ToolContext,
     ) -> ToolResult:
         """Execute a tool call with validation."""
+        turn_policy_error = self._turn_policy_error(tool_call.name, context)
+        if turn_policy_error is not None:
+            return ToolResult(
+                success=False,
+                result_for_llm=turn_policy_error,
+                ui_component=None,
+                error=turn_policy_error,
+            )
+
         tool = await self.get_tool(tool_call.name)
         if not tool:
             msg = f"Tool '{tool_call.name}' not found"
@@ -155,6 +255,16 @@ class ToolRegistry:
                 result_for_llm=msg,
                 ui_component=None,
                 error=msg,
+            )
+
+        if self._is_core_forbidden_tool(tool):
+            msg = "Tool execution capability is disabled in Vanna v3 core"
+            return ToolResult(
+                success=False,
+                result_for_llm=msg,
+                ui_component=None,
+                error=msg,
+                metadata={"code": "code_execution_disabled"},
             )
 
         # Validate group access
@@ -187,13 +297,30 @@ class ToolRegistry:
         try:
             args_model = tool.get_args_schema()
             validated_args = args_model.model_validate(tool_call.arguments)
-        except Exception as e:
-            msg = f"Invalid arguments: {str(e)}"
+        except PydanticValidationError as error:
+            details = "; ".join(
+                f"{'.'.join(str(part) for part in issue['loc'])}: {issue['msg']}"
+                for issue in error.errors(include_input=False)
+            )
+            msg = f"Invalid arguments: {details}"
             return ToolResult(
                 success=False,
                 result_for_llm=msg,
                 ui_component=None,
                 error=msg,
+            )
+        except Exception as error:
+            msg, failure_metadata = public_tool_failure(
+                operation="Tool argument validation",
+                code="tool_argument_validation_failed",
+                error=error,
+            )
+            return ToolResult(
+                success=False,
+                result_for_llm=msg,
+                ui_component=None,
+                error=msg,
+                metadata=failure_metadata,
             )
 
         # Transform/validate arguments based on user context
@@ -279,8 +406,12 @@ class ToolRegistry:
                 )
 
             return result
-        except Exception as e:
-            msg = f"Execution failed: {str(e)}"
+        except Exception as error:
+            msg, failure_metadata = public_tool_failure(
+                operation="Tool execution",
+                code="tool_execution_failed",
+                error=error,
+            )
             lineage_collector = context.metadata.get("lineage_collector")
             if lineage_collector is not None and hasattr(
                 lineage_collector, "record_tool_result"
@@ -288,7 +419,7 @@ class ToolRegistry:
                 lineage_collector.record_tool_result(
                     tool_name=tool_call.name,
                     success=False,
-                    metadata={"execution_time_ms": 0.0},
+                    metadata={"execution_time_ms": 0.0, **failure_metadata},
                     error=msg,
                 )
             return ToolResult(
@@ -296,4 +427,5 @@ class ToolRegistry:
                 result_for_llm=msg,
                 ui_component=None,
                 error=msg,
+                metadata=failure_metadata,
             )

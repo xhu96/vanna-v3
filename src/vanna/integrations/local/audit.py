@@ -54,6 +54,9 @@ class LoggingAuditLogger(AuditLogger):
                 self.log_level,
                 f"[AUDIT] {event.event_type.value} | {event_json}",
             )
-        except Exception as e:
+        except Exception as error:
             # Don't fail the operation if audit logging fails
-            logger.error(f"Failed to log audit event: {e}", exc_info=True)
+            logger.error(
+                "Failed to log audit event error_type=%s",
+                type(error).__name__,
+            )

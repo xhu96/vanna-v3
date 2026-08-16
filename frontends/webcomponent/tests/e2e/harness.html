@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanna web component smoke harness</title>
+  </head>
+  <body>
+    <vanna-status-bar
+      id="status"
+      status="success"
+      message="Frontend bundle loaded"
+    ></vanna-status-bar>
+    <vanna-chat id="chat" api-version="v3"></vanna-chat>
+    <script type="module">
+      const components = await import('/dist/vanna-components.js');
+      window.VannaComponents = components;
+
+      await Promise.all([
+        customElements.whenDefined('vanna-status-bar'),
+        customElements.whenDefined('vanna-chat'),
+        customElements.whenDefined('sp-theme'),
+        customElements.whenDefined('sp-textfield'),
+      ]);
+      document.documentElement.dataset.ready = 'true';
+    </script>
+  </body>
+</html>

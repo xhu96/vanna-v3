@@ -10,6 +10,9 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 
 
+TRUSTED_SCHEMA_LINEAGE_METADATA_KEY = "_vanna_schema_lineage"
+
+
 class RequestContext(BaseModel):
     """Context from a web request for user resolution.
 

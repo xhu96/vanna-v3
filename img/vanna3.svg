@@ -23,7 +23,7 @@
   <!-- Title bar -->
   <rect x="0" y="0" width="1100" height="56" rx="12" fill="url(#headerGrad)"/>
   <rect x="0" y="30" width="1100" height="26" fill="url(#headerGrad)"/>
-  <text x="550" y="37" text-anchor="middle" fill="white" font-size="22" font-weight="700">Vanna 3.0 Architecture</text>
+  <text x="550" y="37" text-anchor="middle" fill="white" font-size="22" font-weight="700">Vanna 3.3 Architecture</text>
 
   <!-- ===== ROW 1: User + Web Component ===== -->
   <!-- User -->

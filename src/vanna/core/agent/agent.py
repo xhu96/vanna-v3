@@ -5,7 +5,7 @@ This module provides the main Agent class that orchestrates the interaction
 between LLM services, tools, and conversation storage.
 """
 
-import traceback
+import asyncio
 import uuid
 from typing import TYPE_CHECKING, AsyncGenerator, List, Optional
 
@@ -21,13 +21,13 @@ from vanna.components import (
     Task,
 )
 from .config import AgentConfig
-from vanna.core.storage import ConversationStore
+from vanna.core.storage import ConversationStore, ConversationStoreError
 from vanna.core.llm import LlmService
 from vanna.core.system_prompt import SystemPromptBuilder
-from vanna.core.storage import Conversation, Message
+from vanna.core.storage import Conversation, Message, REQUEST_ID_METADATA_KEY
 from vanna.core.llm import LlmMessage, LlmRequest, LlmResponse
 from vanna.core.tool import ToolCall, ToolContext, ToolResult, ToolSchema
-from vanna.core.user import User
+from vanna.core.user import User, TRUSTED_SCHEMA_LINEAGE_METADATA_KEY
 from vanna.core.registry import ToolRegistry
 from vanna.core.system_prompt import DefaultSystemPromptBuilder
 from vanna.core.lifecycle import LifecycleHook
@@ -45,6 +45,7 @@ from vanna.core.audit import AuditLogger
 from vanna.capabilities.agent_memory import AgentMemory
 from vanna.core.planner import SemanticFirstPlanner
 from vanna.core.lineage import LineageCollector
+from vanna.core.tool.errors import public_tool_failure
 
 import logging
 
@@ -162,29 +163,64 @@ class Agent:
         Yields:
             UiComponent instances for UI updates
         """
+        resolved_conversation_id = conversation_id or str(uuid.uuid4())
+        trusted_request_id = request_context.metadata.get(REQUEST_ID_METADATA_KEY)
+        request_id = (
+            trusted_request_id[:160]
+            if isinstance(trusted_request_id, str) and trusted_request_id.strip()
+            else str(uuid.uuid4())
+        )
+        lineage_collector = LineageCollector(
+            request_id=request_id,
+            conversation_id=resolved_conversation_id,
+        )
+        schema_lineage = request_context.metadata.get(
+            TRUSTED_SCHEMA_LINEAGE_METADATA_KEY,
+            {},
+        )
+        if not isinstance(schema_lineage, dict):
+            schema_lineage = {}
+        lineage_collector.set_schema(
+            schema_lineage.get("schema_hash"),
+            schema_lineage.get("schema_snapshot_id"),
+            schema_version=schema_lineage.get("schema_version"),
+            schema_drifted=schema_lineage.get("schema_drift_detected", False),
+        )
+        emit_lineage = bool(message.strip())
+
         try:
-            # Delegate to internal method
             async for component in self._send_message(
-                request_context, message, conversation_id=conversation_id
+                request_context,
+                message,
+                conversation_id=resolved_conversation_id,
+                request_id=request_id,
+                lineage_collector=lineage_collector,
             ):
                 yield component
-        except Exception as e:
-            # Log full stack trace
-            stack_trace = traceback.format_exc()
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            correlation_id = f"err_{uuid.uuid4().hex}"
+            lineage_collector.set_outcome(
+                "error",
+                failure_code="agent_execution_failed",
+            )
+            lineage_collector.add_validation_check("agent_execution_failed", False)
+            # Exception values can contain SQL, DSNs, or upstream credentials.
             logger.error(
-                f"Error in send_message (conversation_id={conversation_id}): {e}\n{stack_trace}",
-                exc_info=True,
+                "Agent request failed correlation_id=%s error_type=%s",
+                correlation_id,
+                type(error).__name__,
             )
 
-            # Log to observability provider if available
             if self.observability_provider:
                 try:
                     error_span = await self.observability_provider.create_span(
                         "agent.send_message.error",
                         attributes={
-                            "error_type": type(e).__name__,
-                            "error_message": str(e),
-                            "conversation_id": conversation_id or "none",
+                            "error_type": type(error).__name__,
+                            "correlation_id": correlation_id,
+                            "conversation_id": resolved_conversation_id,
                         },
                     )
                     await self.observability_provider.end_span(error_span)
@@ -192,19 +228,21 @@ class Agent:
                         "agent.error.count",
                         1.0,
                         "count",
-                        tags={"error_type": type(e).__name__},
+                        tags={"error_type": type(error).__name__},
                     )
-                except Exception as obs_error:
+                except Exception as telemetry_error:
                     logger.error(
-                        f"Failed to log error to observability provider: {obs_error}",
-                        exc_info=True,
+                        "Failed to record agent error telemetry correlation_id=%s "
+                        "error_type=%s",
+                        correlation_id,
+                        type(telemetry_error).__name__,
                     )
 
-            # Yield error component to UI (simple, user-friendly message)
-            error_description = "An unexpected error occurred while processing your message. Please try again."
-            if conversation_id:
-                error_description += f"\n\nConversation ID: {conversation_id}"
-
+            error_description = (
+                "An unexpected error occurred while processing your message. "
+                "Please try again."
+                f"\n\nCorrelation ID: {correlation_id}"
+            )
             yield UiComponent(
                 rich_component=StatusCardComponent(
                     title="Error Processing Message",
@@ -213,25 +251,38 @@ class Agent:
                     icon="⚠️",
                 ),
                 simple_component=SimpleTextComponent(
-                    text=f"Error: An unexpected error occurred. Please try again.{f' (Conversation ID: {conversation_id})' if conversation_id else ''}"
+                    text="Error: An unexpected error occurred. Please try again. "
+                    f"Correlation ID: {correlation_id}"
                 ),
             )
-
-            # Update status bar to show error state
-            yield UiComponent(  # type: ignore
-                rich_component=StatusBarUpdateComponent(
-                    status="error",
-                    message="Error occurred",
-                    detail="An unexpected error occurred while processing your message",
-                )
-            )
-
-            # Re-enable chat input so user can try again
             yield UiComponent(  # type: ignore
                 rich_component=ChatInputUpdateComponent(
                     placeholder="Try again...", disabled=False
                 )
             )
+            if emit_lineage:
+                yield self._lineage_component(lineage_collector)
+
+            # V2 sees a normal error status. V3 converts this trusted marker
+            # into its sole terminal event and does not append `done`.
+            yield UiComponent(  # type: ignore
+                rich_component=StatusBarUpdateComponent(
+                    status="error",
+                    message="Error occurred",
+                    detail="An unexpected error occurred while processing your message",
+                    data={
+                        "v3_terminal_error": {
+                            "code": "agent_execution_failed",
+                            "message": "An unexpected error occurred.",
+                            "correlation_id": correlation_id,
+                            "retryable": False,
+                        }
+                    },
+                )
+            )
+        else:
+            if emit_lineage:
+                yield self._lineage_component(lineage_collector)
 
     async def _send_message(
         self,
@@ -239,6 +290,8 @@ class Agent:
         message: str,
         *,
         conversation_id: Optional[str] = None,
+        request_id: str,
+        lineage_collector: LineageCollector,
     ) -> AsyncGenerator[UiComponent, None]:
         """
         Internal method to process a user message and yield UI components.
@@ -260,6 +313,20 @@ class Agent:
             )
 
         user = await self.user_resolver.resolve_user(request_context)
+        lineage_collector.set_visibility(
+            show_tool_names=self.config.ui_features.can_user_access_feature(
+                UiFeature.UI_FEATURE_SHOW_TOOL_NAMES,
+                user,
+            ),
+            show_sql=self.config.ui_features.can_user_access_feature(
+                UiFeature.UI_FEATURE_SHOW_TOOL_ARGUMENTS,
+                user,
+            ),
+            show_sources=self.config.ui_features.can_user_access_feature(
+                UiFeature.UI_FEATURE_SHOW_MEMORY_DETAILED_RESULTS,
+                user,
+            ),
+        )
 
         if self.observability_provider and user_resolution_span:
             user_resolution_span.set_attribute("user_id", user.id)
@@ -271,10 +338,33 @@ class Agent:
                     "ms",
                 )
 
-        # Check if this is a starter UI request (empty message or explicit metadata flag)
-        is_starter_request = (not message.strip()) or request_context.metadata.get(
-            "starter_ui_request", False
-        )
+        # Allocate or verify ownership before hooks, workflows, output, or LLM work.
+        if conversation_id is None:
+            conversation_id = str(uuid.uuid4())
+        conversation_span = None
+        if self.observability_provider:
+            conversation_span = await self.observability_provider.create_span(
+                "agent.conversation.load",
+                attributes={"conversation_id": conversation_id, "user_id": user.id},
+            )
+        (
+            conversation,
+            is_new_conversation,
+        ) = await self.conversation_store.claim_conversation(conversation_id, user)
+        if self.observability_provider and conversation_span:
+            conversation_span.set_attribute("is_new", is_new_conversation)
+            conversation_span.set_attribute("message_count", len(conversation.messages))
+            await self.observability_provider.end_span(conversation_span)
+            if conversation_span.duration_ms():
+                await self.observability_provider.record_metric(
+                    "agent.conversation.load.duration",
+                    conversation_span.duration_ms() or 0,
+                    "ms",
+                    tags={"is_new": str(is_new_conversation)},
+                )
+
+        # Starter UI is selected by the empty V2 message shape, not public metadata.
+        is_starter_request = not message.strip()
 
         if is_starter_request and self.workflow_handler:
             # Handle starter UI request with observability
@@ -285,19 +375,6 @@ class Agent:
                 )
 
             try:
-                # Load or create conversation for context
-                if conversation_id is None:
-                    conversation_id = str(uuid.uuid4())
-
-                conversation = await self.conversation_store.get_conversation(
-                    conversation_id, user
-                )
-                if not conversation:
-                    # Create empty conversation (will be saved if workflow produces components)
-                    conversation = Conversation(
-                        id=conversation_id, user=user, messages=[]
-                    )
-
                 # Get starter UI from workflow handler
                 components = await self.workflow_handler.get_starter_ui(
                     self, user, conversation
@@ -339,14 +416,28 @@ class Agent:
 
                 # Save the conversation if it was newly created
                 if self.config.auto_save_conversations:
-                    await self.conversation_store.update_conversation(conversation)
+                    await self.conversation_store.update_conversation_for_user(
+                        conversation, user
+                    )
 
                 return  # Exit without calling LLM
 
-            except Exception as e:
-                logger.error(f"Error generating starter UI: {e}", exc_info=True)
+            except ConversationStoreError:
+                raise
+            except Exception as error:
+                _, failure_metadata = public_tool_failure(
+                    operation="Starter workflow",
+                    code="starter_workflow_failed",
+                    error=error,
+                )
                 if self.observability_provider and starter_span:
-                    starter_span.set_attribute("error", str(e))
+                    starter_span.set_attribute(
+                        "error_code", failure_metadata["error_type"]
+                    )
+                    starter_span.set_attribute("error_type", type(error).__name__)
+                    starter_span.set_attribute(
+                        "correlation_id", failure_metadata["correlation_id"]
+                    )
                     await self.observability_provider.end_span(starter_span)
                 # Fall through to normal processing on error
 
@@ -396,12 +487,6 @@ class Agent:
         # Use the potentially modified message
         message = modified_message
 
-        # Generate conversation ID and request ID if not provided
-        if conversation_id is None:
-            conversation_id = str(uuid.uuid4())
-
-        request_id = str(uuid.uuid4())
-
         # Update status to working
         yield UiComponent(  # type: ignore
             rich_component=StatusBarUpdateComponent(
@@ -410,36 +495,6 @@ class Agent:
                 detail="Analyzing query",
             )
         )
-
-        # Load or create conversation with observability (but don't add message yet)
-        conversation_span = None
-        if self.observability_provider:
-            conversation_span = await self.observability_provider.create_span(
-                "agent.conversation.load",
-                attributes={"conversation_id": conversation_id, "user_id": user.id},
-            )
-
-        conversation = await self.conversation_store.get_conversation(
-            conversation_id, user
-        )
-
-        is_new_conversation = conversation is None
-
-        if not conversation:
-            # Create empty conversation (will add message after workflow handler check)
-            conversation = Conversation(id=conversation_id, user=user, messages=[])
-
-        if self.observability_provider and conversation_span:
-            conversation_span.set_attribute("is_new", is_new_conversation)
-            conversation_span.set_attribute("message_count", len(conversation.messages))
-            await self.observability_provider.end_span(conversation_span)
-            if conversation_span.duration_ms():
-                await self.observability_provider.record_metric(
-                    "agent.conversation.load.duration",
-                    conversation_span.duration_ms() or 0,
-                    "ms",
-                    tags={"is_new": str(is_new_conversation)},
-                )
 
         # Try workflow handler before adding message to conversation
         if self.workflow_handler:
@@ -462,6 +517,8 @@ class Agent:
 
                 if workflow_result.should_skip_llm:
                     # Workflow handled the message, short-circuit LLM
+                    lineage_collector.set_outcome("workflow")
+                    lineage_collector.add_validation_check("workflow_completed")
 
                     # Apply conversation mutation if provided
                     if workflow_result.conversation_mutation:
@@ -493,7 +550,9 @@ class Agent:
 
                     # Save conversation if auto-save enabled
                     if self.config.auto_save_conversations:
-                        await self.conversation_store.update_conversation(conversation)
+                        await self.conversation_store.update_conversation_for_user(
+                            conversation, user
+                        )
 
                     if self.observability_provider and trigger_span:
                         await self.observability_provider.end_span(trigger_span)
@@ -501,10 +560,17 @@ class Agent:
                     # Exit without calling LLM
                     return
 
-            except Exception as e:
-                logger.error(f"Error in workflow handler: {e}", exc_info=True)
+            except Exception as error:
+                logger.error(
+                    "Workflow handler failed error_type=%s",
+                    type(error).__name__,
+                )
+                lineage_collector.add_validation_check(
+                    "workflow_handler_failed",
+                    False,
+                )
                 if self.observability_provider and trigger_span:
-                    trigger_span.set_attribute("error", str(e))
+                    trigger_span.set_attribute("error_type", type(error).__name__)
                     await self.observability_provider.end_span(trigger_span)
                 # Fall through to normal LLM processing on error
 
@@ -512,12 +578,14 @@ class Agent:
                 if self.observability_provider and trigger_span:
                     await self.observability_provider.end_span(trigger_span)
 
-        # Persist new conversation to store before adding message
-        if is_new_conversation:
-            await self.conversation_store.update_conversation(conversation)
-
         # Not triggered, add user message to conversation now
-        conversation.add_message(Message(role="user", content=message))
+        conversation.add_message(
+            Message(
+                role="user",
+                content=message,
+                metadata={REQUEST_ID_METADATA_KEY: request_id},
+            )
+        )
 
         # Add initial task
         context_task = Task(
@@ -534,12 +602,6 @@ class Agent:
         for feature_name in self.config.ui_features.feature_group_access.keys():
             if self.config.ui_features.can_user_access_feature(feature_name, user):
                 ui_features_available.append(feature_name)
-
-        lineage_collector = LineageCollector()
-        lineage_collector.set_schema(
-            request_context.metadata.get("schema_hash"),
-            request_context.metadata.get("schema_snapshot_id"),
-        )
 
         # Create context with observability provider and UI features
         context = ToolContext(
@@ -602,38 +664,60 @@ class Agent:
             )
         )
 
-        # Semantic-first planner hinting (non-breaking, advisory routing).
+        # Semantic-first planning constrains both advertised and executable tools.
         planner_decision = None
         if self.semantic_planner:
-            try:
-                planner_decision = await self.semantic_planner.decide(
-                    message=message,
-                    tool_schemas=tool_schemas,
-                    context=context,
-                )
-                context.metadata["semantic_planner_decision"] = {
-                    "route": planner_decision.route,
-                    "message": planner_decision.message,
-                    "semantic_hint": planner_decision.semantic_hint.model_dump()
-                    if planner_decision.semantic_hint
-                    else None,
-                }
-                lineage_collector.add_validation_check(
-                    f"semantic_planner_route:{planner_decision.route}"
-                )
-                if planner_decision.route == "sql_fallback":
-                    yield UiComponent(  # type: ignore
-                        rich_component=StatusBarUpdateComponent(
-                            status="warning",
-                            message="SQL fallback route",
-                            detail=planner_decision.message,
+            planner_decision = await self.semantic_planner.decide(
+                message=message,
+                tool_schemas=tool_schemas,
+                context=context,
+            )
+            context.metadata["semantic_planner_decision"] = {
+                "route": planner_decision.route,
+                "message": planner_decision.message,
+                "warning_code": planner_decision.warning_code,
+                "semantic_hint": planner_decision.semantic_hint.model_dump()
+                if planner_decision.semantic_hint
+                else None,
+            }
+            lineage_collector.add_validation_check(
+                f"semantic_planner_route:{planner_decision.route}"
+            )
+            semantic_hint = planner_decision.semantic_hint
+            semantic_request = semantic_hint.request if semantic_hint else None
+            lineage_collector.set_semantic(
+                semantic_hint.coverage if semantic_hint else "missing",
+                metric_names=semantic_request.metrics if semantic_request else (),
+                fallback_reason=(
+                    planner_decision.message if planner_decision.warning_code else None
+                ),
+            )
+            if planner_decision.blocked_tools or planner_decision.blocked_capabilities:
+                blocked_tools = set(planner_decision.blocked_tools)
+                for capability in planner_decision.blocked_capabilities:
+                    blocked_tools.update(
+                        await self.tool_registry.get_tool_names_by_capability(
+                            capability,
+                            user,
                         )
                     )
-            except Exception as planner_error:
-                logger.warning(
-                    f"Semantic planner failed; continuing without planner hints: {planner_error}"
+                tool_schemas = [
+                    schema
+                    for schema in tool_schemas
+                    if schema.name not in blocked_tools
+                ]
+            if planner_decision.warning_code:
+                yield UiComponent(  # type: ignore
+                    rich_component=StatusBarUpdateComponent(
+                        status="warning",
+                        message="SQL fallback route",
+                        detail=planner_decision.message,
+                    )
                 )
-                planner_decision = None
+
+        context.metadata["allowed_tool_names"] = tuple(
+            schema.name for schema in tool_schemas
+        )
 
         # Build system prompt with observability
         prompt_span = None
@@ -665,7 +749,8 @@ class Agent:
                     if request_hint
                     else ""
                 )
-                + "- If semantic coverage is missing, fall back to SQL and surface a warning."
+                + "- Use semantic_query; SQL execution tools are not permitted "
+                "for this turn."
             )
 
         # Enhance system prompt with LLM context enhancer
@@ -850,7 +935,10 @@ class Agent:
                         )
 
                     # Run before_tool hooks with observability
-                    tool = await self.tool_registry.get_tool(tool_call.name)
+                    tool = await self.tool_registry.get_authorized_tool_for_hooks(
+                        tool_call.name,
+                        context,
+                    )
                     if tool:
                         for hook in self.lifecycle_hooks:
                             hook_span = None
@@ -913,37 +1001,40 @@ class Agent:
                             )
 
                     # Run after_tool hooks with observability
-                    for hook in self.lifecycle_hooks:
-                        hook_span = None
-                        if self.observability_provider:
-                            hook_span = await self.observability_provider.create_span(
-                                "agent.hook.after_tool",
-                                attributes={
-                                    "hook": hook.__class__.__name__,
-                                    "tool": tool_call.name,
-                                },
-                            )
-
-                        modified_result = await hook.after_tool(result)
-                        if modified_result is not None:
-                            result = modified_result
-
-                        if self.observability_provider and hook_span:
-                            hook_span.set_attribute(
-                                "modified_result", modified_result is not None
-                            )
-                            await self.observability_provider.end_span(hook_span)
-                            if hook_span.duration_ms():
-                                await self.observability_provider.record_metric(
-                                    "agent.hook.duration",
-                                    hook_span.duration_ms() or 0,
-                                    "ms",
-                                    tags={
-                                        "hook": hook.__class__.__name__,
-                                        "phase": "after_tool",
-                                        "tool": tool_call.name,
-                                    },
+                    if tool is not None:
+                        for hook in self.lifecycle_hooks:
+                            hook_span = None
+                            if self.observability_provider:
+                                hook_span = (
+                                    await self.observability_provider.create_span(
+                                        "agent.hook.after_tool",
+                                        attributes={
+                                            "hook": hook.__class__.__name__,
+                                            "tool": tool_call.name,
+                                        },
+                                    )
                                 )
+
+                            modified_result = await hook.after_tool(result)
+                            if modified_result is not None:
+                                result = modified_result
+
+                            if self.observability_provider and hook_span:
+                                hook_span.set_attribute(
+                                    "modified_result", modified_result is not None
+                                )
+                                await self.observability_provider.end_span(hook_span)
+                                if hook_span.duration_ms():
+                                    await self.observability_provider.record_metric(
+                                        "agent.hook.duration",
+                                        hook_span.duration_ms() or 0,
+                                        "ms",
+                                        tags={
+                                            "hook": hook.__class__.__name__,
+                                            "phase": "after_tool",
+                                            "tool": tool_call.name,
+                                        },
+                                    )
 
                     # Update status card to show completion
                     final_status = "success" if result.success else "error"
@@ -1111,6 +1202,8 @@ class Agent:
 
         # Check if we hit the tool iteration limit
         if tool_iterations >= self.config.max_tool_iterations:
+            lineage_collector.set_outcome("tool_limit")
+            lineage_collector.add_validation_check("tool_limit_reached", False)
             # The loop exited due to hitting the limit, not due to a natural completion
             logger.warning(
                 f"Tool iteration limit reached: {tool_iterations}/{self.config.max_tool_iterations}"
@@ -1152,21 +1245,6 @@ You can:
                 )
             )
 
-        # Emit evidence/lineage panel for reproducibility on every completed answer.
-        lineage_markdown = lineage_collector.to_markdown()
-        yield UiComponent(
-            rich_component=CardComponent(
-                title="Evidence and Lineage",
-                content=lineage_markdown,
-                icon="🔎",
-                status="info",
-                collapsible=True,
-                collapsed=True,
-                markdown=True,
-            ),
-            simple_component=None,
-        )
-
         # Save conversation if configured
         if self.config.auto_save_conversations:
             save_span = None
@@ -1179,7 +1257,9 @@ You can:
                     },
                 )
 
-            await self.conversation_store.update_conversation(conversation)
+            await self.conversation_store.update_conversation_for_user(
+                conversation, user
+            )
 
             if self.observability_provider and save_span:
                 await self.observability_provider.end_span(save_span)
@@ -1235,6 +1315,25 @@ You can:
                     "ms",
                     tags={"user_id": user.id, "hit_tool_limit": str(hit_tool_limit)},
                 )
+
+    @staticmethod
+    def _lineage_component(lineage_collector: LineageCollector) -> UiComponent:
+        """Create the V2 card carrying a trusted typed V3 lineage marker."""
+
+        payload = lineage_collector.to_public_payload()
+        return UiComponent(
+            rich_component=CardComponent(
+                title="Evidence and Lineage",
+                content=lineage_collector.to_markdown(),
+                icon="🔎",
+                status="info",
+                collapsible=True,
+                collapsed=True,
+                markdown=True,
+                data={"v3_lineage": payload},
+            ),
+            simple_component=None,
+        )
 
     async def get_available_tools(self, user: User) -> List[ToolSchema]:
         """Get tools available to the user."""

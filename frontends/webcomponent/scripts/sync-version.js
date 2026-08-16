@@ -1,63 +1,47 @@
-/**
- * Sync version from pyproject.toml to package.json
- *
- * This ensures the webcomponent version always matches the Python package version.
- * Single source of truth: pyproject.toml
- *
- * Usage: node scripts/sync-version.js
- */
+/** Verify the immutable Python/npm version contract without mutating sources. */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Paths relative to this script
-const PYPROJECT_PATH = path.join(__dirname, '../../../pyproject.toml');
-const PACKAGE_JSON_PATH = path.join(__dirname, '../package.json');
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const rootDirectory = path.join(scriptDirectory, '../../..');
 
-function extractVersionFromPyproject(content) {
-  // Match: version = "2.0.0"
+function projectVersion() {
+  const content = fs.readFileSync(path.join(rootDirectory, 'pyproject.toml'), 'utf8');
   const match = content.match(/^version\s*=\s*"([^"]+)"/m);
   if (!match) {
-    throw new Error('Could not find version in pyproject.toml');
+    throw new Error('Could not find project.version in pyproject.toml');
   }
   return match[1];
 }
 
-function updatePackageJsonVersion(packageJsonPath, newVersion) {
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  const oldVersion = packageJson.version;
-
-  packageJson.version = newVersion;
-
-  fs.writeFileSync(
-    packageJsonPath,
-    JSON.stringify(packageJson, null, 2) + '\n',
-    'utf8'
+function jsonVersion(relativePath, selector = (value) => value.version) {
+  const value = JSON.parse(
+    fs.readFileSync(path.join(rootDirectory, relativePath), 'utf8')
   );
-
-  return { oldVersion, newVersion };
+  return selector(value);
 }
 
 function main() {
-  try {
-    // Read pyproject.toml
-    const pyprojectContent = fs.readFileSync(PYPROJECT_PATH, 'utf8');
-    const version = extractVersionFromPyproject(pyprojectContent);
-
-    // Update package.json
-    const { oldVersion, newVersion } = updatePackageJsonVersion(PACKAGE_JSON_PATH, version);
-
-    if (oldVersion !== newVersion) {
-      console.log(`✓ Version synced: ${oldVersion} → ${newVersion}`);
-    } else {
-      console.log(`✓ Version already in sync: ${newVersion}`);
-    }
-
-    process.exit(0);
-  } catch (error) {
-    console.error(`✗ Version sync failed: ${error.message}`);
-    process.exit(1);
+  const versions = {
+    pyproject: projectVersion(),
+    package: jsonVersion('frontends/webcomponent/package.json'),
+    lockfile: jsonVersion(
+      'frontends/webcomponent/package-lock.json',
+      (value) => value.packages[''].version
+    ),
+  };
+  const unique = new Set(Object.values(versions));
+  if (unique.size !== 1 || versions.pyproject !== '3.3.0') {
+    throw new Error(`Version contract mismatch: ${JSON.stringify(versions)}`);
   }
+  console.log(`Version contract verified: ${versions.pyproject}`);
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  console.error(`Version verification failed: ${error.message}`);
+  process.exit(1);
+}

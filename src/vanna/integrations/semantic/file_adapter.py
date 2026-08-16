@@ -20,6 +20,11 @@ from vanna.capabilities.semantic import (
 )
 from vanna.capabilities.sql_runner import RunSqlToolArgs, SqlRunner
 from vanna.core.tool import ToolContext
+from vanna.security.sql_policy import (
+    SqlPolicyViolation,
+    SqlQueryPolicy,
+    normalize_sql_dialect,
+)
 
 
 class _Metric:
@@ -32,9 +37,39 @@ class _Metric:
 class FileSemanticAdapter(SemanticAdapter):
     """Semantic adapter backed by a YAML metric model and a SqlRunner."""
 
-    def __init__(self, model_path: str, sql_runner: SqlRunner):
+    def __init__(
+        self,
+        model_path: str,
+        sql_runner: SqlRunner,
+        query_policy: Optional[SqlQueryPolicy] = None,
+        *,
+        require_native_read_only: bool = True,
+    ):
         self.model_path = model_path
         self.sql_runner = sql_runner
+        self.require_native_read_only = require_native_read_only
+        if require_native_read_only and sql_runner.native_read_only is not True:
+            raise SqlPolicyViolation(
+                "Semantic SQL execution requires a native read-only runner boundary."
+            )
+        runner_dialect = normalize_sql_dialect(
+            getattr(sql_runner, "dialect", "unknown")
+        )
+        if query_policy is None:
+            if runner_dialect == "unknown":
+                raise ValueError(
+                    "FileSemanticAdapter requires a known runner dialect or an "
+                    "explicit SqlQueryPolicy."
+                )
+            query_policy = SqlQueryPolicy(
+                runner_dialect,
+                require_row_policies=True,
+            )
+        elif runner_dialect != "unknown" and query_policy.dialect != runner_dialect:
+            raise ValueError(
+                "Semantic query policy dialect does not match the runner dialect."
+            )
+        self.query_policy = query_policy
         self._metrics: Dict[str, _Metric] = self._load_model(model_path)
 
     @staticmethod
@@ -76,6 +111,17 @@ class FileSemanticAdapter(SemanticAdapter):
     async def execute(
         self, request: SemanticQueryRequest, context: ToolContext
     ) -> SemanticQueryResult:
+        if len(request.metrics) != 1:
+            raise ValueError("FileSemanticAdapter supports exactly one metric.")
+        if (
+            request.dimensions
+            or request.filters
+            or request.time_grain
+            or request.order_by
+        ):
+            raise ValueError(
+                "FileSemanticAdapter does not support structured semantic options."
+            )
         metric = self._metrics.get(request.metric)
         if metric is None:
             return SemanticQueryResult(
@@ -84,7 +130,8 @@ class FileSemanticAdapter(SemanticAdapter):
                 metadata={"semantic_metric": request.metric, "matched": False},
             )
 
-        df = await self.sql_runner.run_sql(RunSqlToolArgs(sql=metric.sql), context)
+        prepared_sql = self.query_policy.prepare(metric.sql, context)
+        df = await self.sql_runner.run_sql(RunSqlToolArgs(sql=prepared_sql), context)
         rows: List[Dict[str, Any]] = (
             cast(List[Dict[str, Any]], df.to_dict("records")) if not df.empty else []
         )
@@ -97,6 +144,7 @@ class FileSemanticAdapter(SemanticAdapter):
                 "semantic_metric": metric.name,
                 "matched": True,
                 "source": "file_semantic_adapter",
-                "executed_sql": metric.sql,
+                "executed_sql": prepared_sql,
+                "validation_checks": ["shared_sql_query_policy_passed"],
             },
         )

@@ -17,6 +17,8 @@ import hashlib
 from pydantic import BaseModel, Field, model_validator
 
 from vanna.core.tool import Tool, ToolContext, ToolResult
+from vanna.core.tool.errors import public_tool_failure
+from vanna.core.user import principal_scope_for_user
 from vanna.components import (
     UiComponent,
     CardComponent,
@@ -27,6 +29,28 @@ from vanna.components import (
 
 MAX_SEARCH_FILE_BYTES = 1_000_000
 FILENAME_MATCH_SNIPPET = "[filename match]"
+
+
+def _file_failure(operation: str, code: str, error: BaseException) -> ToolResult:
+    message, metadata = public_tool_failure(
+        operation=operation,
+        code=code,
+        error=error,
+    )
+    return ToolResult(
+        success=False,
+        result_for_llm=message,
+        ui_component=UiComponent(
+            rich_component=NotificationComponent(
+                type=ComponentType.NOTIFICATION,
+                level="error",
+                message=message,
+            ),
+            simple_component=SimpleTextComponent(text=message),
+        ),
+        error=message,
+        metadata=metadata,
+    )
 
 
 @dataclass
@@ -140,8 +164,9 @@ class LocalFileSystem(FileSystem):
         Returns:
             Path to the user-specific directory
         """
-        # Hash the user ID to create a directory name
-        user_hash = hashlib.sha256(context.user.id.encode()).hexdigest()[:16]
+        tenant_scope, subject = principal_scope_for_user(context.user)
+        principal = f"{tenant_scope}\0{subject}".encode("utf-8")
+        user_hash = hashlib.sha256(principal).hexdigest()[:16]
         user_dir = self.working_directory / user_hash
 
         # Create the directory if it doesn't exist
@@ -378,19 +403,10 @@ class SearchFilesTool(Tool[SearchFilesArgs]):
                 include_content=args.include_content,
             )
         except Exception as exc:
-            error_msg = f"Error searching files: {exc}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(exc),
+            return _file_failure(
+                "File search",
+                "file_search_failed",
+                exc,
             )
 
         if not matches:
@@ -492,20 +508,11 @@ class ListFilesTool(Tool[ListFilesArgs]):
                     simple_component=SimpleTextComponent(text=result),
                 ),
             )
-        except Exception as e:
-            error_msg = f"Error listing files: {str(e)}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(e),
+        except Exception as error:
+            return _file_failure(
+                "File listing",
+                "file_listing_failed",
+                error,
             )
 
 
@@ -552,20 +559,11 @@ class ReadFileTool(Tool[ReadFileArgs]):
                     ),
                 ),
             )
-        except Exception as e:
-            error_msg = f"Error reading file: {str(e)}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(e),
+        except Exception as error:
+            return _file_failure(
+                "File read",
+                "file_read_failed",
+                error,
             )
 
 
@@ -619,20 +617,11 @@ class WriteFileTool(Tool[WriteFileArgs]):
                     ),
                 ),
             )
-        except Exception as e:
-            error_msg = f"Error writing file: {str(e)}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(e),
+        except Exception as error:
+            return _file_failure(
+                "File write",
+                "file_write_failed",
+                error,
             )
 
 
@@ -694,19 +683,10 @@ class EditFileTool(Tool[EditFileArgs]):
         try:
             original_content = await self.file_system.read_file(args.filename, context)
         except Exception as exc:
-            error_msg = f"Error loading file '{args.filename}': {exc}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(exc),
+            return _file_failure(
+                "File edit read",
+                "file_edit_read_failed",
+                exc,
             )
 
         lines = original_content.splitlines(keepends=True)
@@ -799,19 +779,10 @@ class EditFileTool(Tool[EditFileArgs]):
                 args.filename, new_content, context, overwrite=True
             )
         except Exception as exc:
-            error_msg = f"Error writing updated contents to '{args.filename}': {exc}"
-            return ToolResult(
-                success=False,
-                result_for_llm=error_msg,
-                ui_component=UiComponent(
-                    rich_component=NotificationComponent(
-                        type=ComponentType.NOTIFICATION,
-                        level="error",
-                        message=error_msg,
-                    ),
-                    simple_component=SimpleTextComponent(text=error_msg),
-                ),
-                error=str(exc),
+            return _file_failure(
+                "File edit write",
+                "file_edit_write_failed",
+                exc,
             )
 
         diff_lines = list(
